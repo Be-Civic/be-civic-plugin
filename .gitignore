@@ -1,0 +1,19 @@
+.DS_Store
+*.pyc
+__pycache__/
+.venv/
+.env
+.env.local
+
+# Build/packaging artefacts
+dist/
+*.zip
+*.plugin
+
+# Editor state
+.vscode/
+.idea/
+
+# OS junk
+Thumbs.db
+desktop.ini
