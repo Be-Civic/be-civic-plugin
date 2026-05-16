@@ -15,9 +15,9 @@ Invoked by the `be-civic` gate when no Be Civic project folder exists yet. The u
 
 1. **Project folder setup (do this BEFORE any framing or intake).**
    - Call `mcp__cowork__request_cowork_directory` to let the user pick a folder.
-   - Write the harness CLAUDE.md into that folder from the plugin's `harness/CLAUDE.md` template.
-   - Write `.be-civic-project` marker file at the folder root (empty file, used by the `be-civic` gate to detect project context).
-   - Initialise state from `harness/project-init/` template: `profile.json` (empty schema-valid template), `memory.md` (empty), and subfolder structure (`documents/`, `sessions/`, `memory/`, `procedures/` — see open Q on layout).
+   - Write the harness CLAUDE.md into that folder from this skill's `references/harness-CLAUDE.md` template.
+   - Write `.be-civic-project` marker file at the folder root (empty file, used by the `be-civic` gate to detect project context). Source template at `references/project-init/.be-civic-project`.
+   - Initialise state from `references/project-init/` template: `profile.json` (empty schema-valid template), `memory.md` (empty), and subfolder structure (`documents/`, `sessions/`, `memory/`, `procedures/` — see open Q on layout).
    - Confirm to the user: "I set up your Be Civic project at [folder path]. Let me show you what's in it." Brief tour of what each file/folder is for.
 2. **Framing (§1 below).** Delivered exactly once, in this conversation. Captures the privacy + contribution contract before any procedure work.
 3. **Adaptive opening (§ Adaptive opening pattern below).** Acknowledge any intent the user already stated; ask "what brought you here today?" only if no intent is clear yet.

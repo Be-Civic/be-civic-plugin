@@ -1,10 +1,6 @@
 ---
 name: bc-skill-drafter
-description: >
-  Drafts amendments or proposals for Be Civic skill canonicals (skills/<id>/canonical.md).
-  Invoked by bc-session-close when research-notes are ready_to_draft. Two modes:
-  amendment (model sonnet) for edits to existing skills; proposal (model opus) for
-  brand-new skill canonicals.
+description: Drafts new Be Civic procedure skills, or amendments to existing ones, from session research-notes. Spawned by bc-session-close when a user's experience reveals a procedure the catalogue lacks or should change. PLACEHOLDER status.
 model: opus
 ---
 

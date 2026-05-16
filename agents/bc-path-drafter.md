@@ -1,11 +1,7 @@
 ---
 name: bc-path-drafter
-description: >
-  Drafts amendments or proposals for Be Civic path entries (paths/<id>/index.json).
-  Invoked by bc-session-close when research-notes are ready_to_draft. Two modes:
-  amendment (model sonnet) for edits to existing paths; proposal (model opus) for
-  brand-new path entries. Reads research-notes from memory/research-notes-*.md.
-model: sonnet
+description: Drafts new Be Civic path entries (single-outcome routes like portal flows, commune deeplinks, or single forms), or amendments to existing paths, from session research-notes. Spawned by bc-session-close, or by bc-skill-drafter when content is path-shaped rather than skill-shaped. PLACEHOLDER status.
+model: opus
 ---
 
 # Be Civic — Path Drafter (subagent prompt) — PLACEHOLDER

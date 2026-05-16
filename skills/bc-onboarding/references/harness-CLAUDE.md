@@ -44,5 +44,5 @@ Then invoke `be-civic:bc-onboarding` peer skill so the user can at least walk th
 ## References
 
 - Pattern B design: `https://github.com/hk121992/be-civic-plugin/blob/main/docs/pattern-b-design.md`
-- Implementation plan: `~/.claude/plans/be-civic-plugin-pattern-b-reshape.md`
+- This template ships at `skills/bc-onboarding/references/harness-CLAUDE.md` in the plugin install. The `bc-onboarding` peer skill copies it into the user's project folder during onboarding.
 - Authoring source for the full harness: current `be-civic` SKILL.md body at `bc-operations/cowork-plugin/plugins/be-civic/skills/be-civic/SKILL.md` (250 lines) — adapted to project-folder-relative paths and the retro corrections.
