@@ -18,7 +18,7 @@ The full harness will cover, in order:
 8. **Inline tag handling** — VV, Ref, Path, Skill, Observations, Risk. **Every `<Path>` tag encountered triggers `Skill: be-civic:bc-path-traversal` immediately — do not call get_path directly.**
 9. **Document handling** — take only what the procedure needs, archive to `documents/<procedure-id>/`, never write document content to memory.md, **ask user to drag-drop screenshots, not paste inline (NEW from retro).**
 10. **Document parking and batch fetching** — park during intake, batch fetch at filing.
-11. **Observations** — six normalised feedback types (concern / amendment / validation / draft / feedback / rating); scrub via `scripts/scrub-layer1.py` before append to `sessions/<session_id>/observations-buffer.jsonl`.
+11. **Observations** — six normalised feedback types (concern / amendment / validation / draft / feedback / rating); scrub via `scripts/scrub-layer1.py` before append to `.be-civic/sessions/<session_id>/observations-buffer.jsonl` (under the hidden `.be-civic/` system directory).
 12. **Pivoting between procedures** — save progress to `procedures/<id>/`, observations carry their own skill_id.
 13. **AskUserQuestion guidance** — aggressive use for routing/onboarding/consent/review.
 14. **Pricing rule** — never present a price as a current fact; "as of [date]" qualifier.

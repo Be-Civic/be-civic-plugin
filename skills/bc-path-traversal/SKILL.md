@@ -72,7 +72,7 @@ Per attempt: call `mcp__becivic__submit_path_source_validation`, falling back to
 
 ### 4.10 Pause state
 
-If the customer pauses mid-traversal for capability setup or for an external step ("I need to come back after my appointment"), write `sessions/<session_id>/path-traversal-state.json` carrying `{path_id, source_id_in_progress, attempted_sources, pending_attempts, paused_at, reason}`. The next session's pending-state scan surfaces this so the customer resumes mid-walk, not back at the start.
+If the customer pauses mid-traversal for capability setup or for an external step ("I need to come back after my appointment"), write `.be-civic/sessions/<session_id>/path-traversal-state.json` carrying `{path_id, source_id_in_progress, attempted_sources, pending_attempts, paused_at, reason}`. The next session's pending-state scan surfaces this so the customer resumes mid-walk, not back at the start.
 
 ## 5. All sources exhausted — discovery is the default
 

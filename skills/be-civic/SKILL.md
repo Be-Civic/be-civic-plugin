@@ -9,13 +9,13 @@ This skill is the thin entry point for the Be Civic plugin. Its only job is to d
 
 ## 1. Detect project context
 
-Check the current working directory and its parents for a `.be-civic-project` marker file:
+Check the current working directory and its parents for a `.be-civic/marker` file (the marker lives under a hidden `.be-civic/` directory so it stays out of the user's sidebar):
 
 ```bash
 # Walk upward from the cwd looking for the marker.
 dir=$(pwd)
 while [ "$dir" != "/" ]; do
-  if [ -f "$dir/.be-civic-project" ]; then
+  if [ -f "$dir/.be-civic/marker" ]; then
     echo "be-civic project root: $dir"
     exit 0
   fi
@@ -23,6 +23,14 @@ while [ "$dir" != "/" ]; do
 done
 echo "no be-civic project found"
 ```
+
+Note: older Be Civic projects (created before the `.be-civic/` subdirectory was introduced) used a top-level `.be-civic-project` marker file. Check that fallback location too:
+
+```bash
+[ -f "$dir/.be-civic-project" ] && echo "be-civic project root: $dir (legacy marker)" && exit 0
+```
+
+If found at the legacy location, offer to migrate: move the marker into `.be-civic/marker` and any state files under the new hidden subdirectory.
 
 If the bash tool is unavailable, fall back to checking just the current working directory with the available filesystem tool.
 

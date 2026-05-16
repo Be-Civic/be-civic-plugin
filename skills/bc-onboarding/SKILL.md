@@ -15,9 +15,11 @@ Invoked by the `be-civic` gate when no Be Civic project folder exists yet. The u
 
 1. **Project folder setup (do this BEFORE any framing or intake).**
    - Call `mcp__cowork__request_cowork_directory` to let the user pick a folder.
-   - Write the harness CLAUDE.md into that folder from this skill's `references/harness-CLAUDE.md` template.
-   - Write `.be-civic-project` marker file at the folder root (empty file, used by the `be-civic` gate to detect project context). Source template at `references/project-init/.be-civic-project`.
-   - Initialise state from `references/project-init/` template: `profile.json` (empty schema-valid template), `memory.md` (empty), and subfolder structure (`documents/`, `sessions/`, `memory/`, `procedures/` — see open Q on layout).
+   - Write the harness CLAUDE.md into the folder root from this skill's `references/harness-CLAUDE.md` template.
+   - Write the `.be-civic/marker` file (under a hidden `.be-civic/` subdirectory) to identify the folder as a Be Civic project. Source template at `references/project-init/.be-civic/marker`.
+   - Write `profile.json` and `memory.md` at the folder root from the templates at `references/project-init/profile.json` and `references/project-init/memory.md`.
+   - **Do NOT create empty placeholder subfolders** (no `documents/`, `sessions/`, `memory/`, `procedures/` upfront). Those get created lazily by the relevant skills when there's actual content to put in them — `bc-document-handler` creates `documents/<procedure-id>/` when the user uploads a document, the harness creates `.be-civic/sessions/<session-id>/` when the first observation lands, etc.
+   - Keep the project root clean: from the user's sidebar perspective they see only the things they can read and understand (CLAUDE.md, profile.json, memory.md initially; documents/, research-notes/ later as they accumulate). System state (sessions/, observation buffers, pending submissions) lives under `.be-civic/` and stays hidden.
    - Confirm to the user: "I set up your Be Civic project at [folder path]. Let me show you what's in it." Brief tour of what each file/folder is for.
 2. **Framing (§1 below).** Delivered exactly once, in this conversation. Captures the privacy + contribution contract before any procedure work.
 3. **Adaptive opening (§ Adaptive opening pattern below).** Acknowledge any intent the user already stated; ask "what brought you here today?" only if no intent is clear yet.

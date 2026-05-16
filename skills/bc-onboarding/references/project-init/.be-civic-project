@@ -1,8 +1,0 @@
-# This file marks the folder as a Be Civic project.
-# The be-civic plugin's gate skill checks for this file (or one in a parent
-# directory) to detect that the conversation is running inside a Be Civic
-# project, in which case the project's CLAUDE.md harness is the active
-# session context and the gate skill exits quietly.
-#
-# Do not delete this file unless you want to convert the folder back to a
-# non-Be-Civic folder.

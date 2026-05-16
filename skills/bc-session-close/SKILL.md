@@ -24,7 +24,7 @@ Write `state/procedure_progress_<skill_id>.md` for each procedure walked this se
 
 ### 3. Per-item observation review
 
-Read this session's observation list at `sessions/<session_id>/observations-buffer.jsonl`. For each item:
+Read this session's observation list at `.be-civic/sessions/<session_id>/observations-buffer.jsonl`. For each item:
 
 - Show it in plain English (rendered from the JSON, not the JSON itself).
 - AskUserQuestion: approve / edit / discard.
@@ -68,7 +68,7 @@ For each approved item (observations from step 3, drafter payloads from step 4, 
 
 1. **Validate** via `mcp__becivic__validate_submission`, falling back to HTTP POST to `https://becivic.be/api/validate-submission` if MCP is unavailable. Worker runs Layer-2 scrub; if the response carries a `scrub_failure` (per schemas.md §6.2.7 placed under §6.2.4), tell the customer plainly which field tripped and offer rewrite-or-drop. Do NOT silently retry.
 2. **Stage** via `mcp__becivic__stage_submission` (HTTP fallback `https://becivic.be/api/stage-submission`) on validate success. The Worker returns a `cancel_token` and `cancel_url`; carry these into the goodbye.
-3. **Local-buffer fallback (third leg).** If BOTH MCP and HTTPS are unreachable (network down, both endpoints 5xx, or both timeout), do NOT lose the submission. Move the approved item from `observations-buffer.jsonl` to `sessions/<session_id>/pending-submissions.jsonl`. Tell the customer plainly: "I couldn't reach Be Civic right now — your submission is saved locally and I'll try again next session." The next session's preamble surfaces this via `PENDING_STATE`; the customer can review and re-submit at first opportunity. The pending-submissions file uses the same JSONL line shape as the observation buffer plus a `staged_at` timestamp; the scrub-layer1 pass already ran at step 3, so resubmit goes straight to validate/stage.
+3. **Local-buffer fallback (third leg).** If BOTH MCP and HTTPS are unreachable (network down, both endpoints 5xx, or both timeout), do NOT lose the submission. Move the approved item from `observations-buffer.jsonl` to `.be-civic/sessions/<session_id>/pending-submissions.jsonl`. Tell the customer plainly: "I couldn't reach Be Civic right now — your submission is saved locally and I'll try again next session." The next session's preamble surfaces this via `PENDING_STATE`; the customer can review and re-submit at first opportunity. The pending-submissions file uses the same JSONL line shape as the observation buffer plus a `staged_at` timestamp; the scrub-layer1 pass already ran at step 3, so resubmit goes straight to validate/stage.
 
 Capture the cancel tokens. If `SUBMIT_OBSERVATIONS_THIS_SESSION: no` was set by preamble (scrub-rules fetch failed beyond retries — CLAUDE.md §6), tell the customer plainly: "I'm holding back submissions this session — Be Civic's scrub rules couldn't be confirmed. We'll send next time." Do NOT submit anyway.
 
@@ -78,7 +78,7 @@ One sentence per active item. "Next session we'll pick up at [step]." / "When yo
 
 ### 8. Cleanup
 
-Delete `sessions/<session_id>/observations-buffer.jsonl` once all items are either submitted, discarded, or written into `state/`. Leave the session directory for the orphan-buffer scan to handle on a hard close. Skip on resume-submit.
+Delete `.be-civic/sessions/<session_id>/observations-buffer.jsonl` once all items are either submitted, discarded, or written into `state/`. Leave the session directory for the orphan-buffer scan to handle on a hard close. Skip on resume-submit.
 
 ### 9. Goodbye
 
