@@ -1,126 +1,171 @@
 ---
 name: bc-path-traversal
-description: Use when the harness encounters an inline Path tag in a canonical body, a frontmatter requires_paths entry at filing or document step, or a customer-initiated path request. Owns the spec section 6.12 traversal contract — catalogue load, three invariants, per-source execution with handoff gates, validation submission, capability-aware degradation, discovery-mode default on exhaustion.
+description: Walk the user step-by-step through a Belgian-administration procedure once onboarding has captured the profile and the procedure has been routed. Owns the §6.12 Path Directory traversal contract — batched-phase loop, Chrome MCP site discovery, browser_driving_preference honouring, eligibility-first / commune-last / consent-before-audited-delivery invariants, inline-commit path-source validations on each attempt. Hands off to bc-onboarding (returning mode) when the user signals a new procedure mid-session. Hands back to the harness at procedure completion.
+version: 1.0.0
+requires_capabilities:
+  - multi_turn
+  - structured_output
+  - tool_execution
+peer_skills:
+  - bc-onboarding
+  - bc-discovery
+  - bc-document-handler
+  - bc-session-close
 ---
 
 # Be Civic — Path Traversal
 
-## 1. Triggers
+This skill walks the user, one phase at a time, through a verified Belgian-administration procedure. The procedure canonical is the script; the Path Directory is the route to each document or tool the script names; the user owns every appointment, signature, and visit to a service desk.
 
-Per CLAUDE.md §6a inline-tag handling:
+Trust posture is conservative. The skill never invents a path that is not in the catalogue, never proceeds past an audited delivery without per-call consent, never drives a browser the user said not to drive, never claims a step succeeded without checking the validation signal the catalogue specified. Failures are surfaced plainly; the user is told what is next; nothing happens silently.
 
-- **Inline `<Path id="..." />` tag** in the procedure body — the common case. The tag IS the cue; don't wait for a separate "step" or "now we'll get the document" beat. Invoke immediately on encounter.
-- **Frontmatter `requires_paths:` entry** reached at filing/document step (when parked at onboarding per CLAUDE.md §7a, the batch fetch beat runs each parked path in sequence).
-- **Customer-initiated** ("can you help me get certificate X?") when intent matches a catalogued path.
+## Step 1 — Inputs from onboarding
 
-## 2. Execution modes — split by `purpose:` field
+The skill enters with three artefacts already on disk from `bc-onboarding`:
 
-- **Document-fetch purpose** (the common case — `submission` / `preparation` / `check-only` / `handoff`): traversal pulls or produces a document. Run the source-by-source algorithm in §4 under the three invariants in §3.
-- **`purpose: tool` paths** (a live online tool — commune appointment booker, federal e-form, MyMinFin): traversal offers to navigate the customer to the tool's URL rather than handle data itself. Surface as: "this step uses [tool name]. I'll open it for you — when you're done, come back and tell me what happened." For `purpose: tool` sources flagged `audited_document_delivery: true`, the per-call consent gate in §3 still applies before the URL is offered.
+- `profile.json` at the BeCivic root — region, commune, civic_status, residency_status, conversation_language, administration_language, preferred_name, `has_id_card`, `browser_driving_preference`, and the `consent` block.
+- `procedure_progress.md` inside the project subfolder — empty on first entry, accumulated narrative on returning entries.
+- A procedure id resolved by the harness during onboarding (the `skill_id` returned by `find_skill`). The id is the only thing the harness needs to hand over — everything else is read from the artefacts above.
 
-## 3. Three invariants (must hold at every step)
+If `profile.json` is absent, do not improvise; route the user back to `bc-onboarding` in `first-contact` mode and exit. If the procedure id is absent, ask the user what they want to work on and route back to `bc-onboarding` for routing.
 
-- **Eligibility-first.** Never attempt a source whose `audience.predicates` don't match the customer profile. Filter the source list once at the top of traversal; never relax this mid-loop.
-- **Commune-last.** Never suggest a commune visit until every online source has been tried. By schema invariant, `offline` sources carry `fallback_only: true` — sort accordingly.
-- **Consent-before-audited-delivery.** Per-call (not per-session) explicit consent for sources flagged `audited_document_delivery: true`. Plain-English explanation of what audited delivery means (§6). Customer agreeing to fetch a marriage certificate does not extend to a residence certificate.
+## Step 2 — Fetch the procedure canonical
 
-## 4. Core algorithm
+Call `mcp__plugin_be-civic_becivic__read_skill` with the procedure id. The response is the canonical markdown body plus frontmatter — `inputs`, `requires`, `requires_paths`, `applies_to`, and the `[Process]` body with inline `<Path>` and `<Skill>` tags.
 
-### 4.1 Catalogue load
+Read the body to extract the phase structure. Procedure canonicals are organised as named phases (eligibility check, document collection, filing, post-filing). The `requires_paths:` frontmatter lists every path the procedure needs across all phases; the inline `<Path id="…" />` tags inside `[Process]` steps anchor each path to the phase where it is consumed. Use the inline tags as the phase markers — the position of a `<Path>` tag determines when it is fetched, not the order in `requires_paths:`.
 
-Read `cache/paths-index.json` populated by inline fetch per CLAUDE.md §6 (MCP → HTTP → WebFetch). On persistent failure (all three layers): tell the customer plainly "I can describe the procedure but can't walk you through getting it" and emit a `skill_surface` observation flagging the catalogue-unreachable state. Continue advice-only — do NOT invent paths from general knowledge.
+Cache the canonical body in working memory for the rest of the session. Do not re-fetch on every phase.
 
-### 4.2 Path lookup
+## Step 3 — Discover paths
 
-Look up by id. On miss, return a structured signal to CLAUDE.md (`unknown-path-id`); CLAUDE.md routes to `bc-discovery` in path mode. Do NOT synthesise a path from general knowledge.
+Two surfaces inform path discovery, in order:
 
-### 4.3 `applies_to` check
+1. **The procedure's declared paths.** Build the working set from the canonical's `requires_paths:` frontmatter joined with the inline `<Path>` tags in the body. This is the deterministic, corpus-grounded list.
 
-Validate the path's `applies_to` against the customer's profile. Mismatch → surface plainly ("this path is for [region/civic status], doesn't apply to your situation") and skip. Don't proceed.
+2. **Chrome MCP site discovery — only when needed.** Some path sources gate on commune-specific or region-specific portal behaviour the canonical cannot enumerate (a Brussels-only deeplink, a Wallonia population-register sitemap page, a federal CSAM auth wall that re-clicks differently per portal). When the user's profile points at a region or commune whose path source is not deterministic from the catalogue, call `mcp__Claude_in_Chrome__list_connected_browsers` to confirm the user has a paired browser. If paired, use Chrome MCP to navigate the portal and confirm the deeplink the catalogue cites still resolves before walking the user to it. Site-discovery probes are read-only: navigate, read page text, screenshot if needed, never submit a form.
 
-### 4.4 Source filtering and ordering
+3. **`get_path_directory` for surface enumeration.** When the procedure references a path id whose entry the catalogue has multiple sources for, call `mcp__plugin_be-civic_becivic__get_path_directory` to enumerate the catalogued sources. Filter by the user's profile fields (region, residency_status) before presenting any source to the user — eligibility-first invariant applies at discovery, not just execution.
 
-- Filter sources by `audience.predicates` against the profile (eligibility-first invariant).
-- Within the surviving set, sort: non-fallback before fallback; by `priority` ascending within each tier. `offline` sources go last (commune-last invariant).
+Do not probe an audited source (`audited_document_delivery: true`) during discovery. Probing is a real document delivery; the user has not consented yet.
 
-### 4.5 Per-source attempt — three gates
+## Step 4 — Honor `browser_driving_preference`
 
-Before executing each source:
+Read `browser_driving_preference` from `profile.json`. Three values; behaviour for each is sticky for the session and never re-asked:
 
-1. **Audited-delivery gate** — for sources flagged `audited_document_delivery: true`, AskUserQuestion with a plain-English explanation: "this will request a real, official document — logged on the government's side, usually with a fee, sometimes mailed to your address. Not a preview. OK to proceed?" Per-call, not per-session.
-2. **Handoff gate** — read `actor.handoff.when`; surface `agent_responsibility` / `user_responsibility` / `resumption` text to the customer. Frame as "here's what I'll do, here's what you'll need to do, and here's how we pick up after."
-3. **Unobserved-flow caveat** — when `post_handoff_observed: false`, tell the customer once: "after [handoff point] I won't see what happens on your screen. Tell me when you're back."
+- **`drive-by-default`** — agent drives the user's paired browser via Chrome MCP up to authentication walls. At each auth wall, hand off using the source's `actor.handoff` text and pause for the user to sign in. Resume on the user's signal (typically "got it" or a downloaded file).
+- **`ask-each-time`** — agent presents the source's deeplink, the agent-responsibility and user-responsibility text, and an explicit choice for this step: drive the browser, or hand over the link. The user's choice on this step does not bind subsequent steps; the next browser-needing source asks again.
+- **`never-drive`** — agent never invokes Chrome MCP for navigation; every source is presented as a clean markdown link with the user-responsibility text, and the user clicks themselves. Validation signals for these sources come from the user reporting back what happened ("got it" / "couldn't find the link" / "got a 404"), not from agent-observed page state.
 
-### 4.6 Runtime capability gate
+If `browser_driving_preference` is `drive-by-default` but no browser is paired, do not silently downgrade. Surface once: "Your preference is set to drive your browser, but I can't see a paired browser. Want to pair Chrome and the Be Civic extension now, or hand you links for this session?" The user's answer either pairs the browser (preference stands) or updates the preference to `never-drive` for the session.
 
-Read `PATH_TRAVERSAL_CAPABLE` and `PATH_HANDOFF_CAPABLE` from preamble session state.
+## Step 5 — Batched phase loop
 
-- **Both present** → execute the source normally.
-- **Missing or unknown** → do NOT silently skip. Surface a setup nudge: "this route needs Chrome installed and the Be Civic MCP connected; want me to walk you through that now? About a minute." Only fall through to advice-only if the customer declines setup.
+The skill walks one phase at a time. Each phase is a group of related `[Process]` steps in the canonical that share a logical boundary — usually "collect these documents," "complete this filing," "wait for this acknowledgement." Phases are inferred from the canonical's section headers and the position of inline `<Path>` tags.
 
-### 4.7 Execute
+At the start of each phase, name it plainly to the user — what is happening in this phase, what documents or actions it produces, roughly how long it takes. Then iterate:
 
-Per `source_class`: deeplink walk (browser MCP), form-fill where capability allows, or offline checklist emit (e.g., "bring these items to the commune"). The execution detail lives in the source row's `instructions` field; follow it.
+For each step in the phase, in canonical order:
 
-### 4.8 Validate
+1. **Advance.** Read the next step's body. If the step body is wrapped in `<Risk>` per the §6.10 inline-tag schema, slow down and name the stakes before proceeding; the wrapped step describes an irreversible routing call the user must understand before acting.
 
-Validate the produced document or completed action against `validation_path` per the source's `source_class` template (per schemas.md §6.12.3 if/then branches). The path entry carries the validation rules; apply them, not general knowledge.
+2. **Resolve inline tags.** If the step contains `<Path id="…" />`, the path is the step. Move to step 3. If the step contains `<Skill id="…" />`, peer-invoke that procedure skill via `Skill` and return here when it exits. If the step is prose only, present it to the user, take their answer, and move on.
 
-### 4.9 Submit validation
+3. **Fetch the path entry.** Call `get_path_directory` for the cited path id if the catalogue has not already been fetched this session. Filter the source list by the user's profile (eligibility-first invariant). Sort: non-fallback before fallback; within each, by `priority` descending. `source_class: offline` sources are always last (commune-last invariant).
 
-Per attempt: call `mcp__becivic__submit_path_source_validation`, falling back to HTTP POST to `https://becivic.be/api/path-validations` if MCP is unavailable. On success: `verdict: confirm`. On failure: `verdict: reject` with structured `rationale`. Validations commit immediately — no 24h staging — so frame this for the customer as "I'm logging that this worked / didn't work for you, so the next person sees the same."
+4. **Validate path source per attempt.** Execute Step 6 below for each source attempt in turn until one succeeds or all are exhausted.
 
-### 4.10 Pause state
+5. **Record artefact and move on.** On success, write the artefact filename and the producing source id to `procedure_progress.md`. Move to the next step.
 
-If the customer pauses mid-traversal for capability setup or for an external step ("I need to come back after my appointment"), write `.be-civic/sessions/<session_id>/path-traversal-state.json` carrying `{path_id, source_id_in_progress, attempted_sources, pending_attempts, paused_at, reason}`. The next session's pending-state scan surfaces this so the customer resumes mid-walk, not back at the start.
+At the end of each phase, summarise what was produced and what is next, then advance to the next phase.
 
-## 5. All sources exhausted — discovery is the default
+If a phase fails entirely (every source for a required path was exhausted), pause and offer the user three choices: search online directly, prepare a commune visit (commune-last invariant: only at this prompt), or pause the procedure and come back later. Do not skip the phase silently.
 
-When every source in the path's source list has been tried and failed, push discovery mode as the **recommended** option, not one of four equal-weight choices. The framing biases for contribution AND glosses "discovery mode" on first use:
+## Step 6 — Inline-commit path-source validations
 
-> "We've tried every catalogued source for [path name] and none worked. The most useful thing right now is to switch to discovery mode (where we walk through this together and document what we find for the next person) — you'd be the first to map this for Be Civic, and the next person filing this won't hit the same wall. Want to do that?"
+Each source attempt produces a structured outcome. The validation submission is inline-commit — no buffer, no session-close approval — because path-source validations are anonymous-by-construction (no identity, only a source id, a verdict, and an optional structured rationale) and the catalogue needs the signal in real time to learn which sources are rotting.
 
-AskUserQuestion with discovery as the recommended option:
+For every source attempt:
 
-- **A) Discovery mode (recommended)**
-- B) Search online — I'll give you pointers
-- C) Visit your commune — I'll prep a checklist
-- D) Skip for now
+1. **Consent gate.** If the source is flagged `audited_document_delivery: true`, present the per-call consent surface in plain English: what authority will produce what document, whether there is a fee, whether the document is mailed, that this is real and not a preview. Obtain explicit consent for this call. Per-source consent does not extend to other sources; agreeing to fetch a marriage certificate does not extend to a residence certificate.
 
-On **A**: return `all-sources-failed-with-alternative` signal to CLAUDE.md with the customer's volunteered context (if any); CLAUDE.md routes to `bc-discovery` in path mode.
+2. **Handoff text.** If `actor.handoff.when` is not `none`, surface the source's `agent_responsibility`, `user_responsibility`, and `resumption` text to the user before executing. Frame as: here is what I will do, here is what you will need to do, here is how we pick up after. Never hand off silently.
 
-On **B**: emit a short list of authoritative-source URLs the customer can try; close the traversal.
+3. **Execute per source class.** A `deeplink-after-auth` source drives the browser to the deeplink (if `drive-by-default` and a browser is paired) or presents the link (otherwise) and pauses for the user to authenticate. A `wallonia-sitemap-page` source loads a public page and lets the user navigate. A `federal-auth-handoff` source presents the federal portal URL. An `offline` source emits a commune-visit checklist (contact, hours, documents to bring) and pauses for the user to act in the world.
 
-On **C**: emit a commune-visit checklist (NIS5-specific contact, hours, documents to bring); close the traversal.
+4. **Validate against `validation_path`.** Apply the success and failure signals the source declared. For a tier-1 deeplink, this is a content-type and PDF-magic check on the downloaded artefact. For a sitemap page, the user's verbal confirmation. For a federal form, a success-page signature. Use the source's signals, not general knowledge.
 
-On **D**: close the traversal silently; pending-state carries the unfinished traversal forward if the customer wants to come back.
+5. **Submit the validation, inline.** On success, call `mcp__plugin_be-civic_becivic__submit_validation` with `target_type: path_source`, `target: <source-id>`, `verdict: confirm`, `dry_run: false`. On failure, the same call with `verdict: reject` and a structured `rationale` naming the failure signal observed (`404 on quicklink URL`, `page text matched 'Service indisponible'`, `user reported the PDF never downloaded`, etc.). The submission commits immediately; frame this for the user once per session as: "I'm noting that this source worked / didn't work for you, so the next person filing this sees the same."
 
-## 6. Audited document delivery — customer-facing explanation
+If the validation submission itself fails (MCP unreachable, network error), retry once. If still failing, write the validation to the session's observation buffer for later submission and continue — do not block the user on a telemetry hiccup. The fallback chain in Step 13 governs this case in full.
 
-A source flagged `audited_document_delivery: true` produces a real, official document on each invocation. Logged on the government's side. Often with a fee. Sometimes with physical delivery to the customer's address. Not a preview. Not a test. Real.
+## Step 7 — Mini-header rotation
 
-The harness MUST obtain explicit per-call consent. Customer agreeing to fetch a marriage certificate does not extend to a residence certificate.
+At the start of each phase boundary and at the start of the session if entering through this skill (a returning user whose harness loaded the procedure), surface one mini-header callout. The plugin ships ten rotating strings at `${CLAUDE_PLUGIN_ROOT}/data/mini-header-strings.md`; rotate through them round-robin so the same string is not surfaced twice in adjacent invocations. Do not fire the mini-header on every message, every step, or every source attempt — only at phase boundaries and on session-active re-entry.
 
-Plain-English script (use roughly this wording, adapt to context):
+The mini-header signals to the user that the procedure work that follows is grounded in the Be Civic catalogue, not improvised. If the session shifts away from procedure work (the user asks a meta question, the user pivots to a non-procedure topic), the mini-header does not re-fire when procedure work resumes mid-session unless a new phase boundary is crossed.
 
-> "Quick check before I do this: this will request a real, official [doc type] from [authority]. They'll log the request on their side. [If fee: There's a fee of around X EUR — I'll confirm the current figure before you pay.] [If postal: They mail it to your address; takes a few days.] OK to proceed?"
+## Step 8 — Mid-session new-procedure trigger
 
-## 7. Exit conditions
+When the user signals an intent that does not fit the current procedure mid-traversal — "I also need to update my address," "actually first my mum just arrived from Tunisia and needs residency" — stop the current step, name the pivot, and hand back to `bc-onboarding` in `returning` mode with the new procedure id. The handover passes the existing `profile.json` snapshot; `bc-onboarding` runs the new procedure's Section-2 routing form without re-asking Section 1, creates a new project subfolder under the existing BeCivic root, and returns control to a fresh invocation of this skill for the new procedure.
 
-- Document produced + validation submitted (`verdict: confirm`) → return to the procedure body at the tag site.
-- All sources failed + discovery chosen → return `all-sources-failed-with-alternative`.
-- Customer paused → write pause state, exit with `paused`.
-- Customer declined a required capability nudge → exit with `capability-blocked`.
-- Catalogue unreachable → exit with `catalogue-unreachable`; CLAUDE.md continues advice-only.
+The original procedure is parked, not abandoned. Write the current phase and the last completed step to its `procedure_progress.md` before pivoting. When the user wants to resume the original procedure later, the harness reads `procedure_progress.md` and re-enters this skill at the parked phase.
 
-In every case the closing turn names what's next — never leave the customer on a hanging "OK" with no framing.
+Both procedures coexist under the BeCivic root. The user can have nationality, address-change, and apostille running in parallel — same profile, different project subfolders, different `procedure_progress.md` files. Confirmation that a pivot is wanted always uses the confirmation-gate copy: "Of course — we'll park the [current procedure] where it is. Would you like me to set up a new project for [new procedure] inside your existing Be Civic folder?"
 
-## What this skill does NOT own
+## Step 9 — Feedback emission
 
-- Path drafting. That's `bc-path-drafter` (subagent spawned by `bc-session-close`).
-- Document handling once delivered (extraction of routing fields). That's `bc-document-handler` rules (CLAUDE.md §7) or the inline handler if §7 covers it.
-- The path catalogue itself. The skill reads the catalogue; the catalogue lives in `data/paths.json` on the corpus side.
+Two channels for feedback against path-step quality:
 
-## Authoring source
+- **Path-source validations** — the inline-commit channel covered in Step 6. Per attempt, anonymous-by-construction, no buffering.
+- **Concerns and amendments against path or path-step quality** — buffered, surfaced at session close. When the user reports that a document name is wrong, a fee figure is stale, a step description misses a commune-specific detail, the path catalogue has a gap, or the canonical body is unclear, do not commit inline. Append to the session's observation buffer with the appropriate `target_type` (`path` for a scoped path issue, `path_source` for a concern about a specific source, `volatile_value` for a fee or date discrepancy, `skill` for canonical-body issues) and let `bc-session-close` present each item to the user for per-item approval before submission.
 
-Lifts from bootstrap.zip's `skills/becivic/SKILL.md` §31 (Path Directory traversal). Schema references: schemas.md §6.12; protocol.md §23.2.1 (MCP tool names). Discovery-as-default framing and the round-7.3 `<Path>` inline-tag trigger are new content per the W22 sprint plan.
+The decision between concern (no replacement text) and amendment (specific change the harness can defend) is per skills.md §15.7 obligation 12 — deterministic, not user-elected. Name the chosen feedback type to the user when surfacing the item at session close.
+
+Submission MCP tools:
+- `mcp__plugin_be-civic_becivic__submit_concern` for concerns.
+- `mcp__plugin_be-civic_becivic__submit_amendment` for amendments.
+
+Both default to `dry_run=true`; commit with `dry_run=false` only after per-item user approval at session close.
+
+## Step 10 — Completion and handback
+
+When every phase of the procedure has completed and every required artefact is in the project's `documents/` folder, summarise the procedure end-to-end for the user in plain language: what was filed, what is in the folder, what the user is waiting on from the authority, and what the user should do next outside the agent (an appointment, a postal acknowledgement, a follow-up after a statutory delay).
+
+Write a closing entry to `procedure_progress.md` naming the completion date and the final artefact set. Update `profile.json` `active_procedures` to remove the completed procedure id. Hand back to the harness — there is no automatic exit to a next procedure; the user may close the session here, or continue with a different procedure via the harness's normal routing.
+
+If the procedure does not complete in this session (user paused, awaiting an external step like a commune appointment, awaiting a postal acknowledgement), do not synthesise completion. Write the pause reason and the next concrete user action to `procedure_progress.md` and exit cleanly. The next session's harness reads `procedure_progress.md` and re-enters this skill at the parked phase.
+
+## Step 11 — Failure and fallback
+
+Three failure surfaces, in order of escalation:
+
+1. **A single source failed its validation_path** — submit `reject` inline, move to the next source in the ordering. Standard, expected behaviour. Continue without naming the failure as a session-level concern; the catalogue's validation aggregator handles the signal.
+
+2. **Every source for a required path is exhausted** — surface the all-sources-exhausted prompt at the end of the phase. Three choices for the user: search online for another route (agent emits authoritative-source URLs and closes the path), prepare a commune visit (agent emits a NIS5-specific checklist and closes the path), pause the procedure (agent writes pause state and exits). The fourth option — discovery mode — fires only if the user volunteers willingness to walk through the procedure and document what they find. Route to `bc-discovery` in `path` mode in that case.
+
+3. **MCP unreachable** — fall back per the harness CLAUDE.md §6 fetch chain. First attempt: MCP. On persistent MCP failure: HTTP parity at `https://becivic.be/api/paths` and `https://becivic.be/api/path-validations`. On HTTP failure: WebFetch of the canonical catalogue at `https://becivic.be/paths/index.json`. If all three layers fail, surface the catalogue-unreachable state plainly: "My full Be Civic library isn't reachable right now. I can describe what I know about the procedure, but I can't walk you through getting the documents until the library is back." Continue advice-only; do not invent paths from general knowledge. Submit a `skill_surface` concern at session close noting the unreachable window so the operator sees the outage.
+
+User-facing message for catalogue unreachable: do not pretend the agent is working at full capacity. Name the degraded state, offer to continue with what is locally available (the canonical body cached in memory, profile.json) and to defer document-fetching steps until the library is back, or to pause the session entirely. The user picks.
+
+## Step 12 — Multi-active project handling
+
+A user may have multiple Be Civic projects active concurrently under the same BeCivic root — nationality, address-change, apostille, family-reunification — each in its own project subfolder. This skill is scoped to one project at a time. The harness names which project is in focus when invoking the skill; this skill reads `procedure_progress.md` from that subfolder, writes back to the same one, and never reaches across subfolders to read a different procedure's state.
+
+If the user signals a switch to a different active project mid-session ("can we set my mum's residency aside for a minute and get back to my citizenship?"), park the current project's state per Step 8 and hand back to the harness. The harness re-enters this skill with the other project in focus. Profile is shared across projects; `procedure_progress.md` is per-project.
+
+Project switching always crosses through the harness, never directly between two invocations of this skill. The harness owns project-focus; this skill owns the active procedure's traversal.
+
+To start a brand-new procedure mid-session, route back to `bc-onboarding` in `returning` mode per Step 8 — the harness handles `returning` and `multi-active` modes, not this skill.
+
+## What this skill does not own
+
+- Procedure routing and Section-1 / Section-2 capture — `bc-onboarding`.
+- Document handling once delivered (extraction of routing fields from the artefact) — `bc-document-handler`.
+- The unknown-path or all-sources-failed escalation walkthrough — `bc-discovery` in `path` mode.
+- Session-close review and submission of buffered concerns and amendments — `bc-session-close`.
+- The path catalogue itself — authored in `bc-docs/paths/index.json`; this skill reads it via MCP.
+
+## Authoritative references
+
+Path schema and three invariants: `schemas.md` §6.12 and `architecture.md` §24.9. Harness obligations 17, 18, 19: `skills.md` §15.7. Skill body discipline: `skills.md` §15.8. Inline-commit carve-out for `target_type=path_source`: harness CLAUDE.md §6. Browser_driving_preference, mini-header firing rules, and confirmation-gate copy: `decisions-applied-2026-05-17.md` D29, D32, D40, D42, D50.
