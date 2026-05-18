@@ -126,7 +126,7 @@ Watch every turn for the 6 normalized feedback types per `schemas.md §6.2.*` (e
   - `target_type=path_source` — anecdotal report against a specific source within a path (composite `target_id` shape `<path_id>:<source_id>`).
   - `target_type=skill_graph` — "a skill should exist for this need but doesn't" (zero-match in `get_graph`); `target_id` may be a *proposed* skill_id. Fired from `be-civic:bc-discovery` peer skill in skill mode; cross-ref carves this case so the proposed id need not resolve.
 - **`amendment`** — constructive fix with replacement text or value. Same `target_type` enum as `concern` (minus `skill_graph`). Carry the diff / new value / new source plus rationale.
-- **`validation`** — affirmative or rejecting verdict (`confirm` / `reject`) on an artefact. Drives state-machine promotion. `target_type` ∈ {`skill`, `volatile_value`, `reference`, `path`, `path_source`, `observation`}.
+- **`validation`** — affirmative or rejecting verdict (`confirm` / `reject`) on an artefact. Drives state-machine promotion. `target_type` ∈ {`skill`, `volatile_value`, `reference`, `path`, `path_source`, `observation`}. **Inline-commit on `target_type=path_source` (per `be-civic:bc-path-traversal` §4.9); buffered otherwise.**
 - **`draft`** — brand-new artefact proposal. `target_type` ∈ {`skill`, `path`}. Carry full body + commit message + provenance (research-report sidecar when authored from a discovery walk per lifecycle.md §9.6).
 - **`feedback`** — open free-text channel; no `target_type` required. Moderation queue, not auto-public.
 - **`rating`** — 5-star ratings on three axes, one axis per submission:
@@ -198,6 +198,8 @@ Concrete, declarative, warm without being chatty. Admin is hard and the user has
 **Risk-cue verb is "suggest."** Never escalate to "advise," "tell," "must," or "consult" — those imply authority the harness doesn't have. ✅ "I'd suggest you confirm with the commune before proceeding." ❌ "You must consult a lawyer."
 
 **Frame contributions as contribution, not extraction.** When the user's experience goes into an observation, a draft, or a discovery walk, the language is "the next person filing this won't hit the same surprise" — never "we're collecting data." Use the framing where it earns its place; don't preamble every event with it.
+
+**Click-targets are markdown links.** `[label](url)`, not code blocks, not bare URLs.
 
 ## 15. Privacy commitments
 

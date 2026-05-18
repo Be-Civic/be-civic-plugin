@@ -1,0 +1,140 @@
+<!--
+  BeCivic — mini branded header widget.
+
+  Used whenever BeCivic is invoked mid-session (returning user, in-flight trigger,
+  full onboarding doesn't fire). Single panel: brand mark + one rotating call-out
+  + transient subtext.
+
+  Delivered via `mcp__visualize__show_widget` with this entire file as `widget_code`.
+
+  AGENT CONTROL
+    Either let the script pick a call-out at random (default), OR pre-pick one
+    deterministically by setting `window.bcCalloutIndex = <0-9>` before this
+    widget loads. Useful when the agent wants the call-out to match the context
+    of the invocation (e.g. mid-document-extraction → "...just opened the Belgian
+    commune handbook").
+-->
+<style>
+  .bc-mini {
+    --brand-gold: #fae042;
+    --brand-red: #ed2939;
+    --brand-black: #0a0a0a;
+    --brand-cream: #f5f4ee;
+    --brand-ink: #1a1a18;
+    --brand-ink-body: #2a2a26;
+    --brand-mute: #6a6a65;
+    --brand-hairline: #ebe9e3;
+    --display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    font-family: var(--body);
+    max-width: 480px;
+    margin: 0.5rem auto;
+    background: var(--brand-cream);
+    border-radius: 12px;
+    padding: 12px 16px 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--brand-hairline);
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  .bc-mini *, .bc-mini *::before, .bc-mini *::after { box-sizing: border-box; }
+  .bc-mini::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 3px;
+    background: linear-gradient(to bottom,
+      var(--brand-black) 0 33%,
+      var(--brand-gold) 33% 66%,
+      var(--brand-red) 66% 100%);
+  }
+  .bc-mini__logo {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    background: var(--brand-black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .bc-mini__text { min-width: 0; flex: 1; }
+  .bc-mini__callout {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--brand-ink);
+    letter-spacing: -0.005em;
+    line-height: 1.3;
+    margin: 0;
+  }
+  .bc-mini__sub {
+    font-size: 11.5px;
+    color: var(--brand-mute);
+    margin: 2px 0 0;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .bc-mini__pulse {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--brand-gold);
+    animation: bc-mini-pulse 1.6s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes bc-mini-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.85); }
+    50%      { opacity: 1;   transform: scale(1); }
+  }
+</style>
+
+<div class="bc-mini" role="status" aria-live="polite">
+  <div class="bc-mini__logo" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 32 32">
+      <path d="M10 11 h7 a4 4 0 0 1 0 8 h-7 z" fill="none" stroke="#fae042" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M10 15 h7 a4 4 0 0 1 0 8 h-7 z" fill="none" stroke="#ed2939" stroke-width="2.5" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="bc-mini__text">
+    <p class="bc-mini__callout" id="bc-mini-callout">Your agent is now using BeCivic.</p>
+    <p class="bc-mini__sub"><span class="bc-mini__pulse" aria-hidden="true"></span><span>Loading the right procedure…</span></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const callouts = [
+    "Your agent is now using BeCivic.",
+    "Your agent is now an expert on Belgian admin.",
+    "Your agent just opened the Belgian commune handbook.",
+    "Your agent now knows the rules.",
+    "BeCivic is on. Your agent has the procedures.",
+    "Your agent just got a library card for Belgian admin.",
+    "Bonjour. Goeiedag. Guten Tag. Your agent is plugged in.",
+    "Your agent just learned the commune's rhythm.",
+    "Your agent reads Belgian law now. Briefly.",
+    "Procedures loaded. Your agent is ready."
+  ];
+
+  const el = document.getElementById('bc-mini-callout');
+  if (!el) return;
+
+  // Allow deterministic selection: window.bcCalloutIndex = 3 (0-based)
+  let idx;
+  if (typeof window.bcCalloutIndex === 'number'
+      && window.bcCalloutIndex >= 0
+      && window.bcCalloutIndex < callouts.length) {
+    idx = Math.floor(window.bcCalloutIndex);
+  } else {
+    idx = Math.floor(Math.random() * callouts.length);
+  }
+  el.textContent = callouts[idx];
+})();
+</script>

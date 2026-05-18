@@ -1,6 +1,6 @@
 ---
 name: bc-onboarding
-description: First-contact framing, intake, project-setup, and procedure identification for new Be Civic users. Invoked by the be-civic skill when no project folder exists, or by the harness CLAUDE.md when no profile is present. Calls request_cowork_directory, writes the project CLAUDE.md, initialises empty state files, runs the intake form, identifies the procedure, parks required documents.
+description: First-contact framing, intake, project-setup, and procedure identification for new Be Civic users. Invoked by the be-civic skill when no project folder exists, or by the harness CLAUDE.md when no profile is present. Calls request_cowork_directory, writes the shared-root BeCivic/CLAUDE.md and the BeCivic/.be-civic/marker, initialises empty state files at the BeCivic root, creates the first per-procedure subfolder, runs the intake form, identifies the procedure, parks required documents.
 ---
 
 # Be Civic — Onboarding
@@ -14,13 +14,15 @@ Onboarding has two entry modes. The first thing to do on invocation is figure ou
 Invoked by the `be-civic` gate when no Be Civic project folder exists yet. The user is in a fresh Cowork conversation with no harness loaded. The full setup-and-onboard sequence runs in this single conversation; at the end the user is told to open the project folder for subsequent work.
 
 1. **Project folder setup (do this BEFORE any framing or intake).**
-   - Call `mcp__cowork__request_cowork_directory` to let the user pick a folder.
-   - Write the harness CLAUDE.md into the folder root from this skill's `references/harness-CLAUDE.md` template.
-   - Write the `.be-civic/marker` file (under a hidden `.be-civic/` subdirectory) to identify the folder as a Be Civic project. Source template at `references/project-init/.be-civic/marker`.
-   - Write `profile.json` and `MEMORY.md` at the folder root from the templates at `references/project-init/profile.json` and `references/project-init/MEMORY.md`.
-   - **Do NOT create empty placeholder subfolders** (no `documents/`, `sessions/`, `memory/`, `procedures/` upfront). Those get created lazily by the relevant skills when there's actual content to put in them — `bc-document-handler` creates `documents/<procedure-id>/` when the user uploads a document, the harness creates `.be-civic/sessions/<session-id>/` when the first observation lands, etc.
-   - Keep the project root clean: from the user's sidebar perspective they see only the things they can read and understand (CLAUDE.md, profile.json, MEMORY.md initially; documents/, research-notes/ later as they accumulate). System state (sessions/, observation buffers, pending submissions) lives under `.be-civic/` and stays hidden.
-   - Confirm to the user: "I set up your Be Civic project at [folder path]. Let me show you what's in it." Brief tour of what each file/folder is for.
+   - Call `mcp__cowork__request_cowork_directory` to let the user pick a folder. The user picks the **parent**; you create `BeCivic/` inside it. The user's first procedure becomes a subfolder under `BeCivic/` (e.g. `BeCivic/nationality/`).
+   - **One shared `CLAUDE.md` at the BeCivic root** — write the harness CLAUDE.md to `<picked-parent>/BeCivic/CLAUDE.md` from this skill's `references/harness-CLAUDE.md` template. This single CLAUDE.md services every procedure under this BeCivic root. **Do NOT write a CLAUDE.md inside per-procedure subfolders** — Cowork's CLAUDE.md auto-load walks ancestors and picks up the BeCivic-root file when the user opens any procedure subfolder.
+   - **Hidden system folder for system-only state.** Write the marker file to `<picked-parent>/BeCivic/.be-civic/marker` (under the hidden `.be-civic/` directory at the BeCivic root, NOT in per-procedure subfolders). Source template at `references/project-init/.be-civic/marker`. System-only files (marker, future internal state) live in `.be-civic/` at the BeCivic root or stay inside the plugin install itself if they don't need to be in the user's folder.
+   - Write `profile.json` and `MEMORY.md` at the BeCivic root (`<picked-parent>/BeCivic/profile.json` and `<picked-parent>/BeCivic/MEMORY.md`) from the templates at `references/project-init/profile.json` and `references/project-init/MEMORY.md`. These are shared across the user's procedures.
+   - Copy `privacy-attachment.md` (from `data/privacy-attachment.md`, when present) to `<picked-parent>/BeCivic/privacy-attachment.md` so the user can read it via their file manager (D49 alpha terms).
+   - Create the first per-procedure subfolder (e.g. `<picked-parent>/BeCivic/nationality/`) for the procedure the user is about to start. **Per-procedure subfolders contain only procedure-specific things** (`procedure_progress.md`, `documents/`, `memory/research-notes-*.md`) — no CLAUDE.md, no profile, no marker.
+   - **Do NOT create empty placeholder subfolders** (no `documents/`, `sessions/`, `memory/`, etc. upfront). Those get created lazily by the relevant skills when there's actual content to put in them — `bc-document-handler` creates `documents/<procedure-id>/` when the user uploads a document, the harness creates `.be-civic/sessions/<session-id>/` when the first observation lands, etc.
+   - Keep the BeCivic root clean: from the user's sidebar perspective they see only the things they can read and understand (CLAUDE.md, profile.json, MEMORY.md, privacy-attachment.md, plus their procedure subfolders). System state (sessions/, observation buffers, pending submissions) lives under `.be-civic/` and stays hidden.
+   - Confirm to the user: "I set up your Be Civic folder at [BeCivic-root path] with your first procedure at [procedure-subfolder]. Let me show you what's in it." Brief tour of what each file/folder is for.
 2. **Framing (§1 below).** Delivered exactly once, in this conversation. Captures the privacy + contribution contract before any procedure work.
 3. **Adaptive opening (§ Adaptive opening pattern below).** Acknowledge any intent the user already stated; ask "what brought you here today?" only if no intent is clear yet.
 4. **Profile basics (§3).** Name, language, region, commune, residency status, etc.
@@ -37,16 +39,6 @@ Invoked by the `be-civic` gate when no Be Civic project folder exists yet. The u
 Invoked by the harness CLAUDE.md when it detects `PROFILE_JSON: absent` at session start — meaning the project folder exists but no intake has been done yet (rare edge case; usually `new-project` mode covers this).
 
 Skip step 1 (project is already set up). Run steps 2-7 above. At step 8, the user is already in the project conversation, so no handover message — proceed directly into the procedure.
-
-### `migrate-from-v1` mode
-
-Invoked when the be-civic gate detects an existing v1 plugin data dir at `~/.claude/plugins/data/be-civic/` and the user is setting up a project for the first time. Best-effort migration:
-
-1. Run step 1 (project setup) as in `new-project` mode.
-2. Offer to import existing v1 state: read `profile.json`, `MEMORY.md`, `documents/`, `sessions/` from `~/.claude/plugins/data/be-civic/` into the newly-chosen project folder.
-3. Confirm import with the user before copying.
-4. Write a `.migrated-to-<project-path>` marker in the old data dir so the offer doesn't re-fire.
-5. Continue with the rest of onboarding, but skip questions whose answers are already in the imported profile.
 
 ## Adaptive opening pattern (load-bearing)
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://becivic.be/schemas/profile.schema.json",
   "title": "Be Civic — Customer-side profile (v1)",
-  "description": "Validates the v1 16-axis customer-side profile.json per privacy.md §8.7.4. All date fields use YYYY-MM month-bucket precision. No identity-bearing fields are permitted; additionalProperties: false enforces the closed set.",
+  "description": "Validates the v1 customer-side profile.json per privacy.md §8.7.4 (and schemas.md §6.1.x). All date fields use YYYY-MM month-bucket precision. No identity-bearing fields are permitted; additionalProperties: false enforces the closed set. Migration notes (2026-05-18 fold of universal onboarding-rebuild proposal): (1) document_inventory.has_eID (boolean) is renamed to has_id_card (enum yes/not-yet-waiting/no/not-sure); legacy true → 'yes', legacy false → 'no'. (2) other_languages list is superseded by conversation_language (free-text up to 32 chars); other_languages[0] migrates to conversation_language on first write. (3) New browser_driving_preference field (enum drive-by-default/ask-each-time/never-drive) honoured at path-traversal time. (4) New typed consent: object namespace as an extensibility hook; specific keys (e.g. alpha_bundle/signed_at/version) are operational and vary by phase — consumers MUST tolerate unknown consent.* keys.",
   "type": "object",
 
   "required": [
@@ -74,24 +74,29 @@
       "oneOf": [
         {
           "type": "string",
-          "minLength": 2,
-          "maxLength": 8,
-          "description": "BCP 47 language code the harness uses when talking with the user (e.g. 'en', 'fr', 'nl', 'de'). Distinct from administration_language (the commune's official language) and from other_languages (an ordered list with the harness communications language at index 0). conversation_language is the per-session runtime conversation language; other_languages[0] is the persistent preference. Added W23 per W1.4 GAP-2 to document the harness's conversation-language vs administration-language split."
+          "minLength": 1,
+          "maxLength": 32,
+          "description": "Free-text language the user wants the agent to communicate in. Any language the agent can speak works (English, French, Tagalog, Slovenian, etc.) — not enum-constrained per D27. Distinct from administration_language (the commune's official language used for filings). Replaces the prior other_languages ordered list (D27 / 2026-05-18 fold); legacy other_languages[0] is migrated here on first write under V1 schema. Agents MUST tolerate legacy other_languages on read but MUST NOT write that field under V1."
         },
         { "type": "null" }
       ]
     },
 
-    "other_languages": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 2,
-        "maxLength": 8
-      },
-      "uniqueItems": true,
-      "default": [],
-      "description": "Ordered list of language codes (BCP 47). First entry is the harness communications language."
+    "browser_driving_preference": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["drive-by-default", "ask-each-time", "never-drive"],
+          "description": "User preference for browser-driving handoffs at path-traversal time. drive-by-default = agent drives the browser without confirmation when handoff is needed; ask-each-time = agent asks before each handoff; never-drive = agent emits markdown links and lets the user navigate themselves. Honoured per architecture.md §24.9 (Chrome MCP handoff vs AskUserQuestion vs markdown-link). New field per D8 (2026-05-18 fold)."
+        },
+        { "type": "null" }
+      ]
+    },
+
+    "consent": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Typed namespace for consent metadata. The schema declares the namespace; specific keys are operational and vary by phase. Alpha-phase keys (e.g. alpha_bundle, signed_at, version) are documented in cowork-plugin.md §3.8 and are NOT locked here. Post-alpha keys for granular per-stream opt-out will be added when that posture lands. Consumers MUST tolerate unknown consent.* keys — the namespace is intentionally permissive (additionalProperties: true). New namespace per D9/D49 (2026-05-18 fold)."
     },
 
     "civic_status": {
@@ -287,13 +292,19 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "has_eID": {
-              "oneOf": [{ "type": "boolean" }, { "type": "null" }],
-              "description": "Whether the customer holds a Belgian electronic identity card (eID)."
+            "has_id_card": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": ["yes", "not-yet-waiting", "no", "not-sure"],
+                  "description": "Whether the customer holds a Belgian-issued chip card (eID or residence card). Renamed from has_eID (D23, 2026-05-18 fold) — the prior eID-vs-residence-card distinction is dropped because all Belgian-issued chip cards are functionally equivalent for itsme/identity purposes; card-type-specific path-source eligibility is disambiguated at path-traversal time (D52), not at onboarding. Migration: legacy has_eID true → 'yes', has_eID false → 'no'. New enum values ('not-yet-waiting', 'not-sure') originate only from V1+ onboarding forms."
+                },
+                { "type": "null" }
+              ]
             },
             "has_residence_card": {
               "oneOf": [{ "type": "boolean" }, { "type": "null" }],
-              "description": "Whether the customer holds a Belgian residence permit card (A through M series)."
+              "description": "Whether the customer holds a Belgian residence permit card (A through M series). Retained alongside has_id_card for documentary completeness; the chip-card-equivalence rule means has_id_card is the routing field, while has_residence_card is informational about which specific card type the holder carries."
             },
             "has_work_permit": {
               "oneOf": [{ "type": "boolean" }, { "type": "null" }]
@@ -310,12 +321,12 @@
               "oneOf": [{ "type": "boolean" }, { "type": "null" }],
               "description": "Whether the customer holds a non-Belgian passport. No passport number."
             },
-            "validity_end_eID": {
+            "validity_end_id_card": {
               "oneOf": [
                 { "type": "string", "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$" },
                 { "type": "null" }
               ],
-              "description": "Month-bucket expiry of the eID (YYYY-MM), or null."
+              "description": "Month-bucket expiry of the Belgian-issued chip card (YYYY-MM), or null. Renamed from validity_end_eID per the has_eID → has_id_card rename (2026-05-18 fold)."
             },
             "validity_end_residence_card": {
               "oneOf": [

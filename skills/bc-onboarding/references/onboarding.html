@@ -1,0 +1,573 @@
+<!--
+  Be Civic — first-contact onboarding form (branded HTML widget)
+
+  Delivered via `mcp__visualize__show_widget` with this entire file as `widget_code`.
+  This is the Pattern B (branded HTML) path from cowork-form-mechanism.md.
+
+  COWORK STYLING RULE
+    Bare form elements (<button>, <input>, <textarea>) MUST use inline `style="all: unset; ..."`.
+    Cowork's own form CSS out-competes <style>-block rules targeting bare form tags — pills
+    render with washed-out text, inputs look dark-on-dark. `all: unset` wipes Cowork's defaults
+    so the inline declarations stick. Non-form elements (<div>, <p>, <span>, <label>, etc.) are
+    fine in the <style> block; Cowork doesn't restyle them.
+
+    Pill rest state: cream fill (#f5f4ee), no border, ink-body text (#2a2a26), weight 500.
+    Pill selected state: gold fill (#fae042), weight 700. Swapped by the script at the bottom.
+
+  STRUCTURE
+    1. Hero panel (Be Civic mark + tagline + welcome + trust promise)
+    2. Core profile section — 9 field groups
+    3. Initial-procedure section — commented out by default (agent uncomments at runtime)
+    4. Consent checkbox + submit
+
+  POSITIONING (load-bearing — do not edit copy without re-reading the design doc)
+    Be Civic is a TOOL for the user's agent, not an agent itself. Copy reflects this.
+
+  AGENT RUNTIME INSERTION
+    The agent removes the HTML comment around Section 2 and inserts question groups when
+    there's a matched procedure to ask about. Match the same data-pg / data-value conventions
+    used in Section 1 so the submit collector picks them up automatically.
+
+  CSP NOTE
+    External assets restricted to cdnjs / esm.sh / cdn.jsdelivr / unpkg. All visuals here are
+    inline SVG or system fonts (Manrope when available; fallback otherwise).
+-->
+<style>
+  .bc-onboarding {
+    --brand-gold: #fae042;
+    --brand-red: #ed2939;
+    --brand-black: #0a0a0a;
+    --brand-cream: #f5f4ee;
+    --brand-cream-soft: #d4d2cc;
+    --brand-ink: #1a1a18;
+    --brand-ink-body: #2a2a26;
+    --brand-mute: #6a6a65;
+    --brand-hairline: #ebe9e3;
+    --display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    font-family: var(--body);
+    color: var(--brand-ink-body);
+    max-width: 620px;
+    margin: 1rem auto;
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+  }
+  .bc-onboarding *, .bc-onboarding *::before, .bc-onboarding *::after { box-sizing: border-box; }
+
+  /* Hero */
+  .bc-hero {
+    background: var(--brand-cream);
+    padding: 26px 30px 22px;
+    border-bottom: 1px solid var(--brand-hairline);
+    position: relative;
+  }
+  .bc-hero__flag {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    display: flex;
+  }
+  .bc-hero__flag span { flex: 1; }
+  .bc-hero__flag span:nth-child(1) { background: var(--brand-black); }
+  .bc-hero__flag span:nth-child(2) { background: var(--brand-gold); }
+  .bc-hero__flag span:nth-child(3) { background: var(--brand-red); }
+  .bc-hero__mark {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--brand-ink);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .bc-hero__mark .bc-hero__dot { color: var(--brand-red); }
+  .bc-hero__tag {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--brand-ink);
+    letter-spacing: -0.01em;
+    margin: 6px 0 4px;
+    line-height: 1.25;
+  }
+  .bc-hero__welcome {
+    font-size: 13.5px;
+    color: var(--brand-ink-body);
+    line-height: 1.55;
+    margin: 6px 0 14px;
+  }
+  .bc-trust {
+    background: #ffffff;
+    border: 1px solid var(--brand-hairline);
+    border-left: 3px solid var(--brand-gold);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--brand-ink-body);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .bc-trust__icon { flex-shrink: 0; margin-top: 1px; color: var(--brand-ink); }
+  .bc-trust strong { color: var(--brand-ink); font-weight: 700; }
+
+  /* Body container */
+  .bc-body { padding: 24px 30px 8px; }
+
+  .bc-section-label {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand-mute);
+    margin: 0 0 14px;
+  }
+  .bc-section-divider {
+    margin: 22px -30px 18px;
+    border: 0;
+    border-top: 1px solid var(--brand-hairline);
+  }
+
+  .bc-group { margin-bottom: 18px; }
+  .bc-q {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--brand-ink);
+    margin-bottom: 8px;
+    font-family: var(--display);
+    letter-spacing: -0.005em;
+  }
+  .bc-hint {
+    display: block;
+    font-size: 12px;
+    color: var(--brand-mute);
+    margin: -4px 0 8px;
+    line-height: 1.5;
+  }
+
+  /* eID help block */
+  .bc-eid-help {
+    margin-top: 8px;
+    padding: 9px 11px;
+    background: var(--brand-cream);
+    border-radius: 6px;
+    font-size: 11.5px;
+    color: var(--brand-ink-body);
+    line-height: 1.5;
+  }
+  .bc-eid-help strong { color: var(--brand-ink); }
+
+  /* Procedure section (agent uncomments) */
+  .bc-procedure {
+    background: var(--brand-cream);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 4px;
+  }
+
+  /* Consent block container */
+  .bc-consent {
+    margin: 18px 0 4px;
+    padding: 14px 16px;
+    background: var(--brand-cream);
+    border-radius: 10px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .bc-consent label { cursor: pointer; color: var(--brand-ink-body); }
+  .bc-consent label strong { color: var(--brand-ink); font-weight: 700; }
+  .bc-consent__details { margin-top: 8px; cursor: pointer; }
+  .bc-consent__details summary {
+    font-size: 11.5px;
+    color: var(--brand-mute);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    list-style: none;
+  }
+  .bc-consent__details summary::-webkit-details-marker { display: none; }
+  .bc-consent__details[open] summary { color: var(--brand-ink); font-weight: 600; }
+  .bc-consent__details-body {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: #ffffff;
+    border-radius: 6px;
+    border: 1px solid var(--brand-hairline);
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+  .bc-consent__details-body p { margin: 0 0 6px; }
+  .bc-consent__details-body p:last-child { margin-bottom: 0; }
+  .bc-consent__details-body code {
+    background: var(--brand-cream);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+
+  /* Footer container */
+  .bc-footer { padding: 6px 30px 26px; background: #ffffff; }
+  .bc-footer-note {
+    font-size: 11.5px;
+    color: var(--brand-mute);
+    text-align: center;
+    margin: 10px 0 0;
+    line-height: 1.5;
+  }
+</style>
+
+<div class="bc-onboarding" role="form" aria-label="Be Civic onboarding">
+
+  <!-- ============ HERO ============ -->
+  <div class="bc-hero">
+    <div class="bc-hero__flag" aria-hidden="true"><span></span><span></span><span></span></div>
+
+    <div class="bc-hero__mark">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="3.5" ry="3.5" fill="#0a0a0a"/>
+        <path fill="#fae042" transform="translate(-0.1920 23.5) scale(0.011000 -0.011000)" d="M670 -30Q509 -30 401.0 45.0Q293 120 238.5 249.0Q184 378 184 540Q184 702 238.0 831.0Q292 960 397.0 1035.0Q502 1110 656 1110Q811 1110 926.0 1036.0Q1041 962 1104.5 833.5Q1168 705 1168 540Q1168 378 1105.5 249.0Q1043 120 931.0 45.0Q819 -30 670 -30ZM138 0V1440H412V740H378V0ZM626 212Q714 212 770.0 256.0Q826 300 853.0 374.5Q880 449 880 540Q880 630 852.0 704.5Q824 779 765.5 823.5Q707 868 616 868Q531 868 478.5 827.0Q426 786 402.0 712.0Q378 638 378 540Q378 442 402.0 368.0Q426 294 480.5 253.0Q535 212 626 212Z"/>
+        <path fill="#fae042" transform="translate(12.6560 23.5) scale(0.011000 -0.011000)" d="M642 -30Q476 -30 349.5 41.5Q223 113 151.5 238.5Q80 364 80 526Q80 703 150.0 834.0Q220 965 343.0 1037.5Q466 1110 626 1110Q796 1110 915.0 1030.0Q1034 950 1091.0 805.0Q1148 660 1131 464H862V564Q862 729 809.5 801.5Q757 874 638 874Q499 874 433.5 789.5Q368 705 368 540Q368 389 433.5 306.5Q499 224 626 224Q706 224 763.0 259.0Q820 294 850 360L1122 282Q1061 134 929.5 52.0Q798 -30 642 -30ZM284 464V666H1000V464Z"/>
+        <path fill="#ed2939" transform="translate(25.1520 23.5) scale(0.011000 -0.011000)" d="M184 0V272H456V0Z"/>
+      </svg>
+      <span>be civic<span class="bc-hero__dot">.</span></span>
+    </div>
+
+    <p class="bc-hero__tag">Belgian admin, written for the AI you already have.</p>
+    <p class="bc-hero__welcome">
+      Be Civic gives your agent a public library of verified Belgian procedures — commune,
+      federal, regional. Tell us a few things about your situation and your agent will
+      pick the right procedure for you.
+    </p>
+
+    <div class="bc-trust" role="note">
+      <svg class="bc-trust__icon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
+      </svg>
+      <span>
+        <strong>Everything you tell Be Civic stays in your project folder on your computer.</strong>
+        Nothing leaves your machine except observations you explicitly approve at session close.
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ BODY ============ -->
+  <div class="bc-body">
+
+    <p class="bc-section-label">About you</p>
+
+    <!-- region -->
+    <div class="bc-group">
+      <label class="bc-q">Where in Belgium do you live?</label>
+      <div data-pg="region" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="Brussels-Capital" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Brussels-Capital</button>
+        <button type="button" data-value="Flanders" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Flanders</button>
+        <button type="button" data-value="Wallonia" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Wallonia</button>
+        <button type="button" data-value="German-speaking-community" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">German-speaking community</button>
+        <button type="button" data-value="not-in-belgium" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Not in Belgium yet</button>
+      </div>
+    </div>
+
+    <!-- commune (hidden when "Not in Belgium yet" is picked) -->
+    <div class="bc-group" id="bc-commune-group">
+      <label class="bc-q" for="bc-commune">Which commune?</label>
+      <span class="bc-hint" id="bc-commune-hint">Commune name or postcode.</span>
+      <input id="bc-commune" type="text" data-name="commune" placeholder="e.g. Ixelles or 1050"
+             style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
+    </div>
+
+    <!-- civil status -->
+    <div class="bc-group">
+      <label class="bc-q">Civil status</label>
+      <div data-pg="civic_status" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="single" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Single</button>
+        <button type="button" data-value="married" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Married</button>
+        <button type="button" data-value="cohabitant-legal" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Legally cohabiting</button>
+        <button type="button" data-value="divorced" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Divorced</button>
+        <button type="button" data-value="widowed" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Widowed</button>
+        <button type="button" data-value="separated" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Separated</button>
+      </div>
+    </div>
+
+    <!-- residency status -->
+    <div class="bc-group">
+      <label class="bc-q">Your nationality / residency situation</label>
+      <div data-pg="residency_status" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="belgian-national" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Belgian national</button>
+        <button type="button" data-value="EU-citizen" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">EU citizen</button>
+        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Third-country, with a Belgian permit</button>
+        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Third-country, applying from abroad</button>
+        <button type="button" data-value="asylum" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Asylum seeker</button>
+        <button type="button" data-value="undocumented" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Undocumented</button>
+        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">I'm not sure</button>
+      </div>
+      <span class="bc-hint">If you're not sure, pick that — we'll figure it out together from your card or paperwork.</span>
+    </div>
+
+    <!-- conversation language (free text — agent pre-fills detected language at runtime) -->
+    <div class="bc-group">
+      <label class="bc-q" for="bc-convlang">We can keep talking in <span data-template-fill="detected_language">English</span>, or tell us another language below.</label>
+      <span class="bc-hint">Any language your agent speaks works — Spanish, Slovenian, Tagalog, anything.</span>
+      <input id="bc-convlang" type="text" data-name="conversation_language" value="English" placeholder="e.g. English, Français, Nederlands"
+             style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
+    </div>
+
+    <!-- administration language (label + hint + visible pills filter by region — see script at bottom) -->
+    <div class="bc-group" id="bc-adminlang-group" style="display: none;">
+      <label class="bc-q" id="bc-adminlang-label">Language for paperwork with the commune</label>
+      <span class="bc-hint" id="bc-adminlang-hint">Filed paperwork must be in a language the commune accepts.</span>
+      <div data-pg="administration_language" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="FR" data-langlabel="Français" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Français</button>
+        <button type="button" data-value="NL" data-langlabel="Nederlands" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Nederlands</button>
+        <button type="button" data-value="DE" data-langlabel="Deutsch" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Deutsch</button>
+      </div>
+    </div>
+
+    <!-- preferred name -->
+    <div class="bc-group">
+      <label class="bc-q" for="bc-name">What should we call you?</label>
+      <span class="bc-hint">First name, an initial, anything that feels right. Stays on your machine.</span>
+      <input id="bc-name" type="text" data-name="preferred_name" placeholder="e.g. Maya"
+             style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
+    </div>
+
+    <!-- has Belgian ID card -->
+    <div class="bc-group">
+      <label class="bc-q">Do you currently have a Belgian ID card?</label>
+      <div data-pg="has_id_card" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="yes" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Yes</button>
+        <button type="button" data-value="not-yet" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Not yet — waiting for my first one or a renewal</button>
+        <button type="button" data-value="no" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">No</button>
+        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Not sure</button>
+      </div>
+    </div>
+
+    <!-- browser driving preference -->
+    <div class="bc-group">
+      <label class="bc-q">When your agent needs to use a website (Irisbox, MyMinfin, etc.)</label>
+      <div data-pg="browser_driving_preference" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Let it drive my browser (I'll watch)</button>
+        <button type="button" data-value="ask-each-time" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Ask me each time</button>
+        <button type="button" data-value="never-drive" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Just give me the link, I'll do it</button>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!--   SECTION 2 — INITIAL PROCEDURE                                -->
+    <!--                                                                -->
+    <!--   Hidden by default — the agent UNCOMMENTS the block below     -->
+    <!--   and inserts question groups when there's a matched procedure -->
+    <!--   to ask about. If no procedure is named at onboarding time,   -->
+    <!--   this entire section stays commented out and the form ends    -->
+    <!--   at the consent block.                                        -->
+    <!--                                                                -->
+    <!--   AT RUNTIME: select WHICH inputs to ask, based on the matched -->
+    <!--   skill canonical and what's already known. Don't dump every   -->
+    <!--   inputs: field — pick 2-5 that genuinely differentiate the    -->
+    <!--   user's case. Use the same data-pg / data-value conventions   -->
+    <!--   used in Section 1 so the submit collector picks them up      -->
+    <!--   automatically. Every categorical question that could         -->
+    <!--   plausibly have an uncertain answer MUST include an           -->
+    <!--   "I'm not sure" option — onboarding probes uncertainty rather -->
+    <!--   than swallowing it.                                          -->
+    <!-- ============================================================ -->
+    <!-- AGENT: REMOVE THE TWO COMMENT MARKERS BELOW (the "BEGIN" and "END" lines)
+         WHEN YOU HAVE PROCEDURE-SPECIFIC QUESTIONS TO INSERT.
+
+    BEGIN PROCEDURE SECTION
+    <hr class="bc-section-divider">
+    <p class="bc-section-label">About your procedure</p>
+    <div id="procedure-questions" class="bc-procedure">
+
+      INSERT QUESTION GROUPS HERE. Example shape (uses the same inline-style pattern):
+
+      <div class="bc-group">
+        <label class="bc-q">How many years have you been a legal resident of Belgium?</label>
+        <span class="bc-hint">Continuous registered residence — if you're not sure, pick that.</span>
+        <div data-pg="years_legal_residence" style="display: flex; flex-wrap: wrap; gap: 7px;">
+          <button type="button" data-value="lt-5" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Less than 5</button>
+          <button type="button" data-value="5-10" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">5 to 10</button>
+          <button type="button" data-value="gt-10" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">More than 10</button>
+          <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">I'm not sure</button>
+        </div>
+      </div>
+
+    </div>
+    END PROCEDURE SECTION
+    -->
+
+    <!-- ============ CONSENT (alpha-required statement, no checkbox) ============ -->
+    <!-- Hidden input ensures the submit collector sends consent=yes — by submitting, the user has agreed. -->
+    <input type="hidden" data-name="alpha_consent_bundle" value="yes">
+    <div class="bc-consent">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px; color: #1a1a18;">
+        <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
+      </svg>
+      <div>
+        <strong>You're part of the Be Civic alpha.</strong> By continuing, you agree that
+        anonymous session telemetry and observations on the catalogue are part of how
+        Be Civic learns during pre-launch. We need this to ship a good product.
+        <details class="bc-consent__details">
+          <summary>What's included, and what can I change later?</summary>
+          <div class="bc-consent__details-body">
+            <p><strong>Anonymous telemetry</strong> — session length, turn count, which procedures
+            get used, where the agent gets stuck. Categorical fields only. Never your prompt text,
+            file paths, or document content.</p>
+            <p><strong>Observations</strong> — concerns about the catalogue, amendments, ratings,
+            free-text feedback. Each one shown to you at session close before send; you can edit
+            or drop any.</p>
+            <p><strong>Path-source validations</strong> — "this commune accepted this document on
+            this date." Anonymous by construction; commits inline as confirmation that something
+            worked.</p>
+            <p><strong>During alpha these can't be turned off individually</strong> — they're how we
+            improve fast enough to launch. Once Be Civic is out of alpha, you'll get granular
+            controls over each. <strong>To stop using Be Civic entirely</strong>, just tell your
+            agent and delete the project folder.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ FOOTER ============ -->
+  <div class="bc-footer">
+    <button type="button" id="bc-submit"
+            style="all: unset; display: block; width: 100%; box-sizing: border-box; background: #1a1a18; color: #f5f4ee; padding: 14px 18px; border-radius: 10px; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; font-weight: 700; text-align: center; cursor: pointer;">
+      Continue →
+    </button>
+    <p class="bc-footer-note">
+      Independent project — not affiliated with the Belgian government, the EU, or any commune.
+    </p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const root = document.currentScript.previousElementSibling || document.querySelector('.bc-onboarding');
+  if (!root) return;
+
+  /* Pill selection — Cowork-resilient dynamic-style-swap pattern */
+  root.querySelectorAll('[data-pg]').forEach(group => {
+    group.querySelectorAll('button').forEach(btn => {
+      btn.dataset.original = btn.getAttribute('style') || '';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener('click', () => {
+        // Reset all siblings in the group (mutual exclusion)
+        group.querySelectorAll('button').forEach(b => {
+          b.setAttribute('style', b.dataset.original);
+          b.setAttribute('aria-pressed', 'false');
+        });
+        // Swap background → gold, font-weight → 700 on the clicked button
+        const next = btn.dataset.original
+          .replace(/background:\s*[^;]+;/, 'background: #fae042;')
+          .replace(/font-weight:\s*[^;]+;/, 'font-weight: 700;');
+        btn.setAttribute('style', next);
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+  });
+
+  /* Region → admin-language filter, plus pre-move handling
+     Belgian regions: Brussels FR/NL · Flanders NL · Wallonia FR · German-speaking DE/FR.
+     "Not in Belgium yet" hides commune + admin-language entirely (user doesn't know yet).
+     Single-language regions auto-select that language. */
+  const adminLangByRegion = {
+    'Brussels-Capital': ['FR', 'NL'],
+    'Flanders': ['NL'],
+    'Wallonia': ['FR'],
+    'German-speaking-community': ['DE', 'FR'],
+    'not-in-belgium': ['FR', 'NL', 'DE']
+  };
+  const hintByRegion = {
+    'Brussels-Capital': 'Brussels communes accept French or Dutch — pick the one your commune uses.',
+    'Flanders': 'Flemish communes file in Dutch.',
+    'Wallonia': 'Walloon communes file in French.',
+    'German-speaking-community': 'The German-speaking communes accept German or French.',
+    'not-in-belgium': 'Pick the language for the region you\'re considering: Brussels — French or Dutch; Wallonia — French; Flanders — Dutch; German-speaking community — German. If you really don\'t know, pick French or Dutch for now — you can change this later.'
+  };
+  const labelByRegion = {
+    'not-in-belgium': 'Language you\'d like to use for paperwork',
+    '_default': 'Language for paperwork with the commune'
+  };
+  const adminLangGroup = root.querySelector('#bc-adminlang-group');
+  const adminLangHint = root.querySelector('#bc-adminlang-hint');
+  const adminLangLabel = root.querySelector('#bc-adminlang-label');
+  const adminLangPills = root.querySelectorAll('[data-pg="administration_language"] button');
+  const communeGroup = root.querySelector('#bc-commune-group');
+  const communeHint = root.querySelector('#bc-commune-hint');
+
+  root.querySelectorAll('[data-pg="region"] button').forEach(regionBtn => {
+    regionBtn.addEventListener('click', () => {
+      const region = regionBtn.dataset.value;
+      const preMove = region === 'not-in-belgium';
+      const allowed = adminLangByRegion[region] || [];
+
+      // Commune: hide entirely when pre-move
+      communeGroup.style.display = preMove ? 'none' : '';
+      if (!preMove) {
+        communeHint.textContent = 'Commune name or postcode.';
+      }
+
+      // Admin language: always show; filter pills + adapt label/hint by region
+      adminLangGroup.style.display = '';
+      if (adminLangLabel) {
+        adminLangLabel.textContent = preMove ? labelByRegion['not-in-belgium'] : labelByRegion['_default'];
+      }
+      adminLangHint.textContent = hintByRegion[region] || 'Filed paperwork must be in a language the commune accepts.';
+      adminLangPills.forEach(btn => {
+        btn.setAttribute('style', btn.dataset.original);
+        btn.setAttribute('aria-pressed', 'false');
+        btn.hidden = !allowed.includes(btn.dataset.value);
+      });
+      // Auto-select only when the region has exactly one valid language
+      if (allowed.length === 1) {
+        const onlyBtn = [...adminLangPills].find(b => b.dataset.value === allowed[0]);
+        if (onlyBtn) onlyBtn.click();
+      }
+    });
+  });
+
+  /* Submit collector */
+  const submit = root.querySelector('#bc-submit');
+  if (!submit) return;
+  submit.addEventListener('click', () => {
+    const parts = [];
+
+    // Pill groups (core profile + any agent-inserted procedure questions)
+    root.querySelectorAll('[data-pg]').forEach(group => {
+      const selected = [...group.querySelectorAll('button[aria-pressed="true"]')]
+        .map(b => b.dataset.value);
+      if (selected.length) {
+        parts.push(group.dataset.pg.replace(/_/g, ' ') + ': ' + selected.join(', '));
+      }
+    });
+
+    // Text inputs / checkbox
+    root.querySelectorAll('input[data-name], textarea[data-name]').forEach(el => {
+      if (el.type === 'checkbox') {
+        parts.push(el.dataset.name.replace(/_/g, ' ') + ': ' + (el.checked ? 'yes' : 'no'));
+      } else if (el.value) {
+        parts.push(el.dataset.name.replace(/_/g, ' ') + ': ' + el.value);
+      }
+    });
+
+    const payload = 'Be Civic onboarding — ' + parts.join(' · ');
+    if (typeof sendPrompt === 'function') {
+      sendPrompt(payload);
+    } else {
+      console.log('[Be Civic onboarding submit]', payload);
+    }
+  });
+})();
+</script>
