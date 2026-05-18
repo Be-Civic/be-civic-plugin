@@ -1,0 +1,515 @@
+<!-- MACHINE TRANSLATION — NEEDS NATIVE-SPEAKER REVIEW (Phase 3) -->
+<!--
+  Be Civic — форма первого знайомства (брендований HTML-віджет)
+
+  Надається через `mcp__visualize__show_widget` з цим повним файлом як `widget_code`.
+  Це шлях Pattern B (брендований HTML) з cowork-form-mechanism.md.
+
+  ПРАВИЛО СТИЛІВ COWORK
+    Голі елементи форм (<button>, <input>, <textarea>) ПОВИННІ використовувати inline `style="all: unset; ..."`.
+    Власний CSS форм Cowork перевищує правила блоку <style>, що стосуються голих тегів форм.
+    `all: unset` скидає стандарти Cowork, щоб inline-оголошення застосовувалися.
+
+  СТРУКТУРА
+    1. Герой-панель (знак Be Civic + слоган + вітання + обіцянка довіри)
+    2. Розділ основного профілю — 9 груп полів
+    3. Розділ початкової процедури — закоментовано за замовчуванням (агент розкоментовує під час виконання)
+    4. Згода + надіслати
+-->
+<style>
+  .bc-onboarding {
+    --brand-gold: #fae042;
+    --brand-red: #ed2939;
+    --brand-black: #0a0a0a;
+    --brand-cream: #f5f4ee;
+    --brand-cream-soft: #d4d2cc;
+    --brand-ink: #1a1a18;
+    --brand-ink-body: #2a2a26;
+    --brand-mute: #6a6a65;
+    --brand-hairline: #ebe9e3;
+    --display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    font-family: var(--body);
+    color: var(--brand-ink-body);
+    max-width: 620px;
+    margin: 1rem auto;
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+  }
+  .bc-onboarding *, .bc-onboarding *::before, .bc-onboarding *::after { box-sizing: border-box; }
+
+  /* Герой */
+  .bc-hero {
+    background: var(--brand-cream);
+    padding: 26px 30px 22px;
+    border-bottom: 1px solid var(--brand-hairline);
+    position: relative;
+  }
+  .bc-hero__flag {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    display: flex;
+  }
+  .bc-hero__flag span { flex: 1; }
+  .bc-hero__flag span:nth-child(1) { background: var(--brand-black); }
+  .bc-hero__flag span:nth-child(2) { background: var(--brand-gold); }
+  .bc-hero__flag span:nth-child(3) { background: var(--brand-red); }
+  .bc-hero__mark {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--brand-ink);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .bc-hero__mark .bc-hero__dot { color: var(--brand-red); }
+  .bc-hero__tag {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--brand-ink);
+    letter-spacing: -0.01em;
+    margin: 6px 0 4px;
+    line-height: 1.25;
+  }
+  .bc-hero__welcome {
+    font-size: 13.5px;
+    color: var(--brand-ink-body);
+    line-height: 1.55;
+    margin: 6px 0 14px;
+  }
+  .bc-trust {
+    background: #ffffff;
+    border: 1px solid var(--brand-hairline);
+    border-left: 3px solid var(--brand-gold);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--brand-ink-body);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .bc-trust__icon { flex-shrink: 0; margin-top: 1px; color: var(--brand-ink); }
+  .bc-trust strong { color: var(--brand-ink); font-weight: 700; }
+
+  /* Основний контент */
+  .bc-body { padding: 24px 30px 8px; }
+
+  .bc-section-label {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand-mute);
+    margin: 0 0 14px;
+  }
+  .bc-section-divider {
+    margin: 22px -30px 18px;
+    border: 0;
+    border-top: 1px solid var(--brand-hairline);
+  }
+
+  .bc-group { margin-bottom: 18px; }
+  .bc-q {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--brand-ink);
+    margin-bottom: 8px;
+    font-family: var(--display);
+    letter-spacing: -0.005em;
+  }
+  .bc-hint {
+    display: block;
+    font-size: 12px;
+    color: var(--brand-mute);
+    margin: -4px 0 8px;
+    line-height: 1.5;
+  }
+
+  /* Блок допомоги eID */
+  .bc-eid-help {
+    margin-top: 8px;
+    padding: 9px 11px;
+    background: var(--brand-cream);
+    border-radius: 6px;
+    font-size: 11.5px;
+    color: var(--brand-ink-body);
+    line-height: 1.5;
+  }
+  .bc-eid-help strong { color: var(--brand-ink); }
+
+  /* Розділ процедури (агент розкоментовує) */
+  .bc-procedure {
+    background: var(--brand-cream);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 4px;
+  }
+
+  /* Блок згоди */
+  .bc-consent {
+    margin: 18px 0 4px;
+    padding: 14px 16px;
+    background: var(--brand-cream);
+    border-radius: 10px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .bc-consent label { cursor: pointer; color: var(--brand-ink-body); }
+  .bc-consent label strong { color: var(--brand-ink); font-weight: 700; }
+  .bc-consent__details { margin-top: 8px; cursor: pointer; }
+  .bc-consent__details summary {
+    font-size: 11.5px;
+    color: var(--brand-mute);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    list-style: none;
+  }
+  .bc-consent__details summary::-webkit-details-marker { display: none; }
+  .bc-consent__details[open] summary { color: var(--brand-ink); font-weight: 600; }
+  .bc-consent__details-body {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: #ffffff;
+    border-radius: 6px;
+    border: 1px solid var(--brand-hairline);
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+  .bc-consent__details-body p { margin: 0 0 6px; }
+  .bc-consent__details-body p:last-child { margin-bottom: 0; }
+  .bc-consent__details-body code {
+    background: var(--brand-cream);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+
+  /* Нижній колонтитул */
+  .bc-footer { padding: 6px 30px 26px; background: #ffffff; }
+  .bc-footer-note {
+    font-size: 11.5px;
+    color: var(--brand-mute);
+    text-align: center;
+    margin: 10px 0 0;
+    line-height: 1.5;
+  }
+</style>
+
+<div class="bc-onboarding" role="form" aria-label="Реєстрація Be Civic">
+
+  <!-- ============ ГЕРОЙ ============ -->
+  <div class="bc-hero">
+    <div class="bc-hero__flag" aria-hidden="true"><span></span><span></span><span></span></div>
+
+    <div class="bc-hero__mark">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="3.5" ry="3.5" fill="#0a0a0a"/>
+        <path fill="#fae042" transform="translate(-0.1920 23.5) scale(0.011000 -0.011000)" d="M670 -30Q509 -30 401.0 45.0Q293 120 238.5 249.0Q184 378 184 540Q184 702 238.0 831.0Q292 960 397.0 1035.0Q502 1110 656 1110Q811 1110 926.0 1036.0Q1041 962 1104.5 833.5Q1168 705 1168 540Q1168 378 1105.5 249.0Q1043 120 931.0 45.0Q819 -30 670 -30ZM138 0V1440H412V740H378V0ZM626 212Q714 212 770.0 256.0Q826 300 853.0 374.5Q880 449 880 540Q880 630 852.0 704.5Q824 779 765.5 823.5Q707 868 616 868Q531 868 478.5 827.0Q426 786 402.0 712.0Q378 638 378 540Q378 442 402.0 368.0Q426 294 480.5 253.0Q535 212 626 212Z"/>
+        <path fill="#fae042" transform="translate(12.6560 23.5) scale(0.011000 -0.011000)" d="M642 -30Q476 -30 349.5 41.5Q223 113 151.5 238.5Q80 364 80 526Q80 703 150.0 834.0Q220 965 343.0 1037.5Q466 1110 626 1110Q796 1110 915.0 1030.0Q1034 950 1091.0 805.0Q1148 660 1131 464H862V564Q862 729 809.5 801.5Q757 874 638 874Q499 874 433.5 789.5Q368 705 368 540Q368 389 433.5 306.5Q499 224 626 224Q706 224 763.0 259.0Q820 294 850 360L1122 282Q1061 134 929.5 52.0Q798 -30 642 -30ZM284 464V666H1000V464Z"/>
+        <path fill="#ed2939" transform="translate(25.1520 23.5) scale(0.011000 -0.011000)" d="M184 0V272H456V0Z"/>
+      </svg>
+      <span>be civic<span class="bc-hero__dot">.</span></span>
+    </div>
+
+    <p class="bc-hero__tag">Бельгійська адміністрація, написана для ШІ, який у вас вже є.</p>
+    <p class="bc-hero__welcome">
+      Be Civic надає вашому агенту публічну бібліотеку перевірених бельгійських процедур —
+      громадських, федеральних, регіональних. Розкажіть нам дещо про вашу ситуацію, і ваш агент
+      підбере для вас правильну процедуру.
+    </p>
+
+    <div class="bc-trust" role="note">
+      <svg class="bc-trust__icon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
+      </svg>
+      <span>
+        <strong>Усе, що ви повідомляєте Be Civic, залишається у вашій папці проєкту на вашому комп'ютері.</strong>
+        Нічого не залишає вашу машину, крім спостережень, які ви явно схвалюєте при завершенні сесії.
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ ОСНОВНИЙ КОНТЕНТ ============ -->
+  <div class="bc-body">
+
+    <p class="bc-section-label">Про вас</p>
+
+    <!-- region -->
+    <div class="bc-group">
+      <label class="bc-q">Де в Бельгії ви проживаєте?</label>
+      <div data-pg="region" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="Brussels-Capital" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Брюссельський столичний регіон</button>
+        <button type="button" data-value="Flanders" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Фландрія</button>
+        <button type="button" data-value="Wallonia" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Валонія</button>
+        <button type="button" data-value="German-speaking-community" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Німецькомовна спільнота</button>
+        <button type="button" data-value="not-in-belgium" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Ще не в Бельгії</button>
+      </div>
+    </div>
+
+    <!-- commune -->
+    <div class="bc-group" id="bc-commune-group">
+      <label class="bc-q" for="bc-commune">Яка громада?</label>
+      <span class="bc-hint" id="bc-commune-hint">Назва громади або поштовий індекс.</span>
+      <input id="bc-commune" type="text" data-name="commune" placeholder="напр. Іксель або 1050"
+             style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
+    </div>
+
+    <!-- civil status -->
+    <div class="bc-group">
+      <label class="bc-q">Сімейний стан</label>
+      <div data-pg="civic_status" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="single" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Неодружений / незаміжня</button>
+        <button type="button" data-value="married" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Одружений / заміжня</button>
+        <button type="button" data-value="cohabitant-legal" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Законне спільне проживання</button>
+        <button type="button" data-value="divorced" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Розлучений / розлучена</button>
+        <button type="button" data-value="widowed" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Вдовець / вдова</button>
+        <button type="button" data-value="separated" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Фактично роздільне проживання</button>
+      </div>
+    </div>
+
+    <!-- residency status -->
+    <div class="bc-group">
+      <label class="bc-q">Ваше громадянство / статус проживання</label>
+      <div data-pg="residency_status" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="belgian-national" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Громадянин Бельгії</button>
+        <button type="button" data-value="EU-citizen" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Громадянин ЄС</button>
+        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Третя країна, з бельгійським дозволом на проживання</button>
+        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Третя країна, подаю заявку з-за кордону</button>
+        <button type="button" data-value="asylum" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Шукач притулку</button>
+        <button type="button" data-value="undocumented" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Без документів</button>
+        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Я не впевнений / не впевнена</button>
+      </div>
+      <span class="bc-hint">Якщо не впевнені — оберіть цей варіант, разом розберемося за допомогою вашої картки або документів.</span>
+    </div>
+
+    <!-- conversation language -->
+    <div class="bc-group">
+      <label class="bc-q" for="bc-convlang">Ми можемо продовжити розмову <span data-template-fill="detected_language">українською</span>, або вкажіть іншу мову нижче.</label>
+      <span class="bc-hint">Будь-яка мова, яку розуміє ваш агент — іспанська, словенська, тагальська, будь-яка.</span>
+      <input id="bc-convlang" type="text" data-name="conversation_language" value="Українська" placeholder="напр. English, Français, Nederlands"
+             style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
+    </div>
+
+    <!-- administration language -->
+    <div class="bc-group" id="bc-adminlang-group" style="display: none;">
+      <label class="bc-q" id="bc-adminlang-label">Мова для документів у громаді</label>
+      <span class="bc-hint" id="bc-adminlang-hint">Подані документи мають бути мовою, яку приймає громада.</span>
+      <div data-pg="administration_language" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="FR" data-langlabel="Français" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Français</button>
+        <button type="button" data-value="NL" data-langlabel="Nederlands" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Nederlands</button>
+        <button type="button" data-value="DE" data-langlabel="Deutsch" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Deutsch</button>
+      </div>
+    </div>
+
+    <!-- preferred name -->
+    <div class="bc-group">
+      <label class="bc-q" for="bc-name">Як нам вас називати?</label>
+      <span class="bc-hint">Ім'я, ініціал, що вам підходить. Залишається на вашій машині.</span>
+      <input id="bc-name" type="text" data-name="preferred_name" placeholder="напр. Майя"
+             style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
+    </div>
+
+    <!-- has Belgian ID card -->
+    <div class="bc-group">
+      <label class="bc-q">Чи маєте ви зараз бельгійське посвідчення особи?</label>
+      <div data-pg="has_id_card" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="yes" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Так</button>
+        <button type="button" data-value="not-yet" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Ще ні — очікую першу картку або поновлення</button>
+        <button type="button" data-value="no" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Ні</button>
+        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Не впевнений / не впевнена</button>
+      </div>
+    </div>
+
+    <!-- browser driving preference -->
+    <div class="bc-group">
+      <label class="bc-q">Коли вашому агенту потрібно використовувати вебсайт (Irisbox, MyMinfin тощо)</label>
+      <div data-pg="browser_driving_preference" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Нехай керує моїм браузером (я слідкуватиму)</button>
+        <button type="button" data-value="ask-each-time" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Запитуйте мене кожного разу</button>
+        <button type="button" data-value="never-drive" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Просто дайте посилання, я зроблю сам / сама</button>
+      </div>
+    </div>
+
+    <!-- AGENT: REMOVE THE TWO COMMENT MARKERS BELOW (the "BEGIN" and "END" lines)
+         WHEN YOU HAVE PROCEDURE-SPECIFIC QUESTIONS TO INSERT.
+
+    BEGIN PROCEDURE SECTION
+    <hr class="bc-section-divider">
+    <p class="bc-section-label">Про вашу процедуру</p>
+    <div id="procedure-questions" class="bc-procedure">
+
+      ВСТАВТЕ ГРУПИ ПИТАНЬ ТУТ.
+
+    </div>
+    END PROCEDURE SECTION
+    -->
+
+    <!-- ============ ЗГОДА ============ -->
+    <input type="hidden" data-name="alpha_consent_bundle" value="yes">
+    <div class="bc-consent">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px; color: #1a1a18;">
+        <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
+      </svg>
+      <div>
+        <strong>Ви є учасником альфа-версії Be Civic.</strong> Продовжуючи, ви погоджуєтесь, що
+        анонімна телеметрія сесій та спостереження щодо каталогу є частиною того, як
+        Be Civic навчається на етапі перед запуском. Це необхідно для випуску якісного продукту.
+        <details class="bc-consent__details">
+          <summary>Що входить і що можна змінити пізніше?</summary>
+          <div class="bc-consent__details-body">
+            <p><strong>Анонімна телеметрія</strong> — тривалість сесії, кількість обмінів, які процедури
+            використовуються, де агент зупиняється. Лише категоріальні поля. Ніколи не ваш текст запиту,
+            шляхи файлів або вміст документів.</p>
+            <p><strong>Спостереження</strong> — занепокоєння щодо каталогу, поправки, оцінки, відгуки
+            у вільній формі. Кожне показується вам при закритті сесії перед надсиланням; ви можете
+            редагувати або видалити будь-яке.</p>
+            <p><strong>Перевірка джерел шляху</strong> — «ця громада прийняла цей документ у цю дату.»
+            Анонімно за конструкцією; надсилається як підтвердження того, що щось спрацювало.</p>
+            <p><strong>Під час альфа їх неможливо вимкнути окремо</strong> — саме так ми покращуємося
+            достатньо швидко для запуску. Після виходу Be Civic з альфа-версії ви отримаєте детальний
+            контроль над кожним. <strong>Щоб повністю припинити використання Be Civic</strong>, просто
+            скажіть своєму агенту та видаліть папку проєкту.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ НИЖНІЙ КОЛОНТИТУЛ ============ -->
+  <div class="bc-footer">
+    <button type="button" id="bc-submit"
+            style="all: unset; display: block; width: 100%; box-sizing: border-box; background: #1a1a18; color: #f5f4ee; padding: 14px 18px; border-radius: 10px; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; font-weight: 700; text-align: center; cursor: pointer;">
+      Продовжити →
+    </button>
+    <p class="bc-footer-note">
+      Незалежний проєкт — не пов'язаний з урядом Бельгії, ЄС або будь-якою громадою.
+    </p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const root = document.currentScript.previousElementSibling || document.querySelector('.bc-onboarding');
+  if (!root) return;
+
+  /* Pill selection — Cowork-resilient dynamic-style-swap pattern */
+  root.querySelectorAll('[data-pg]').forEach(group => {
+    group.querySelectorAll('button').forEach(btn => {
+      btn.dataset.original = btn.getAttribute('style') || '';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('button').forEach(b => {
+          b.setAttribute('style', b.dataset.original);
+          b.setAttribute('aria-pressed', 'false');
+        });
+        const next = btn.dataset.original
+          .replace(/background:\s*[^;]+;/, 'background: #fae042;')
+          .replace(/font-weight:\s*[^;]+;/, 'font-weight: 700;');
+        btn.setAttribute('style', next);
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+  });
+
+  /* Region → admin-language filter */
+  const adminLangByRegion = {
+    'Brussels-Capital': ['FR', 'NL'],
+    'Flanders': ['NL'],
+    'Wallonia': ['FR'],
+    'German-speaking-community': ['DE', 'FR'],
+    'not-in-belgium': ['FR', 'NL', 'DE']
+  };
+  const hintByRegion = {
+    'Brussels-Capital': 'Брюссельські громади приймають французьку або нідерландську — оберіть мову, яку використовує ваша громада.',
+    'Flanders': 'Фламандські громади подають документи нідерландською.',
+    'Wallonia': 'Валонські громади подають документи французькою.',
+    'German-speaking-community': 'Німецькомовні громади приймають німецьку або французьку.',
+    'not-in-belgium': 'Оберіть мову для регіону, який ви розглядаєте: Брюссель — французька або нідерландська; Валонія — французька; Фландрія — нідерландська; Німецькомовна спільнота — німецька. Якщо не впевнені, оберіть французьку або нідерландську — можна змінити пізніше.'
+  };
+  const labelByRegion = {
+    'not-in-belgium': 'Мова, яку ви хочете використовувати для документів',
+    '_default': 'Мова для документів у громаді'
+  };
+  const adminLangGroup = root.querySelector('#bc-adminlang-group');
+  const adminLangHint = root.querySelector('#bc-adminlang-hint');
+  const adminLangLabel = root.querySelector('#bc-adminlang-label');
+  const adminLangPills = root.querySelectorAll('[data-pg="administration_language"] button');
+  const communeGroup = root.querySelector('#bc-commune-group');
+  const communeHint = root.querySelector('#bc-commune-hint');
+
+  root.querySelectorAll('[data-pg="region"] button').forEach(regionBtn => {
+    regionBtn.addEventListener('click', () => {
+      const region = regionBtn.dataset.value;
+      const preMove = region === 'not-in-belgium';
+      const allowed = adminLangByRegion[region] || [];
+
+      communeGroup.style.display = preMove ? 'none' : '';
+      if (!preMove) {
+        communeHint.textContent = 'Назва громади або поштовий індекс.';
+      }
+
+      adminLangGroup.style.display = '';
+      if (adminLangLabel) {
+        adminLangLabel.textContent = preMove ? labelByRegion['not-in-belgium'] : labelByRegion['_default'];
+      }
+      adminLangHint.textContent = hintByRegion[region] || 'Подані документи мають бути мовою, яку приймає громада.';
+      adminLangPills.forEach(btn => {
+        btn.setAttribute('style', btn.dataset.original);
+        btn.setAttribute('aria-pressed', 'false');
+        btn.hidden = !allowed.includes(btn.dataset.value);
+      });
+      if (allowed.length === 1) {
+        const onlyBtn = [...adminLangPills].find(b => b.dataset.value === allowed[0]);
+        if (onlyBtn) onlyBtn.click();
+      }
+    });
+  });
+
+  /* Submit collector */
+  const submit = root.querySelector('#bc-submit');
+  if (!submit) return;
+  submit.addEventListener('click', () => {
+    const parts = [];
+
+    root.querySelectorAll('[data-pg]').forEach(group => {
+      const selected = [...group.querySelectorAll('button[aria-pressed="true"]')]
+        .map(b => b.dataset.value);
+      if (selected.length) {
+        parts.push(group.dataset.pg.replace(/_/g, ' ') + ': ' + selected.join(', '));
+      }
+    });
+
+    root.querySelectorAll('input[data-name], textarea[data-name]').forEach(el => {
+      if (el.type === 'checkbox') {
+        parts.push(el.dataset.name.replace(/_/g, ' ') + ': ' + (el.checked ? 'yes' : 'no'));
+      } else if (el.value) {
+        parts.push(el.dataset.name.replace(/_/g, ' ') + ': ' + el.value);
+      }
+    });
+
+    const payload = 'Be Civic onboarding — ' + parts.join(' · ');
+    if (typeof sendPrompt === 'function') {
+      sendPrompt(payload);
+    } else {
+      console.log('[Be Civic onboarding submit]', payload);
+    }
+  });
+})();
+</script>

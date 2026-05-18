@@ -1,0 +1,517 @@
+<!-- MACHINE TRANSLATION — NEEDS NATIVE-SPEAKER REVIEW (Phase 3) -->
+<!--
+  Be Civic — formulaire d'intégration premier contact (widget HTML personnalisé)
+
+  Livré via `mcp__visualize__show_widget` avec l'intégralité de ce fichier en tant que `widget_code`.
+  Il s'agit du chemin Pattern B (HTML personnalisé) depuis cowork-form-mechanism.md.
+
+  RÈGLE DE STYLE COWORK
+    Les éléments de formulaire nus (<button>, <input>, <textarea>) DOIVENT utiliser le style en ligne `style="all: unset; ..."`.
+    Le CSS de formulaire de Cowork l'emporte sur les règles du bloc <style> ciblant les balises de formulaire nues.
+    `all: unset` supprime les valeurs par défaut de Cowork afin que les déclarations en ligne s'appliquent.
+
+  STRUCTURE
+    1. Panneau hero (marque Be Civic + accroche + bienvenue + promesse de confiance)
+    2. Section profil principal — 9 groupes de champs
+    3. Section procédure initiale — commentée par défaut (l'agent la décommente à l'exécution)
+    4. Consentement + soumettre
+-->
+<style>
+  .bc-onboarding {
+    --brand-gold: #fae042;
+    --brand-red: #ed2939;
+    --brand-black: #0a0a0a;
+    --brand-cream: #f5f4ee;
+    --brand-cream-soft: #d4d2cc;
+    --brand-ink: #1a1a18;
+    --brand-ink-body: #2a2a26;
+    --brand-mute: #6a6a65;
+    --brand-hairline: #ebe9e3;
+    --display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    font-family: var(--body);
+    color: var(--brand-ink-body);
+    max-width: 620px;
+    margin: 1rem auto;
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+  }
+  .bc-onboarding *, .bc-onboarding *::before, .bc-onboarding *::after { box-sizing: border-box; }
+
+  /* Hero */
+  .bc-hero {
+    background: var(--brand-cream);
+    padding: 26px 30px 22px;
+    border-bottom: 1px solid var(--brand-hairline);
+    position: relative;
+  }
+  .bc-hero__flag {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    display: flex;
+  }
+  .bc-hero__flag span { flex: 1; }
+  .bc-hero__flag span:nth-child(1) { background: var(--brand-black); }
+  .bc-hero__flag span:nth-child(2) { background: var(--brand-gold); }
+  .bc-hero__flag span:nth-child(3) { background: var(--brand-red); }
+  .bc-hero__mark {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--brand-ink);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .bc-hero__mark .bc-hero__dot { color: var(--brand-red); }
+  .bc-hero__tag {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--brand-ink);
+    letter-spacing: -0.01em;
+    margin: 6px 0 4px;
+    line-height: 1.25;
+  }
+  .bc-hero__welcome {
+    font-size: 13.5px;
+    color: var(--brand-ink-body);
+    line-height: 1.55;
+    margin: 6px 0 14px;
+  }
+  .bc-trust {
+    background: #ffffff;
+    border: 1px solid var(--brand-hairline);
+    border-left: 3px solid var(--brand-gold);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--brand-ink-body);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .bc-trust__icon { flex-shrink: 0; margin-top: 1px; color: var(--brand-ink); }
+  .bc-trust strong { color: var(--brand-ink); font-weight: 700; }
+
+  /* Corps */
+  .bc-body { padding: 24px 30px 8px; }
+
+  .bc-section-label {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand-mute);
+    margin: 0 0 14px;
+  }
+  .bc-section-divider {
+    margin: 22px -30px 18px;
+    border: 0;
+    border-top: 1px solid var(--brand-hairline);
+  }
+
+  .bc-group { margin-bottom: 18px; }
+  .bc-q {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--brand-ink);
+    margin-bottom: 8px;
+    font-family: var(--display);
+    letter-spacing: -0.005em;
+  }
+  .bc-hint {
+    display: block;
+    font-size: 12px;
+    color: var(--brand-mute);
+    margin: -4px 0 8px;
+    line-height: 1.5;
+  }
+
+  /* Bloc aide eID */
+  .bc-eid-help {
+    margin-top: 8px;
+    padding: 9px 11px;
+    background: var(--brand-cream);
+    border-radius: 6px;
+    font-size: 11.5px;
+    color: var(--brand-ink-body);
+    line-height: 1.5;
+  }
+  .bc-eid-help strong { color: var(--brand-ink); }
+
+  /* Section procédure (l'agent décommente) */
+  .bc-procedure {
+    background: var(--brand-cream);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 4px;
+  }
+
+  /* Bloc consentement */
+  .bc-consent {
+    margin: 18px 0 4px;
+    padding: 14px 16px;
+    background: var(--brand-cream);
+    border-radius: 10px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .bc-consent label { cursor: pointer; color: var(--brand-ink-body); }
+  .bc-consent label strong { color: var(--brand-ink); font-weight: 700; }
+  .bc-consent__details { margin-top: 8px; cursor: pointer; }
+  .bc-consent__details summary {
+    font-size: 11.5px;
+    color: var(--brand-mute);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    list-style: none;
+  }
+  .bc-consent__details summary::-webkit-details-marker { display: none; }
+  .bc-consent__details[open] summary { color: var(--brand-ink); font-weight: 600; }
+  .bc-consent__details-body {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: #ffffff;
+    border-radius: 6px;
+    border: 1px solid var(--brand-hairline);
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+  .bc-consent__details-body p { margin: 0 0 6px; }
+  .bc-consent__details-body p:last-child { margin-bottom: 0; }
+  .bc-consent__details-body code {
+    background: var(--brand-cream);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+
+  /* Pied de page */
+  .bc-footer { padding: 6px 30px 26px; background: #ffffff; }
+  .bc-footer-note {
+    font-size: 11.5px;
+    color: var(--brand-mute);
+    text-align: center;
+    margin: 10px 0 0;
+    line-height: 1.5;
+  }
+</style>
+
+<div class="bc-onboarding" role="form" aria-label="Intégration Be Civic">
+
+  <!-- ============ HERO ============ -->
+  <div class="bc-hero">
+    <div class="bc-hero__flag" aria-hidden="true"><span></span><span></span><span></span></div>
+
+    <div class="bc-hero__mark">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="3.5" ry="3.5" fill="#0a0a0a"/>
+        <path fill="#fae042" transform="translate(-0.1920 23.5) scale(0.011000 -0.011000)" d="M670 -30Q509 -30 401.0 45.0Q293 120 238.5 249.0Q184 378 184 540Q184 702 238.0 831.0Q292 960 397.0 1035.0Q502 1110 656 1110Q811 1110 926.0 1036.0Q1041 962 1104.5 833.5Q1168 705 1168 540Q1168 378 1105.5 249.0Q1043 120 931.0 45.0Q819 -30 670 -30ZM138 0V1440H412V740H378V0ZM626 212Q714 212 770.0 256.0Q826 300 853.0 374.5Q880 449 880 540Q880 630 852.0 704.5Q824 779 765.5 823.5Q707 868 616 868Q531 868 478.5 827.0Q426 786 402.0 712.0Q378 638 378 540Q378 442 402.0 368.0Q426 294 480.5 253.0Q535 212 626 212Z"/>
+        <path fill="#fae042" transform="translate(12.6560 23.5) scale(0.011000 -0.011000)" d="M642 -30Q476 -30 349.5 41.5Q223 113 151.5 238.5Q80 364 80 526Q80 703 150.0 834.0Q220 965 343.0 1037.5Q466 1110 626 1110Q796 1110 915.0 1030.0Q1034 950 1091.0 805.0Q1148 660 1131 464H862V564Q862 729 809.5 801.5Q757 874 638 874Q499 874 433.5 789.5Q368 705 368 540Q368 389 433.5 306.5Q499 224 626 224Q706 224 763.0 259.0Q820 294 850 360L1122 282Q1061 134 929.5 52.0Q798 -30 642 -30ZM284 464V666H1000V464Z"/>
+        <path fill="#ed2939" transform="translate(25.1520 23.5) scale(0.011000 -0.011000)" d="M184 0V272H456V0Z"/>
+      </svg>
+      <span>be civic<span class="bc-hero__dot">.</span></span>
+    </div>
+
+    <p class="bc-hero__tag">L'admin belge, écrit pour l'IA que vous avez déjà.</p>
+    <p class="bc-hero__welcome">
+      Be Civic donne à votre agent une bibliothèque publique de procédures belges vérifiées —
+      commune, fédéral, régional. Dites-nous quelques choses sur votre situation et votre agent
+      choisira la bonne procédure pour vous.
+    </p>
+
+    <div class="bc-trust" role="note">
+      <svg class="bc-trust__icon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
+      </svg>
+      <span>
+        <strong>Tout ce que vous dites à Be Civic reste dans votre dossier de projet sur votre ordinateur.</strong>
+        Rien ne quitte votre machine, sauf les observations que vous approuvez explicitement à la fin de la session.
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ CORPS ============ -->
+  <div class="bc-body">
+
+    <p class="bc-section-label">À propos de vous</p>
+
+    <!-- region -->
+    <div class="bc-group">
+      <label class="bc-q">Où habitez-vous en Belgique ?</label>
+      <div data-pg="region" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="Brussels-Capital" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Bruxelles-Capitale</button>
+        <button type="button" data-value="Flanders" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Flandre</button>
+        <button type="button" data-value="Wallonia" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Wallonie</button>
+        <button type="button" data-value="German-speaking-community" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Communauté germanophone</button>
+        <button type="button" data-value="not-in-belgium" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Pas encore en Belgique</button>
+      </div>
+    </div>
+
+    <!-- commune -->
+    <div class="bc-group" id="bc-commune-group">
+      <label class="bc-q" for="bc-commune">Quelle commune ?</label>
+      <span class="bc-hint" id="bc-commune-hint">Nom de la commune ou code postal.</span>
+      <input id="bc-commune" type="text" data-name="commune" placeholder="ex. Ixelles ou 1050"
+             style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
+    </div>
+
+    <!-- civil status -->
+    <div class="bc-group">
+      <label class="bc-q">État civil</label>
+      <div data-pg="civic_status" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="single" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Célibataire</button>
+        <button type="button" data-value="married" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Marié·e</button>
+        <button type="button" data-value="cohabitant-legal" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Cohabitant·e légal·e</button>
+        <button type="button" data-value="divorced" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Divorcé·e</button>
+        <button type="button" data-value="widowed" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Veuf·ve</button>
+        <button type="button" data-value="separated" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Séparé·e</button>
+      </div>
+    </div>
+
+    <!-- residency status -->
+    <div class="bc-group">
+      <label class="bc-q">Votre nationalité / situation de séjour</label>
+      <div data-pg="residency_status" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="belgian-national" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Ressortissant·e belge</button>
+        <button type="button" data-value="EU-citizen" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Citoyen·ne de l'UE</button>
+        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Pays tiers, avec un titre de séjour belge</button>
+        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Pays tiers, demande depuis l'étranger</button>
+        <button type="button" data-value="asylum" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Demandeur·euse d'asile</button>
+        <button type="button" data-value="undocumented" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Sans papiers</button>
+        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Je ne suis pas sûr·e</button>
+      </div>
+      <span class="bc-hint">Si vous n'êtes pas sûr·e, choisissez cette option — nous le déterminerons ensemble à partir de votre carte ou de vos documents.</span>
+    </div>
+
+    <!-- conversation language -->
+    <div class="bc-group">
+      <label class="bc-q" for="bc-convlang">Nous pouvons continuer en <span data-template-fill="detected_language">Français</span>, ou indiquez une autre langue ci-dessous.</label>
+      <span class="bc-hint">Toute langue que votre agent comprend fonctionne — espagnol, slovène, tagalog, n'importe laquelle.</span>
+      <input id="bc-convlang" type="text" data-name="conversation_language" value="Français" placeholder="ex. English, Français, Nederlands"
+             style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
+    </div>
+
+    <!-- administration language -->
+    <div class="bc-group" id="bc-adminlang-group" style="display: none;">
+      <label class="bc-q" id="bc-adminlang-label">Langue pour les démarches administratives avec la commune</label>
+      <span class="bc-hint" id="bc-adminlang-hint">Les documents déposés doivent être dans une langue acceptée par la commune.</span>
+      <div data-pg="administration_language" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="FR" data-langlabel="Français" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Français</button>
+        <button type="button" data-value="NL" data-langlabel="Nederlands" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Nederlands</button>
+        <button type="button" data-value="DE" data-langlabel="Deutsch" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Deutsch</button>
+      </div>
+    </div>
+
+    <!-- preferred name -->
+    <div class="bc-group">
+      <label class="bc-q" for="bc-name">Comment pouvons-nous vous appeler ?</label>
+      <span class="bc-hint">Prénom, une initiale, ce qui vous convient. Reste sur votre machine.</span>
+      <input id="bc-name" type="text" data-name="preferred_name" placeholder="ex. Maya"
+             style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
+    </div>
+
+    <!-- has Belgian ID card -->
+    <div class="bc-group">
+      <label class="bc-q">Avez-vous actuellement une carte d'identité belge ?</label>
+      <div data-pg="has_id_card" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="yes" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Oui</button>
+        <button type="button" data-value="not-yet" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Pas encore — j'attends ma première carte ou un renouvellement</button>
+        <button type="button" data-value="no" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Non</button>
+        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Je ne sais pas</button>
+      </div>
+    </div>
+
+    <!-- browser driving preference -->
+    <div class="bc-group">
+      <label class="bc-q">Quand votre agent doit utiliser un site web (Irisbox, MyMinfin, etc.)</label>
+      <div data-pg="browser_driving_preference" style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Laissez-le piloter mon navigateur (je regarderai)</button>
+        <button type="button" data-value="ask-each-time" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Demandez-moi à chaque fois</button>
+        <button type="button" data-value="never-drive" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Donnez-moi juste le lien, je le ferai moi-même</button>
+      </div>
+    </div>
+
+    <!-- AGENT: REMOVE THE TWO COMMENT MARKERS BELOW (the "BEGIN" and "END" lines)
+         WHEN YOU HAVE PROCEDURE-SPECIFIC QUESTIONS TO INSERT.
+
+    BEGIN PROCEDURE SECTION
+    <hr class="bc-section-divider">
+    <p class="bc-section-label">À propos de votre procédure</p>
+    <div id="procedure-questions" class="bc-procedure">
+
+      INSÉREZ LES GROUPES DE QUESTIONS ICI.
+
+    </div>
+    END PROCEDURE SECTION
+    -->
+
+    <!-- ============ CONSENTEMENT ============ -->
+    <input type="hidden" data-name="alpha_consent_bundle" value="yes">
+    <div class="bc-consent">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px; color: #1a1a18;">
+        <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
+      </svg>
+      <div>
+        <strong>Vous faites partie de l'alpha Be Civic.</strong> En continuant, vous acceptez que
+        la télémétrie de session anonymisée et les observations sur le catalogue fassent partie
+        de la façon dont Be Civic apprend pendant le pré-lancement. Nous en avons besoin pour
+        livrer un bon produit.
+        <details class="bc-consent__details">
+          <summary>Qu'est-ce qui est inclus et que puis-je modifier plus tard ?</summary>
+          <div class="bc-consent__details-body">
+            <p><strong>Télémétrie anonymisée</strong> — durée de session, nombre de tours, quelles procédures
+            sont utilisées, où l'agent est bloqué. Champs catégoriels uniquement. Jamais votre texte de
+            prompt, chemins de fichiers ou contenu de documents.</p>
+            <p><strong>Observations</strong> — préoccupations sur le catalogue, amendements, évaluations,
+            retours en texte libre. Chacune vous est présentée à la fin de la session avant envoi ; vous
+            pouvez en modifier ou supprimer n'importe laquelle.</p>
+            <p><strong>Validations de source de chemin</strong> — « cette commune a accepté ce document à
+            cette date. » Anonyme par construction ; soumises en ligne comme confirmation que quelque chose
+            a fonctionné.</p>
+            <p><strong>Pendant l'alpha, celles-ci ne peuvent pas être désactivées individuellement</strong> —
+            c'est ainsi que nous nous améliorons assez vite pour lancer. Une fois Be Civic hors de l'alpha,
+            vous aurez des contrôles granulaires sur chacune. <strong>Pour arrêter d'utiliser Be Civic entièrement</strong>,
+            dites-le simplement à votre agent et supprimez le dossier du projet.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ PIED DE PAGE ============ -->
+  <div class="bc-footer">
+    <button type="button" id="bc-submit"
+            style="all: unset; display: block; width: 100%; box-sizing: border-box; background: #1a1a18; color: #f5f4ee; padding: 14px 18px; border-radius: 10px; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; font-weight: 700; text-align: center; cursor: pointer;">
+      Continuer →
+    </button>
+    <p class="bc-footer-note">
+      Projet indépendant — non affilié au gouvernement belge, à l'UE ou à une commune.
+    </p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const root = document.currentScript.previousElementSibling || document.querySelector('.bc-onboarding');
+  if (!root) return;
+
+  /* Pill selection — Cowork-resilient dynamic-style-swap pattern */
+  root.querySelectorAll('[data-pg]').forEach(group => {
+    group.querySelectorAll('button').forEach(btn => {
+      btn.dataset.original = btn.getAttribute('style') || '';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('button').forEach(b => {
+          b.setAttribute('style', b.dataset.original);
+          b.setAttribute('aria-pressed', 'false');
+        });
+        const next = btn.dataset.original
+          .replace(/background:\s*[^;]+;/, 'background: #fae042;')
+          .replace(/font-weight:\s*[^;]+;/, 'font-weight: 700;');
+        btn.setAttribute('style', next);
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+  });
+
+  /* Region → admin-language filter */
+  const adminLangByRegion = {
+    'Brussels-Capital': ['FR', 'NL'],
+    'Flanders': ['NL'],
+    'Wallonia': ['FR'],
+    'German-speaking-community': ['DE', 'FR'],
+    'not-in-belgium': ['FR', 'NL', 'DE']
+  };
+  const hintByRegion = {
+    'Brussels-Capital': 'Les communes bruxelloises acceptent le français ou le néerlandais — choisissez celui utilisé par votre commune.',
+    'Flanders': 'Les communes flamandes déposent en néerlandais.',
+    'Wallonia': 'Les communes wallonnes déposent en français.',
+    'German-speaking-community': 'Les communes germanophones acceptent l\'allemand ou le français.',
+    'not-in-belgium': 'Choisissez la langue pour la région que vous envisagez : Bruxelles — français ou néerlandais ; Wallonie — français ; Flandre — néerlandais ; Communauté germanophone — allemand. Si vous n\'êtes vraiment pas sûr·e, choisissez français ou néerlandais pour l\'instant — vous pourrez le modifier plus tard.'
+  };
+  const labelByRegion = {
+    'not-in-belgium': 'Langue que vous souhaitez utiliser pour les démarches administratives',
+    '_default': 'Langue pour les démarches administratives avec la commune'
+  };
+  const adminLangGroup = root.querySelector('#bc-adminlang-group');
+  const adminLangHint = root.querySelector('#bc-adminlang-hint');
+  const adminLangLabel = root.querySelector('#bc-adminlang-label');
+  const adminLangPills = root.querySelectorAll('[data-pg="administration_language"] button');
+  const communeGroup = root.querySelector('#bc-commune-group');
+  const communeHint = root.querySelector('#bc-commune-hint');
+
+  root.querySelectorAll('[data-pg="region"] button').forEach(regionBtn => {
+    regionBtn.addEventListener('click', () => {
+      const region = regionBtn.dataset.value;
+      const preMove = region === 'not-in-belgium';
+      const allowed = adminLangByRegion[region] || [];
+
+      communeGroup.style.display = preMove ? 'none' : '';
+      if (!preMove) {
+        communeHint.textContent = 'Nom de la commune ou code postal.';
+      }
+
+      adminLangGroup.style.display = '';
+      if (adminLangLabel) {
+        adminLangLabel.textContent = preMove ? labelByRegion['not-in-belgium'] : labelByRegion['_default'];
+      }
+      adminLangHint.textContent = hintByRegion[region] || 'Les documents déposés doivent être dans une langue acceptée par la commune.';
+      adminLangPills.forEach(btn => {
+        btn.setAttribute('style', btn.dataset.original);
+        btn.setAttribute('aria-pressed', 'false');
+        btn.hidden = !allowed.includes(btn.dataset.value);
+      });
+      if (allowed.length === 1) {
+        const onlyBtn = [...adminLangPills].find(b => b.dataset.value === allowed[0]);
+        if (onlyBtn) onlyBtn.click();
+      }
+    });
+  });
+
+  /* Submit collector */
+  const submit = root.querySelector('#bc-submit');
+  if (!submit) return;
+  submit.addEventListener('click', () => {
+    const parts = [];
+
+    root.querySelectorAll('[data-pg]').forEach(group => {
+      const selected = [...group.querySelectorAll('button[aria-pressed="true"]')]
+        .map(b => b.dataset.value);
+      if (selected.length) {
+        parts.push(group.dataset.pg.replace(/_/g, ' ') + ': ' + selected.join(', '));
+      }
+    });
+
+    root.querySelectorAll('input[data-name], textarea[data-name]').forEach(el => {
+      if (el.type === 'checkbox') {
+        parts.push(el.dataset.name.replace(/_/g, ' ') + ': ' + (el.checked ? 'yes' : 'no'));
+      } else if (el.value) {
+        parts.push(el.dataset.name.replace(/_/g, ' ') + ': ' + el.value);
+      }
+    });
+
+    const payload = 'Be Civic onboarding — ' + parts.join(' · ');
+    if (typeof sendPrompt === 'function') {
+      sendPrompt(payload);
+    } else {
+      console.log('[Be Civic onboarding submit]', payload);
+    }
+  });
+})();
+</script>
