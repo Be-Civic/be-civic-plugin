@@ -71,8 +71,13 @@ The `documents:` block is path-only — no field values, no transcriptions. Exam
 
 To check whether this is the first archive for the current procedure: look for any existing dossier file under `documents/dossier/` in the procedure's folder. If none exists, this is the first archive; fire `initial` mode. If one already exists, skip the `initial`-mode invocation (subsequent refresh is handled by `bc-dossier-compilation` on its own trigger).
 
+## Reference prompts
+
+- **Belgian residence-card image reading** (used by bc-onboarding's row_list folder-drop hydration, not by this skill directly): `references/card-vision-prompt.md`. Vision-extraction instructions for card-type + month-bucket dates, with pairing heuristics for front/back and a two-fail policy aligned with bc-onboarding §7.1 R5.
+
 ## What this skill does NOT own
 
 - Validation of whether the document is genuine, valid, in the right format, or sufficient for the procedure. Those calls live in the procedure skill body.
 - Enumerated extraction tables per document type. The model judges per procedure context using the heuristics above.
 - Re-archiving documents already in `documents/`. Check the cross-procedure index first; if present, reuse the existing path and skip the upload.
+- Vision extraction for row_list folder-drop hydration. The prompt lives at `references/card-vision-prompt.md` but bc-onboarding's §7.1 hydration loop is the caller — this skill does not initiate the read.

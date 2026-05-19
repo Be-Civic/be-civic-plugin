@@ -276,6 +276,126 @@ Onboarding doesn't end at submit — the form is the **start** of high-confidenc
 
 This is the "lawyer onboarding a client" pass. Spend the exchanges it takes to get the picture right before handing off to the procedure.
 
+### 7.2. row_list hydration for sentinel payloads (W25.13)
+
+Some form-input types (currently only `row_list` — see `specs/schemas.md` "Form-input types" and `specs/protocol.md` §23.2 sentinel-payload paragraph) support deferred-capture modes. When the user picked Mode 2 (folder drop) or Mode 3 (chat) on a `row_list` field, the submit payload carries a sentinel object instead of the structured rows:
+
+```json
+{ "<field_name>": { "__mode": "folder_drop"|"chat", "__status": "pending" } }
+```
+
+After 6.1 validation but **before** writing case.json / profile.json in step 6.3, scan every field in the submit payload for the sentinel shape and run the matching hydration. The structured value the hydration produces replaces the sentinel before the write.
+
+#### 7.2.1. Sentinel rejection (defense layer 2 — closes B3)
+
+Before routing to hydration, validate that the sentinel only appears on input types that declared capture modes. The procedure canonical's `inputs:` block (cached in step 4) tells you each field's `type`; the inputs catalogue declares which types support sentinels. Today that allowlist is: **`row_list` only**. If a sentinel appears on `single_choice`, `text`, `yes_no`, or any other input type:
+
+1. **Reject.** Do not route to hydration. The server-side renderer should never have produced this shape; receiving it means either a stale client or a tampered submit.
+2. **Log it** to the observation buffer as a `harness_anomaly` observation with category `sentinel_on_non_row_list` and the field name + input type recorded. The buffer goes through the normal review-before-submit flow at session close.
+3. **Treat the field as missing.** Re-prompt the user for that field in chat using the input's normal copy (single AskUserQuestion or short Tier-2 elicitation), as if the form had returned `null` for it. Do not fabricate a value.
+
+This is defense layer 2 — the server-side rejection in `specs/protocol.md` §23.2 is layer 1; this is the harness-side safety net.
+
+#### 7.2.2. Mode 2 — folder_drop hydration
+
+The user dropped image files into `<procedure-root>/inputs/<field_name>/` while the form was open (or is about to — the instruction panel in the form told them so). Folder polling waits for the user signal before reading; the user may not have started yet.
+
+**Wait for the user signal.** Send a chat line in the conversation language:
+
+> *"When you've dropped your card photos in the folder and are back here, just say 'done with cards' or anything that tells me you're back — I'll read them and walk you through what I found."*
+
+Hold position. The next chat message from the user is the trigger — any message that reads as "I'm back" / "done" / "go ahead" / "ready" / a sigh / a single dot / etc. The agent uses judgment; the user is not required to say a magic word.
+
+When the trigger lands, list the folder. For each image file:
+
+1. **Run the agent's vision capability** with the prompt at `${CLAUDE_PLUGIN_ROOT}/skills/bc-document-handler/references/card-vision-prompt.md` (loaded verbatim). One vision call per image, OR one call per paired front+back set (see the prompt's pairing heuristics).
+2. **Parse the JSON output.** The prompt instructs the model to return strict JSON; if parsing fails, that's fail #1 (see retry policy below).
+3. **Score the read** per the prompt's pass/fail rules: valid JSON with a non-null `card_type` and at least one non-null date = pass. Anything else = fail.
+
+**Two-fail retry policy (per design doc R5).** On the *second* consecutive failure for the same image (or paired set), stop retrying that image and surface to the user in chat:
+
+> *"I couldn't read `<filename>` clearly — want to upload a clearer photo, or just type that row in manually? Other cards I read fine, so this is per-card, not the whole set."*
+
+Three branches:
+
+- **Re-upload.** User drops a new image; restart the two-attempt cycle on the new file. Discard the old image from the read-set (it stays archived per harness §7 but doesn't contribute a row).
+- **Type manually.** The card hydrates as an empty/partial row pre-populated in the widget for that card — `card_type: null`, dates null, notes blank. Other readable cards still hydrate normally with their extracted values. The user fills the manual row in the re-confirmation widget (7.2.4).
+- **Skip.** No row is added for that image. Other readable cards still hydrate.
+
+Once the read-set is fully resolved (every image is a pass, a manual-entry placeholder, or a skip), assemble the structured rows array — one row per pass or manual placeholder, in chronological order by `start_month` (nulls sort last). Hand off to the re-confirmation widget (7.2.4).
+
+**Archive note.** The dropped images stay in `documents/<procedure-id>/inputs/<field_name>/` per harness §7 archive rule. The hydration does NOT move them, rename them, or delete them — the user owns the archive.
+
+#### 7.2.3. Mode 3 — chat hydration
+
+Elicit conversationally. In the conversation language, send:
+
+> *"Walk me through your card history, oldest first. For each card, tell me the type (A, F+, single permit, etc.) and the rough dates you held it. Don't worry about exact day — month and year is enough."*
+
+The user replies in prose. Parse their reply into the structured-row shape — one row per card mentioned, in chronological order:
+
+```json
+{
+  "card_type": "<one of the catalogue enum values>",
+  "start_month": "<YYYY-MM>",
+  "end_month": "<YYYY-MM or 'current'>",
+  "notes": "<short free text, optional>"
+}
+```
+
+**Parsing rules:**
+
+- Map user-language card descriptions to the catalogue enum. The catalogue's full enum + labels lives in `bc-docs/mcp/forms/inputs/<field_name>.yml`; for `belgian_residence_card_history` the values are `orange | A | B | C | F | F_plus | K | L | H | single_permit | M | N | visa_d | visa_c | EU_citizen | other`. "F+" → `F_plus`, "Blue Card" / "Carte bleue" → `H`, "single permit" / "permis unique" / "gecombineerde vergunning" → `single_permit`, etc. Use judgment.
+- Bucket dates to YYYY-MM. "Spring 2018" → ask the user to pick a month. "Around 2018" → `2018-01` if they don't refine, with a `notes` entry recording the approximation. Current card → `end_month: "current"`.
+- Empty cards (`card_type: "EU_citizen"`) get null dates per the design doc D7 — EU citizens don't have residence-card dates in the same sense.
+- Cap `notes` at 200 chars per the catalogue.
+
+If the user's reply is ambiguous on a row (can't pick a card_type, or dates are vague), do NOT silently guess — ask a clarifying follow-up in chat, then update that row. Iterate until every row is parseable.
+
+Once the rows array is assembled, hand off to the re-confirmation widget (7.2.4).
+
+#### 7.2.4. Re-confirmation widget (Mode 2 + Mode 3)
+
+Regardless of mode, present the parsed rows back to the user in the same `row_list` widget for in-place confirm/edit. Render via `mcp__visualize__show_widget` with the same widget HTML the server returned in step 4, but pre-populated with the rows array you assembled. (The widget supports pre-population because it's the same surface Mode 1 uses; pre-fill semantics are described in the design doc §3 Mode 2 step 3.)
+
+Frame in chat (conversation language):
+
+> *"Here's what I got — give it a quick look. Edit anything that's off, add rows I missed, and hit Continue. If a row's totally wrong, just clear it."*
+
+Wait for the second submit. Validate the returned rows array against the catalogue's column types (`card_type` is one of the enum, `start_month` is `^[0-9]{4}-[0-9]{2}$` or null-for-EU-row, `end_month` matches `^([0-9]{4}-[0-9]{2}|current)$` or null-for-EU-row, `notes` ≤ 200 chars). On validation failure, re-render with an inline error per row.
+
+On approve (clean validation), proceed to the scrub + write (7.2.5).
+
+#### 7.2.5. Notes Layer-1 scrub (closes R3) + write
+
+Before writing the final array to its target store, run `scripts/scrub-layer1.py` against the `notes` field of each row:
+
+```bash
+scripts/scrub-layer1.py --stdin --field notes
+```
+
+For each row whose notes field returns `status: "rejected"` (high-severity hit — identity, biometric, document_number):
+
+1. **Do not write the array yet.** Surface to the user in chat, citing the row by index + the redaction category:
+
+   > *"The note on row <N> tripped the scrub check — something in there reads as identity-shaped (<category>). Want to rewrite it more abstractly, or just clear that note?"*
+
+2. **User picks via AskUserQuestion:** rewrite, or clear. On rewrite, capture the new value, re-scrub, loop until clean or cleared.
+3. **Do not silently redact and proceed.** The scrub is load-bearing for the privacy contract; every hit goes through the user.
+
+Rows with `status: "redacted"` (medium severity, regex made a safe substitution) write the redacted version without prompting — same policy as `bc-document-handler`'s scrub-failure abort.
+
+Once every row's notes field is clean, write the array to its target store:
+
+- `render: profile` (the design's default for `belgian_residence_card_history`) → write to `<BeCivic-root>/profile.json` under the field name.
+- `render: case` (other future row_list inputs may declare this) → write to `<BeCivic-root>/<procedure-slug>/case.json` under the field name.
+
+Read the input's `render:` directive from the procedure canonical's `inputs:` block (cached in step 4) — do not hardcode by field name.
+
+#### 7.2.6. Hydration completes — step 7.1 probing continues
+
+After the row_list field hydrates, return to step 7.1 probing for any remaining "I'm not sure" / contradiction / low-confidence-load-bearing patterns in the rest of the payload. The row_list hydration may itself surface new probes (e.g. card history reveals a residence gap the procedure body cares about); flag those for `bc-path-traversal` to follow up post-handoff.
+
 ---
 
 ## Step 8. Hand off to `bc-path-traversal`
