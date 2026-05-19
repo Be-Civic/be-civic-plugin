@@ -1,147 +1,135 @@
 ---
 name: bc-dossier-compilation
-description: Use at the end of a Be Civic application procedure, after eligibility has passed and the document checklist has been gathered. Produces a Be Civic-styled application dossier — index page, bring-originals callout, checklist table, filled official forms, disclaimer — that the user prints and submits to the filing authority. Agent-tooling sub-skill; produces an artefact rather than running a Belgian admin process.
+description: Assembles the user's gathered documents into a fully-bound A4 PDF dossier they print and file at the commune. Three modes — initial (first call, mostly placeholders), refresh (a new document arrived), final (terminal step). Writes and iterates on a render.py script in the user's project folder; renders via vendored pure-Python fpdf2 + pypdf. Six presentation classes; watermarks original-required pages in the user's conversation language.
 ---
 
 <Tip>
-Stable skill — agent-tooling sub-skill. Produces an artefact rather than running a Belgian admin process; no consumer-side validation submission applies. The parent skill files validation against its own proposal.
+Stable skill — agent-tooling sub-skill. Produces a local artefact for the user to file at the commune; Be Civic does not stage or store the dossier. No consumer-side validation submission applies.
 </Tip>
 
-Invoked from a `kind: main` application skill at session end, after eligibility has passed, intent is confirmed, and the checklist of required documents has been gathered. Produces a Be Civic-styled application dossier — an index page listing every document the user must file, the "bring originals" callout, the checklist table, and the filled official forms — that the user prints and submits to the filing authority.
+Architectural authority: [`bc-operations/docs/agent-ux/dossier-rebuild-design.md`](../../../bc-operations/docs/agent-ux/dossier-rebuild-design.md). The design doc is the spec; this SKILL.md is the operating manual.
 
-The dossier is the artefact the user files. Be Civic does not stage or store it; the agent renders it locally on the user's machine.
+## Invocation
 
-## Step 1 — confirm invocation
+Three modes; the caller signals which, or you infer from context:
 
-Invoke this sub-skill only when:
+- **`initial`** — first dossier-relevant beat for this procedure (typically after `bc-document-handler` archives the first document). Build a dossier with placeholders for everything not yet collected, so the user sees the artefact taking shape early.
+- **`refresh`** — a new document arrived; update the existing `render.py` and re-run.
+- **`final`** — procedure terminal step reached (triggered by `<Skill id="bc-dossier-compilation" />` in the canonical, or defensively by `bc-session-close` Step 0). Produce the version the user files.
 
-- The parent skill's intro paragraph declared the artefact class as `application dossier` (per `meta-draft-l1-skill` step 9).
-- The parent skill listed `dossier-compilation` in its `requires`.
-- The session has reached the point where every checklist item is gathered or accounted for (the user knows where each document comes from, which form is required, and whether it must be brought in original).
-- The user has confirmed they are ready to file.
+Only fire when the parent skill declares `application_dossier` as its artefact class and lists `bc-dossier-compilation` in its `requires`. Otherwise refuse.
 
-If any of these are unmet, do not render the dossier. Continue gathering with the user under the parent skill's guidance.
+## Step 1 — Capability gate
 
-## Step 2 — capability gate and graceful degradation
+Confirm `python3` is callable and the plugin's vendored module is reachable. If either is missing, degrade per the table and tell the user once:
 
-The full-capability path requires `pdf_generation`, `file_read`, and `structured_output`. If any are unavailable, degrade per the table:
+| Missing | Degraded behaviour |
+|---|---|
+| `python3` | Emit dossier *markdown only*; walk the user through a browser print-to-PDF path. |
+| Vendored `fpdf2` + `pypdf` (plugin install incomplete) | Same as above; ask the user to reinstall the plugin when convenient. |
 
-| Missing capability | Degraded behaviour |
-|--------------------|--------------------|
-| `pdf_generation` | Emit the dossier markdown only. Tell the user once: *"I can't render PDF in this session. Save the markdown I produce, then convert via your browser's print-to-PDF or a converter like pandoc."* Walk them through one render path. |
-| `file_read` | The agent cannot save artefacts locally. Narrate the dossier content inline in chat; tell the user to copy it to a local file themselves. |
-| `structured_output` | Render the index page as plain prose rather than tables; mark each document with a clear *"Bring in original"* / *"Copy acceptable"* prefix. |
+Don't over-explain — the user wants the dossier, not an apology.
 
-Tell the user once, briefly, which path you are taking. Do not over-explain — the user wants the dossier, not an apology for what the agent cannot do.
+## Step 2 — Reconcile + classify
 
-## Step 3 — fill the index-page template
+Read the procedure canonical's `## Required documents` section (cached from `bc-path-traversal` or fetched via `read_skill`). For each row:
 
-The index page is the cover of the dossier. Render the template below, filling each `{placeholder}` from the parent skill's inputs and the user's gathered context.
+1. Look for a matching archived file in `<procedure-root>/documents/`. Match by cert type name first, filename heuristics second, agent judgment third.
+2. If found, **classify** into one of six presentation classes per the design doc §3:
+   - `id-card` — residence permit, eID, driving licence, orange card (front + back as one half-page row, up to 2 cards/page)
+   - `full-page-cert` — birth, marriage, residence-with-history, apostille, BAPA Annexe 3.1, NT2, any single-page issued certificate
+   - `multi-page-doc` — Sigedis compte individuel, multi-page certificates, judgement extracts
+   - `fee-receipt` — MyMinfin Preuve de paiement, fee proofs
+   - `filled-form` — Annexe 1 declaration, official forms the agent fills
+3. If not found, mark as `placeholder` with the cert type name + source hint from the canonical (path id or commune-visit instructions).
 
-````markdown
-<!-- Be Civic Application Index — generated {generated_date} -->
-<!-- Skill: {parent_skill_id} v{parent_skill_version} ({version_status}); last verified {parent_skill_last_verified} -->
+Classification is agent reasoning, not a deterministic file property. Files arrive arbitrarily named ("scan.pdf", "IMG_2034.jpg"); read the content via `bc-document-handler` to infer the class.
 
-![Be Civic](https://becivic.be/logo/light-inline.png){ width=120px }
+Note for each item whether the canonical's form column is anything other than `Printout acceptable` — those pages get watermarked.
 
-# {application_title}
+## Step 3 — Write or update `render.py`
 
-**Prepared for:**     {user_name_or_self_reference}
-**Date prepared:**    {generated_date}
-**Filing authority:** {filing_authority}
-**Skill:**            `{parent_skill_id}` v{parent_skill_version} ({version_status})
+Path: `<procedure-root>/dossier/render.py`.
 
----
+On **initial** mode: create the file with an import header pointing at the live plugin root (resolve at write-time from `CLAUDE_PLUGIN_ROOT` if set, else from your tool environment). Header shape:
 
-> **Bring these in original — the printout is not sufficient:**
-> - {original_required_1}
-> - {original_required_2}
+```python
+# Be Civic dossier renderer. Run: python3 render.py
+# Auto-generated — edit freely; the agent will preserve your changes.
+import sys
+sys.path.insert(0, "<absolute-plugin-root>/vendor")
+sys.path.insert(0, "<absolute-plugin-root>/scripts")
+# Fallback probe if the plugin path moved (auto-installer relocations, etc.):
+try:
+    from be_civic_dossier import Dossier, IdCard, FullPageCert, MultiPageDoc, FeeReceipt, FilledForm, Placeholder
+except ImportError:
+    for probe in ["~/.claude/plugins/be-civic", "~/Library/Application Support/Claude/plugins/be-civic"]:
+        sys.path.insert(0, f"{probe}/vendor")
+        sys.path.insert(0, f"{probe}/scripts")
+        try:
+            from be_civic_dossier import Dossier, IdCard, FullPageCert, MultiPageDoc, FeeReceipt, FilledForm, Placeholder
+            break
+        except ImportError:
+            continue
+    else:
+        raise RuntimeError("Be Civic plugin not found — reinstall via Cowork sidebar.")
+```
 
-## What this dossier contains
+Then the `Dossier(...)` constructor and `.add(...)` calls per the design doc §5 worked example. Use the user's `profile.json` for `conversation_language`, `applicant_name`, `filing_language`; the procedure canonical for `procedure_title` and `filing_authority` (with commune resolved from profile).
 
-| § | Document | Form | Source |
-|---|----------|------|--------|
-| 1 | {document_name} | {form_required} | {source} |
-| ... | ... | ... | ... |
+On **refresh** mode: read the existing `render.py`, preserve any user edits (cover note tweaks, item reordering), and update only the item list — replace `Placeholder(...)` lines with the appropriate class instance for the newly-archived document. Do not rewrite the whole file.
 
-## Notes for the filing officer
+If the plugin path block fails to import on a later run (plugin moved), regenerate the import header.
 
-{agent_note_or_omit}
+## Step 4 — Officer notes
 
----
+On **final** mode (and optionally on refresh), author `<procedure-root>/dossier/officer-notes.md` — short prose explaining the routing call: applicable statute (e.g. art. 12bis §1, 2°), eligibility math (years of legal residence, integration evidence, etc.), any commune-specific notes worth surfacing. The agent writes this; `render.py` reads it.
 
-*This dossier was prepared by the user with the assistance of an AI agent
-using Be Civic context. Be Civic publishes public information only and has
-no legal standing. Verify with the relevant authority before filing —
-procedures vary and change.*
-````
+Keep it to under 250 words. Officer reads it once at intake.
 
-The logo URL is stable and served at the apex; embedding it as a remote `![]()` is fine for renderers with web access. If the renderer is offline or strips remote images, omit the logo line — do not block rendering on it.
+## Step 5 — Run `render.py`
 
-## Step 4 — render the checklist as a table
+Execute via the workspace bash. Output: `<procedure-root>/dossier/dossier-<YYYY-MM-DD>.pdf`.
 
-The checklist enumerates every document in the dossier. One row per document. Use a markdown table — long document names wrap to a second line within the cell rather than overflowing the page edge.
+The script's deterministic body handles cover, checklist, dividers, originals-callout, each per-class layout, watermarks (in the user's `conversation_language` on every page where form ≠ Printout acceptable), and concatenation. Branding (Be Civic header / ribbon / footer) appears **only on pages we generate** — cover, checklist, dividers, placeholders, filled forms, officer notes. User documents pass through untouched.
 
-Columns:
+If the script errors, surface the error to the user plainly, fix the proximate cause (missing file, malformed image, bad path), and re-run. Don't hide the failure.
 
-- **§** — index number (1, 2, 3, ...)
-- **Document** — the official name of the document, in the language used by the issuing authority
-- **Form** — one of `Original`, `Certified copy`, `Apostilled`, `Sworn translation`, `Printout acceptable`. Pull from the parent skill's `## Required documents` section, where each row carries a form-required marker per `meta-draft-l1-skill` step 10.
-- **Source** — where the user obtained it (commune, origin sub-skill name, payment receipt, etc.)
+## Step 6 — Present + iterate
 
-The "Form" column drives Step 5.
+Show the user the rendered PDF and the placeholder count. Plain summary:
 
-## Step 5 — surface the "Bring in original" callout
+> *"Your dossier is at `dossier-2026-05-19.pdf` — 8 pages: cover, checklist, your birth certificate, residence certificate, L card, BAPA attestation, fee receipt, and a placeholder for the Annexe 1 you'll sign at the commune."*
 
-Above the checklist table, render the originals callout. Include every document where "Form" is anything other than `Printout acceptable`:
+If placeholders remain, list them briefly and offer the relevant next-step path (e.g. *"Drop the BAPA attestation PDF here when you have it and I'll fold it in."*). The user typically responds with a new document; that triggers `refresh` mode (Step 3 update + Step 5 re-run).
 
-> **Bring these in original — the printout is not sufficient:**
-> - {document_1}
-> - {document_2}
+## Step 7 — Final handoff
 
-Before closing the dossier handoff (Step 8), say this out loud to the user:
+On **final** mode after the last placeholder is filled (or the user explicitly accepts a dossier with remaining placeholders for commune-visit completion), close with:
 
-> *"You'll need to bring these documents in original form — the dossier I'm preparing is for your reference, not a substitute for the originals. Specifically: {list}."*
+- The originals reminder: enumerate the documents where the watermark indicates "ORIGINAL REQUIRED" — *"You'll need to bring these in original: birth certificate (apostilled), L card, BAPA attestation. The printed dossier is for reference; the originals are what the commune accepts."*
+- The re-run instruction: *"You can re-run `python3 render.py` from your `dossier/` folder any time you update a document — the script is yours to edit too."*
 
-If the parent skill's `## Bring in original` section is empty (rare for application skills, but possible — e.g., a fully digital filing), omit both the callout and the verbal reminder.
+Exit cleanly. Validation submission is not this skill's concern (per the `<Tip>` above).
 
-## Step 6 — append the official forms
+## Failure modes
 
-After the index page and checklist, append every official form the user must file. These are pulled from the parent skill body (Annexes, declarations, fee receipts, attestations, etc.). For each form:
+- **Vendored library import fails at runtime** — the probe fallback in the import header catches plugin relocations; if all probes fail, the script raises a clear "reinstall plugin" message. Don't silently degrade.
+- **Image rotation wrong on an ID card** — re-prompt the user for a head-on scan; the renderer doesn't OCR or auto-rotate.
+- **Watermark unreadable on a dark scanned document** — known limitation of 25%-opacity overlay; user can manually highlight the warning if needed. Surface as a known limitation if the user asks.
+- **render.py byte-determinism** — `fpdf2` stamps `/CreationDate` and `/ModDate` from wall-clock by default; the vendored module stubs these to a fixed sentinel so re-runs produce byte-identical PDFs. If you see drift, check the module's metadata stub.
 
-- Reproduce the form's title and reference number exactly as the issuing authority publishes it.
-- If the agent has filled fields based on user answers, mark filled values clearly (some authorities require handwritten signatures on printed forms, so the user must verify and sign physically).
-- If a form is not yet available (e.g., the user must collect it from the commune in person), include a placeholder page noting where the user obtains it.
+## What this skill does NOT own
 
-Do not invent or paraphrase form fields. If unsure of a value, leave the field blank and flag it to the user before rendering.
-
-## Step 7 — format and orientation rules
-
-A4 portrait is the default for the entire dossier. Override per page where content demands it:
-
-- **Landscape** — pages with wide tables (more than five columns or document names that exceed ~60 characters). Worth checking that print-to-PDF respects the orientation declaration.
-- **ID cards on one page** — render front and back of the same card (residence permit, ID card, driving licence) on a single A4 portrait page rather than wasting two pages. Standard layout: front in the upper half, back in the lower half, both at full readable size.
-- **Wrap text in tables** — long names, addresses, and citation text should sit inside table cells which the renderer wraps, rather than as inline prose that runs off the page edge.
-- **Page breaks** — insert a manual page break before each new top-level section (`## ...`) to keep the dossier scannable. The index page sits on its own page.
-- **Margins** — narrow margins (1.5cm) so checklist tables fit at full width.
-- **Fonts** — embed fonts where the renderer supports it; otherwise use a widely-supported sans-serif (Helvetica, Arial) that survives PDF sharing across platforms.
-
-If the renderer does not support a particular instruction (e.g., browser print-to-PDF has limited orientation control), accept the limitation and tell the user.
-
-## Step 8 — output handoff
-
-Save the dossier locally with the user's permission. Default filename: `{parent_skill_id}-dossier-{YYYY-MM-DD}.{md,pdf}`.
-
-Repeat the originals reminder from Step 5. Confirm the user understands the dossier is a reference, not a substitute for the originals.
-
-This sub-skill does not file a validation submission at session end. Validation is filed by the parent skill (against the parent's `proposal_id`, per `agents/submit/validation`). The dossier is rendered; the parent's lifecycle continues.
-
----
-
-*Verify with the relevant authority before filing — procedures vary and change.*
+- The procedure body (eligibility math, branching, statute references) — lives in the parent canonical.
+- Document validation / authenticity checks — the parent canonical's concern.
+- Document archiving (`documents/<procedure-id>/`) — `bc-document-handler` owns this; we only read.
+- Validation submission — agent-tooling sub-skill, no validation fires here.
 
 ## References
 
-- `[meta-draft-l1-skill]` — `skills/meta-draft-l1-skill/canonical.md` — drafting protocol; step 9 sets the dossier artefact class; step 10 sets the form-required markers on the checklist
-- `[agents-protocol]` — `agents.mdx`
-- `[agents-submit-validation]` — `agents/submit/validation.mdx`
+- Architectural design: `bc-operations/docs/agent-ux/dossier-rebuild-design.md`
+- Spec: `bc-operations/specs/cowork-plugin.md` §2.3 (bc-dossier-compilation paragraph)
+- Renderer module: `${CLAUDE_PLUGIN_ROOT}/scripts/be_civic_dossier/`
+- Templates: `${CLAUDE_PLUGIN_ROOT}/skills/bc-dossier-compilation/templates/`
+- Vendored libs + fonts: `${CLAUDE_PLUGIN_ROOT}/vendor/`

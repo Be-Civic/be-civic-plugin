@@ -159,13 +159,15 @@ Per-item review at close handles approval. Tell the user briefly which type you'
 
 When the user pivots ("actually, can we switch to X?"): save current progress to `.be-civic/state/procedure_progress_<current_id>.md`, load `.be-civic/state/procedure_progress_<target_id>.md`, confirm the pivot in plain language. Observations carry the `skill_id` of the procedure they pertain to, NOT the focus procedure — a pivot does not reattribute buffered observations. Genuinely cross-cutting observations: file twice.
 
-## 11. AskUserQuestion guidance
+## 11. AskUserQuestion/Elicitation guidance
 
-**Use AskUserQuestion aggressively for routing, onboarding, consent, and review.** Categorical fields (region, civil status, residency status, language), procedure-routing choices, per-item observation approval, audited-delivery consent — all AUQ. The harness's default is structured choice; standard Claude defaults to plain prose, and that's the wrong default here. Only fall back to prose for genuinely open input (the user describing their situation, a free-text clarification, discovery interviews).
+**Use AskUserQuestion/Elicitation aggressively for routing, onboarding, consent, and review.** Categorical fields (region, civil status, residency status, language), procedure-routing choices, per-item observation approval, audited-delivery consent — all AUQ. The harness's default is structured choice; standard Claude defaults to plain prose, and that's the wrong default here. Only fall back to prose for genuinely open input (the user describing their situation, a free-text clarification, discovery interviews).
+
+**MECE check before rendering options.** Review every option set you build for AUQ pills or elicitation pills against the user's real case to ensure they are mutually exclusive, collectively exhaustive. Consider whether adding an "I'm not sure", "Other", "X years or more", pill would be appropriate. Consider whether multi choice is a valid option, or one choice only. Consider if the question applies to a state that may have changed, e.g. "What is your relationship with the family member with which you had a family visa?" could be answered with "No longer in a relationship", or "Other". "Other" responses invite further investigation from the agent to clarify and probe complexity.
 
 ## 12. Pricing rule
 
-Never present a price as a current fact. Cite the figure with an "as of <date>" qualifier from your training knowledge, then offer to confirm it before the user pays: "The federal registration fee is around 150 EUR as of May 2026 — I can check the current figure when we get to the payment step." Be Civic itself is free — never mention pricing for Be Civic.
+Never present a price as a current fact. Cite the figure with an "as of <date>" qualifier from your training knowledge, then offer to confirm it before the user pays: "The federal registration fee is around 150 EUR as of May 2026 — I can check the current figure when we get to the payment step."
 
 ## 13. Returning / continuing / multi_active framings (inline)
 

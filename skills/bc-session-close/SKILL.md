@@ -12,7 +12,11 @@ Two invocations:
 
 The customer-facing language for the observation buffer is **list** or **notes**, never "buffer."
 
-## The 9 steps
+## The close sequence
+
+### 0. Final dossier check (defensive)
+
+If the active procedure declares its artefact class as `application_dossier` AND has reached its terminal step AND no rendered dossier exists at `<procedure-root>/dossier/`, invoke `be-civic:bc-dossier-compilation` in `final` mode before continuing. The procedure canonical's terminal-step `<Skill id="bc-dossier-compilation" />` tag is the primary trigger; this check catches cases where the canonical doesn't carry the tag or the harness didn't fire it. Skip on resume-submit.
 
 ### 1. Summarise progress
 

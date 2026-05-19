@@ -278,21 +278,27 @@ This is the "lawyer onboarding a client" pass. Spend the exchanges it takes to g
 
 ---
 
-## Step 8. Hand off to `bc-path-traversal`
+## Step 8. Hand off to a new Cowork session
 
-Once the folder is mounted, profile.json is written, and post-submit probing has cleaned up uncertain answers, hand control to `bc-path-traversal`. That skill takes the cached canonical from step 4 plus the case.json from step 6.3 and walks the procedure's required documents.
+Once the folder is mounted, `profile.json` is written, and post-submit probing has cleaned up uncertain answers, end **this** conversation with the handoff line and let the user open the procedure subfolder in a **new** Cowork chat. Per `specs/cowork-plugin.md` §2.3 line 167, Cowork's CLAUDE.md auto-load convention walks ancestors at session-start and picks up the BeCivic-root CLAUDE.md, loading the harness as Project Instructions for the procedure-walking session. The new-session handoff is the only supported mode.
 
 Hand-off line (in conversation language):
 
-> "Setup is done. Let me walk you through what you'll need for the <procedure name>."
+> "Setup is done. Open the project folder in a new Cowork conversation to continue — your new chat will have the Be Civic harness loaded automatically, and we'll walk through the <procedure name> from there."
 
-If this skill is running in `new-project` mode where the user is in a transient setup conversation (the legacy mode), close with:
+If your Cowork client surface offers a click-through (e.g. "Open in new chat"), name the action plainly: *"Click here when you're ready and I'll be waiting in the new chat."* If no click-through exists, instruct the user to open the project folder manually (Cowork sidebar → Open folder → pick `<picked-parent>/BeCivic/<procedure-slug>/`).
 
-> "Setup is done. From here, open this folder in Cowork to continue — the next conversation you open from this folder will have the Be Civic harness loaded automatically."
+**Do NOT proceed directly into `bc-path-traversal` in this conversation.** Cowork's ancestor-walk loads CLAUDE.md at session-start, not mid-conversation, so the harness would not be in context if you continued here. The 2026-05-19 dogfood session confirmed that attempting same-conversation continuation produces uninstrumented agent behaviour (six rule violations against clear harness instructions in a single session). See [`docs/agent-ux/handoff-spec-compliance-2026-05-19.md`](../../../bc-operations/docs/agent-ux/handoff-spec-compliance-2026-05-19.md) for the diagnosis.
 
-In the post-`request_cowork_directory` Cowork pattern (the V1 default for first-contact), the folder is already mounted in the current conversation and the harness CLAUDE.md is being loaded by Cowork's ancestor-walk. Proceed directly into `bc-path-traversal` in the same conversation.
+### 8.1 If the user keeps chatting after the handoff line
 
-Exit this skill cleanly. Do not loop. Subsequent procedure work (path traversal, document handling, observation buffering, session close) runs against the harness, not this skill.
+The user may not immediately switch chats. If they ask follow-up questions in the onboarding conversation after you've delivered the handoff line:
+
+- **Procedure questions** ("what document do I need first?", "do I need to apostille my birth certificate?") — do NOT walk the procedure here. Reply with: *"I'd love to walk you through that, but the Be Civic library only loads properly in a new chat opened from the project folder. Open `<path>` in a new Cowork conversation and ask me the same question there — I'll have the full procedure loaded."*
+- **Quick clarifying questions about the setup itself** ("where is the folder again?", "is my profile.json correct?") — answer briefly here, then re-deliver the handoff line.
+- **The user explicitly declines to switch** ("can we just keep going here?") — explain the constraint once more, plainly: *"I can answer general questions, but I can't walk the actual procedure here — the harness that drives the walk needs to load at the start of the session. The procedure work will be much better in a fresh chat."* If they still insist, fall back to advice-only mode (general procedure context from training knowledge, no document handling, no path traversal, no observation buffering) and flag this to the user.
+
+Exit this skill cleanly otherwise. Subsequent procedure work (path traversal, document handling, observation buffering, session close) runs against the harness in the new session, not this skill.
 
 ---
 
