@@ -1,0 +1,207 @@
+<!--
+  Be Civic dossier — placeholder page.
+
+  Inserted in lieu of an actual user document when the checklist row is not yet
+  satisfied. One A4 page. Be Civic-branded because we generated it.
+
+  Jinja2-style placeholders:
+    {{ name }}               — cert type / human-readable document name
+    {{ source }}             — where the user obtains it (path-id, commune visit, etc.)
+    {{ index }}              — item number within the dossier
+    {{ total }}              — total number of dossier items
+    {{ collect_label }}      — locale "TO COLLECT" string (en/fr/nl/de/ar/uk)
+    {{ source_label }}       — locale "Source:" string
+    {{ note }}               — optional one-line agent note (e.g. "Sign at filing")
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Be Civic dossier — placeholder</title>
+  <style>
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+
+    :root {
+      --brand-black: #0a0a0a;
+      --brand-gold: #fae042;
+      --brand-red: #ed2939;
+      --brand-cream: #f5f4ee;
+      --brand-ink: #1a1a18;
+      --brand-mute: #6a6a65;
+      --brand-hairline: #ebe9e3;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: var(--brand-ink);
+      font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      height: 100%;
+    }
+
+    .bc-page {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bc-page-head {
+      display: flex;
+      align-items: center;
+      gap: 6mm;
+      margin-bottom: 10mm;
+      padding-bottom: 4mm;
+      border-bottom: 0.6mm solid var(--brand-ink);
+    }
+    .bc-mini-stripe {
+      display: flex;
+      width: 18mm;
+      height: 4mm;
+      flex-shrink: 0;
+    }
+    .bc-mini-stripe > div { flex: 1 1 33.333%; height: 100%; }
+    .bc-mini-stripe > div:nth-child(1) { background: var(--brand-black); }
+    .bc-mini-stripe > div:nth-child(2) { background: var(--brand-gold); }
+    .bc-mini-stripe > div:nth-child(3) { background: var(--brand-red); }
+    .bc-section-label {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 9.5pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--brand-mute);
+    }
+
+    .bc-body {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 0 4mm;
+    }
+
+    .bc-collect-tag {
+      display: inline-block;
+      padding: 2mm 5mm;
+      background: var(--brand-red);
+      color: #ffffff;
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 10pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10mm;
+    }
+
+    .bc-name {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 26pt;
+      line-height: 1.15;
+      letter-spacing: -0.015em;
+      color: var(--brand-ink);
+      margin: 0 0 14mm 0;
+      max-width: 160mm;
+    }
+
+    .bc-source-row {
+      display: flex;
+      align-items: baseline;
+      gap: 4mm;
+      max-width: 160mm;
+      margin-bottom: 10mm;
+    }
+    .bc-source-label {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 9.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--brand-mute);
+      flex-shrink: 0;
+      min-width: 26mm;
+    }
+    .bc-source-value {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 12pt;
+      color: var(--brand-ink);
+      font-weight: 600;
+    }
+
+    .bc-note {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 10.5pt;
+      color: var(--brand-mute);
+      max-width: 160mm;
+      border-left: 2mm solid var(--brand-gold);
+      padding-left: 5mm;
+      margin-top: 4mm;
+    }
+
+    .bc-page-foot {
+      margin-top: auto;
+      padding-top: 6mm;
+      border-top: 0.3mm solid var(--brand-hairline);
+      display: flex;
+      justify-content: space-between;
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 8.5pt;
+      color: var(--brand-mute);
+    }
+  </style>
+</head>
+<body>
+  <div class="bc-page">
+    <header class="bc-page-head">
+      <div class="bc-mini-stripe" aria-hidden="true">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="bc-section-label">Be Civic — Placeholder</div>
+    </header>
+
+    <div class="bc-body">
+      <div class="bc-collect-tag">{{ collect_label|default("TO COLLECT") }}</div>
+      <h1 class="bc-name">{{ name }}</h1>
+
+      <div class="bc-source-row">
+        <div class="bc-source-label">{{ source_label|default("Source") }}</div>
+        <div class="bc-source-value">{{ source }}</div>
+      </div>
+
+      {% if note %}
+      <div class="bc-note">{{ note }}</div>
+      {% endif %}
+    </div>
+
+    <div class="bc-page-foot">
+      <span>Be Civic — becivic.be</span>
+      <span>§{{ index }} of {{ total }}</span>
+    </div>
+  </div>
+</body>
+</html>

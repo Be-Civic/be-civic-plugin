@@ -388,6 +388,72 @@
       "uniqueItems": true,
       "default": [],
       "description": "Life transitions currently in progress. Extensible in future schema versions."
+    },
+
+    "belgian_residence_card_history": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "properties": {
+          "card_type": {
+            "type": "string",
+            "enum": [
+              "orange",
+              "visa_d",
+              "visa_c",
+              "A",
+              "B",
+              "C",
+              "D",
+              "K",
+              "L",
+              "F",
+              "F_plus",
+              "H",
+              "I",
+              "J",
+              "M",
+              "M_plus",
+              "N",
+              "E",
+              "E_plus",
+              "EU",
+              "EU_plus",
+              "EU_citizen",
+              "other"
+            ],
+            "description": "Belgian residence card or visa type. 23-value enum per the W25.15 card-type enum survey (2026-05-19): replaces the design-doc 16-value draft after Stream G identified 3 material defects. Removed: single_permit (annotation on A/B, not a card type — capture work-route in notes). Added: D (legacy long-term resident, archived format), I + J (intra-corporate transferee cards, live since Dec 2021), M_plus (Brexit-WA permanent variant), E + E_plus (legacy EU registration cards), EU + EU_plus (current EU registration cards, replaced E/E+ in May 2021). Label-correction: F is currently issued (not archived); B is currently issued (not archived). EU_citizen remains the value for EU/EEA/CH citizens present without registering."
+          },
+          "start_month": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}$",
+            "description": "Start of the card validity period, YYYY-MM month-bucket precision."
+          },
+          "end_month": {
+            "type": "string",
+            "pattern": "^([0-9]{4}-[0-9]{2}|current)$",
+            "description": "End of the card validity period (YYYY-MM), or the literal 'current' when the card is still held."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Optional free-text note for this card entry, e.g. 'changed job at this point'. Max 200 chars."
+          }
+        },
+        "required": ["card_type"],
+        "if": {
+          "properties": {
+            "card_type": { "not": { "const": "EU_citizen" } }
+          }
+        },
+        "then": {
+          "required": ["start_month", "end_month"]
+        },
+        "additionalProperties": false
+      },
+      "description": "Chronological list of Belgian residence cards and visas held by the customer. Card type is an enum (23 values per W25.15 survey); dates are YYYY-MM month-bucket. No card numbers, no document identifiers. EU citizens may have a row with card_type=EU_citizen and no start/end dates. Added W25.12; enum synced to W25.15 survey 2026-05-19."
     }
   }
 }

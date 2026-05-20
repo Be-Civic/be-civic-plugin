@@ -1,0 +1,424 @@
+<!--
+  Be Civic dossier — Annexe 1 (Belgian nationality declaration, art. 12bis).
+
+  Best-effort reproduction of the SPF Justice "Déclaration de nationalité belge"
+  form layout. Field labels are bilingual (FR/NL) per Belgian federal practice;
+  the agent fills field values at render time via Jinja2-style placeholders.
+
+  This template structures the form. Page header watermark "SIGN BEFORE FILING"
+  is added at render time by be_civic_dossier.watermark (Stream A), not in this
+  template — keeps the template content / watermark concerns separated.
+
+  Jinja2-style placeholders (all values filled by render.py from profile.json + answers):
+    {{ filing_authority }}
+    {{ filing_date }}
+    {{ national_register_number }}    — NN (national register number)
+    {{ full_name }}                   — surname, given names as on birth cert
+    {{ surname }}
+    {{ given_names }}
+    {{ birth_date }}                  — ISO YYYY-MM-DD
+    {{ birth_place }}                 — city, country
+    {{ nationality_of_origin }}       — applicant's current nationality
+    {{ address_street }}
+    {{ address_number }}
+    {{ address_box }}
+    {{ address_postcode }}
+    {{ address_city }}
+    {{ legal_basis }}                 — e.g. "art. 12bis, §1, 2°"
+    {{ residence_basis_summary }}     — e.g. "5 years legal residence in Belgium"
+    {{ language_evidence }}           — e.g. "BAPA Annexe 3.1, French A2"
+    {{ integration_evidence }}        — e.g. "BAPA integration course attested"
+    {{ economic_evidence }}           — e.g. "ONSS contributions Sigedis compte individuel"
+    {{ filing_language }}             — fr|nl|de, drives which header label fronts
+
+  Layout: A4 portrait, 1.5cm margins. Header includes form reference + filing-language
+  label fronted. Body is a labelled field-grid the user reviews before signing.
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Annexe 1 — Déclaration de nationalité belge (art. 12bis)</title>
+  <style>
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+
+    :root {
+      --brand-black: #0a0a0a;
+      --brand-gold: #fae042;
+      --brand-red: #ed2939;
+      --brand-cream: #f5f4ee;
+      --brand-ink: #1a1a18;
+      --brand-mute: #6a6a65;
+      --brand-hairline: #ebe9e3;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: var(--brand-ink);
+      font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+      font-size: 10pt;
+      line-height: 1.4;
+    }
+
+    /* Form header — official-looking, lower visual weight than cover */
+    .form-head {
+      border-bottom: 0.6mm solid var(--brand-ink);
+      padding-bottom: 4mm;
+      margin-bottom: 8mm;
+    }
+    .form-head__ref {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-size: 9pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--brand-mute);
+      margin-bottom: 2mm;
+    }
+    .form-head__title-fr {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 16pt;
+      letter-spacing: -0.01em;
+      color: var(--brand-ink);
+      margin: 0 0 2mm 0;
+    }
+    .form-head__title-nl {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 14pt;
+      letter-spacing: -0.005em;
+      color: var(--brand-ink);
+      margin: 0 0 4mm 0;
+    }
+    .form-head__basis {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 10pt;
+      color: var(--brand-mute);
+    }
+
+    .form-section {
+      margin-bottom: 8mm;
+    }
+    .form-section__title {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 11pt;
+      color: var(--brand-ink);
+      margin: 0 0 4mm 0;
+      padding-bottom: 1.5mm;
+      border-bottom: 0.3mm solid var(--brand-hairline);
+    }
+
+    /* Field grid — label/value rows mimicking a paper form */
+    .field-grid {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .field-grid td {
+      padding: 2mm 3mm 2mm 0;
+      vertical-align: bottom;
+    }
+    .field-grid td.field-label {
+      width: 55mm;
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 9pt;
+      color: var(--brand-mute);
+      letter-spacing: 0.02em;
+      line-height: 1.3;
+    }
+    .field-grid td.field-label .lang-alt {
+      display: block;
+      font-size: 8pt;
+      font-style: italic;
+      color: var(--brand-mute);
+      margin-top: 0.5mm;
+    }
+    .field-grid td.field-value {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 11pt;
+      font-weight: 600;
+      color: var(--brand-ink);
+      border-bottom: 0.3mm solid var(--brand-ink);
+      padding-bottom: 1mm;
+      min-height: 5mm;
+    }
+
+    /* Compact two-column for short fields (postcode, city, etc.) */
+    .field-pair {
+      display: flex;
+      gap: 6mm;
+    }
+    .field-pair > div { flex: 1 1 50%; }
+
+    /* Address block — multi-line */
+    .address-block .field-grid td.field-value {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .address-block .address-line {
+      display: flex;
+      align-items: baseline;
+      border-bottom: 0.3mm solid var(--brand-ink);
+      padding-bottom: 1mm;
+      margin-bottom: 1.5mm;
+    }
+
+    /* Declaration paragraph — block-quote style */
+    .declaration-text {
+      background: var(--brand-cream);
+      border-left: 2mm solid var(--brand-gold);
+      padding: 5mm 6mm;
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 10pt;
+      color: var(--brand-ink);
+      line-height: 1.55;
+      margin-bottom: 6mm;
+    }
+    .declaration-text .lang-alt {
+      display: block;
+      font-style: italic;
+      color: var(--brand-mute);
+      margin-top: 2mm;
+      font-size: 9.5pt;
+    }
+
+    /* Signature row */
+    .sig-grid {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14mm;
+    }
+    .sig-grid td {
+      padding: 3mm 3mm 0 3mm;
+      vertical-align: top;
+      width: 50%;
+    }
+    .sig-line {
+      border-top: 0.4mm solid var(--brand-ink);
+      padding-top: 2mm;
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 9pt;
+      color: var(--brand-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      min-height: 22mm;
+    }
+
+    .form-footer {
+      margin-top: 10mm;
+      padding-top: 4mm;
+      border-top: 0.3mm solid var(--brand-hairline);
+      display: flex;
+      justify-content: space-between;
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 8.5pt;
+      color: var(--brand-mute);
+    }
+  </style>
+</head>
+<body>
+  <header class="form-head">
+    <div class="form-head__ref">Annexe 1 — Bijlage 1</div>
+    <h1 class="form-head__title-fr">Déclaration d'acquisition de la nationalité belge</h1>
+    <div class="form-head__title-nl">Verklaring tot verkrijging van de Belgische nationaliteit</div>
+    <div class="form-head__basis">{{ legal_basis|default("Code de la nationalité belge — art. 12bis") }}</div>
+  </header>
+
+  <section class="form-section">
+    <h2 class="form-section__title">1. Autorité de dépôt — Indieningsinstantie</h2>
+    <table class="field-grid">
+      <tr>
+        <td class="field-label">
+          Commune (officier de l'état civil)
+          <span class="lang-alt">Gemeente (ambtenaar burgerlijke stand)</span>
+        </td>
+        <td class="field-value">{{ filing_authority }}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Date du dépôt
+          <span class="lang-alt">Datum van indiening</span>
+        </td>
+        <td class="field-value">{{ filing_date }}</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="form-section">
+    <h2 class="form-section__title">2. Identité du déclarant — Identiteit van de verklarende</h2>
+    <table class="field-grid">
+      <tr>
+        <td class="field-label">
+          Numéro de Registre national
+          <span class="lang-alt">Rijksregisternummer</span>
+        </td>
+        <td class="field-value">{{ national_register_number }}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Nom de famille
+          <span class="lang-alt">Familienaam</span>
+        </td>
+        <td class="field-value">{{ surname }}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Prénoms (tous, dans l'ordre)
+          <span class="lang-alt">Voornamen (alle, in volgorde)</span>
+        </td>
+        <td class="field-value">{{ given_names }}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Date de naissance
+          <span class="lang-alt">Geboortedatum</span>
+        </td>
+        <td class="field-value">{{ birth_date }}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Lieu de naissance (ville, pays)
+          <span class="lang-alt">Geboorteplaats (stad, land)</span>
+        </td>
+        <td class="field-value">{{ birth_place }}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Nationalité actuelle
+          <span class="lang-alt">Huidige nationaliteit</span>
+        </td>
+        <td class="field-value">{{ nationality_of_origin }}</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="form-section address-block">
+    <h2 class="form-section__title">3. Domicile en Belgique — Hoofdverblijfplaats in België</h2>
+    <table class="field-grid">
+      <tr>
+        <td class="field-label">
+          Rue et numéro
+          <span class="lang-alt">Straat en nummer</span>
+        </td>
+        <td class="field-value">{{ address_street }} {{ address_number }}{% if address_box %} / {{ address_box }}{% endif %}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Code postal et commune
+          <span class="lang-alt">Postcode en gemeente</span>
+        </td>
+        <td class="field-value">{{ address_postcode }} {{ address_city }}</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="form-section">
+    <h2 class="form-section__title">4. Base légale et conditions — Wettelijke grondslag en voorwaarden</h2>
+    <table class="field-grid">
+      <tr>
+        <td class="field-label">
+          Disposition légale invoquée
+          <span class="lang-alt">Ingeroepen wettelijke bepaling</span>
+        </td>
+        <td class="field-value">{{ legal_basis }}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Résidence légale (durée et continuité)
+          <span class="lang-alt">Wettelijk verblijf (duur en continuïteit)</span>
+        </td>
+        <td class="field-value">{{ residence_basis_summary }}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Connaissance de l'une des langues nationales
+          <span class="lang-alt">Kennis van één van de landstalen</span>
+        </td>
+        <td class="field-value">{{ language_evidence }}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Intégration sociale
+          <span class="lang-alt">Maatschappelijke integratie</span>
+        </td>
+        <td class="field-value">{{ integration_evidence }}</td>
+      </tr>
+      <tr>
+        <td class="field-label">
+          Participation économique
+          <span class="lang-alt">Economische deelname</span>
+        </td>
+        <td class="field-value">{{ economic_evidence }}</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="form-section">
+    <h2 class="form-section__title">5. Déclaration — Verklaring</h2>
+    <div class="declaration-text">
+      Je, soussigné(e), déclare acquérir la nationalité belge sur la base de la disposition précitée du Code de la nationalité belge. Je certifie que les renseignements ci-dessus sont exacts et complets, et je joins à la présente déclaration les pièces justificatives requises par la loi.
+      <span class="lang-alt">Ik, ondergetekende, verklaar de Belgische nationaliteit te verkrijgen op basis van de hierboven vermelde bepaling van het Wetboek van de Belgische nationaliteit. Ik bevestig dat bovenstaande inlichtingen juist en volledig zijn, en voeg bij deze verklaring de door de wet vereiste bewijsstukken.</span>
+    </div>
+
+    <table class="sig-grid">
+      <tr>
+        <td>
+          <div class="sig-line">
+            Fait à — Gedaan te / Date — Datum
+          </div>
+        </td>
+        <td>
+          <div class="sig-line">
+            Signature du déclarant — Handtekening van de verklarende
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <table class="sig-grid">
+      <tr>
+        <td colspan="2">
+          <div class="sig-line">
+            Reçu par — Ontvangen door (officier de l'état civil — ambtenaar burgerlijke stand)
+          </div>
+        </td>
+      </tr>
+    </table>
+  </section>
+
+  <div class="form-footer">
+    <span>Annexe 1 — Be Civic dossier copy. The authoritative version is the form the officer prints.</span>
+    <span>{{ filing_date }}</span>
+  </div>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!--
+  Be Civic dossier — section divider.
+
+  Single A4 page inserted between each major dossier item. Carries a thin Be Civic
+  flag ribbon, the item index (§N of M), the cert type label, and a class hint
+  (id-card, full-page-cert, multi-page-doc, fee-receipt, filled-form, placeholder).
+
+  Jinja2-style placeholders:
+    {{ index }}              — item number within the dossier (1-based)
+    {{ total }}              — total number of dossier items
+    {{ cert_type }}          — agent-assigned label, e.g. "Birth certificate (apostilled)"
+    {{ cert_class }}         — one of the six presentation classes
+    {{ cert_class_label }}   — human-readable label for the class
+    {{ original_required }}  — bool; if true, render the "bring original" reminder
+    {{ original_reminder }}  — locale-appropriate one-liner
+
+  Page format: A4 portrait, 1.5cm margins. The divider is purely a wayfinding page
+  for the receiving officer; it adds Be Civic branding because we generated it.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Be Civic dossier — divider</title>
+  <style>
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+
+    :root {
+      --brand-black: #0a0a0a;
+      --brand-gold: #fae042;
+      --brand-red: #ed2939;
+      --brand-cream: #f5f4ee;
+      --brand-ink: #1a1a18;
+      --brand-mute: #6a6a65;
+      --brand-hairline: #ebe9e3;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: var(--brand-ink);
+      font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      height: 100%;
+    }
+
+    .bc-divider-page {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Ribbon — Be Civic flag stripe across full width */
+    .bc-ribbon {
+      display: flex;
+      width: 100%;
+      height: 6mm;
+      margin-bottom: 60mm;
+    }
+    .bc-ribbon > div { flex: 1 1 33.333%; height: 100%; }
+    .bc-ribbon > div:nth-child(1) { background: var(--brand-black); }
+    .bc-ribbon > div:nth-child(2) { background: var(--brand-gold); }
+    .bc-ribbon > div:nth-child(3) { background: var(--brand-red); }
+
+    .bc-divider-content {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 0 6mm;
+    }
+
+    .bc-divider-index {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 11pt;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--brand-mute);
+      margin-bottom: 8mm;
+    }
+    .bc-divider-index strong {
+      color: var(--brand-red);
+      font-size: 14pt;
+      letter-spacing: 0.05em;
+    }
+
+    .bc-divider-cert-type {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 28pt;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+      color: var(--brand-ink);
+      margin: 0 0 12mm 0;
+      max-width: 150mm;
+    }
+
+    .bc-divider-class {
+      display: inline-block;
+      padding: 2mm 5mm;
+      background: var(--brand-cream);
+      border-left: 2mm solid var(--brand-gold);
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-size: 10pt;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--brand-ink);
+      margin-bottom: 12mm;
+    }
+    .bc-divider-class .bc-class-tag {
+      color: var(--brand-mute);
+      font-weight: 400;
+      margin-left: 2mm;
+    }
+
+    .bc-divider-reminder {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 11pt;
+      color: var(--brand-red);
+      font-weight: 600;
+      border-top: 0.3mm solid var(--brand-hairline);
+      padding-top: 5mm;
+      max-width: 150mm;
+    }
+
+    .bc-divider-foot {
+      margin-top: auto;
+      padding-top: 8mm;
+      border-top: 0.3mm solid var(--brand-hairline);
+      display: flex;
+      justify-content: space-between;
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 8.5pt;
+      color: var(--brand-mute);
+    }
+  </style>
+</head>
+<body>
+  <div class="bc-divider-page">
+    <div class="bc-ribbon" aria-hidden="true">
+      <div></div><div></div><div></div>
+    </div>
+
+    <div class="bc-divider-content">
+      <div class="bc-divider-index">
+        Section <strong>{{ index }}</strong> of {{ total }}
+      </div>
+
+      <h1 class="bc-divider-cert-type">{{ cert_type }}</h1>
+
+      <div class="bc-divider-class">
+        {{ cert_class_label }}<span class="bc-class-tag">({{ cert_class }})</span>
+      </div>
+
+      {% if original_required %}
+      <div class="bc-divider-reminder">
+        {{ original_reminder|default("Original required — do not file printout.") }}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="bc-divider-foot">
+      <span>Be Civic — becivic.be</span>
+      <span>§{{ index }}</span>
+    </div>
+  </div>
+</body>
+</html>

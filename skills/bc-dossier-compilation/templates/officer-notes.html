@@ -1,0 +1,235 @@
+<!--
+  Be Civic dossier — officer-notes wrapper.
+
+  The agent authors notes in markdown (officer-notes.md in the user's project
+  folder), and the renderer converts MD → HTML and injects the resulting HTML
+  fragment into this template at {{ notes_html }}. Inline CSS only.
+
+  Jinja2-style placeholders:
+    {{ procedure_title }}      — for the wrapper heading
+    {{ applicant_name }}       — context for the receiving officer
+    {{ filing_authority }}     — context for the receiving officer
+    {{ filing_date }}
+    {{ notes_html }}           — MD-rendered HTML body (no <html>/<body>, fragments only)
+    {{ conversation_language }} — locale tag for lang attribute
+    {{ generated_date }}
+-->
+<!DOCTYPE html>
+<html lang="{{ conversation_language|default('en') }}">
+<head>
+  <meta charset="utf-8">
+  <title>Be Civic dossier — Officer notes</title>
+  <style>
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+
+    :root {
+      --brand-black: #0a0a0a;
+      --brand-gold: #fae042;
+      --brand-red: #ed2939;
+      --brand-cream: #f5f4ee;
+      --brand-ink: #1a1a18;
+      --brand-ink-body: #2a2a26;
+      --brand-mute: #6a6a65;
+      --brand-hairline: #ebe9e3;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: var(--brand-ink);
+      font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.55;
+    }
+
+    .bc-page-head {
+      display: flex;
+      align-items: center;
+      gap: 6mm;
+      margin-bottom: 8mm;
+      padding-bottom: 4mm;
+      border-bottom: 0.6mm solid var(--brand-ink);
+    }
+    .bc-mini-stripe {
+      display: flex;
+      width: 18mm;
+      height: 4mm;
+      flex-shrink: 0;
+    }
+    .bc-mini-stripe > div { flex: 1 1 33.333%; height: 100%; }
+    .bc-mini-stripe > div:nth-child(1) { background: var(--brand-black); }
+    .bc-mini-stripe > div:nth-child(2) { background: var(--brand-gold); }
+    .bc-mini-stripe > div:nth-child(3) { background: var(--brand-red); }
+    .bc-section-label {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 9.5pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--brand-mute);
+    }
+
+    h1.notes-title {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 20pt;
+      letter-spacing: -0.01em;
+      color: var(--brand-ink);
+      margin: 0 0 3mm 0;
+    }
+    .notes-subtitle {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 11pt;
+      color: var(--brand-mute);
+      margin: 0 0 8mm 0;
+    }
+
+    .notes-meta {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 9.5pt;
+      color: var(--brand-mute);
+      background: var(--brand-cream);
+      padding: 4mm 6mm;
+      border-left: 2mm solid var(--brand-gold);
+      margin-bottom: 10mm;
+    }
+    .notes-meta dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 35mm 1fr;
+      column-gap: 6mm;
+      row-gap: 1.5mm;
+    }
+    .notes-meta dt {
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 8.5pt;
+    }
+    .notes-meta dd {
+      margin: 0;
+      color: var(--brand-ink);
+      font-weight: 600;
+      font-size: 10pt;
+    }
+
+    /* MD-rendered body styling */
+    .notes-body {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 11pt;
+      color: var(--brand-ink-body);
+      line-height: 1.6;
+    }
+    .notes-body h1, .notes-body h2, .notes-body h3 {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      color: var(--brand-ink);
+      letter-spacing: -0.005em;
+    }
+    .notes-body h1 { font-size: 15pt; margin: 8mm 0 3mm 0; }
+    .notes-body h2 { font-size: 13pt; margin: 7mm 0 2.5mm 0; }
+    .notes-body h3 { font-size: 11.5pt; margin: 6mm 0 2mm 0; }
+    .notes-body p { margin: 0 0 4mm 0; }
+    .notes-body ul, .notes-body ol { margin: 0 0 4mm 6mm; padding: 0; }
+    .notes-body li { margin-bottom: 1.5mm; }
+    .notes-body blockquote {
+      border-left: 2mm solid var(--brand-hairline);
+      padding-left: 5mm;
+      margin: 0 0 4mm 0;
+      color: var(--brand-mute);
+      font-style: italic;
+    }
+    .notes-body code {
+      font-family: "Menlo", "Consolas", monospace;
+      font-size: 9.5pt;
+      background: var(--brand-cream);
+      padding: 0.5mm 1.5mm;
+      border-radius: 0.8mm;
+    }
+    .notes-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 4mm 0;
+      font-size: 10pt;
+    }
+    .notes-body th, .notes-body td {
+      text-align: left;
+      padding: 2mm 3mm;
+      border-bottom: 0.2mm solid var(--brand-hairline);
+    }
+    .notes-body th {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      color: var(--brand-ink);
+      border-bottom-color: var(--brand-ink);
+    }
+
+    .notes-foot {
+      margin-top: 12mm;
+      padding-top: 4mm;
+      border-top: 0.3mm solid var(--brand-hairline);
+      display: flex;
+      justify-content: space-between;
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 8.5pt;
+      color: var(--brand-mute);
+    }
+  </style>
+</head>
+<body>
+  <header class="bc-page-head">
+    <div class="bc-mini-stripe" aria-hidden="true">
+      <div></div><div></div><div></div>
+    </div>
+    <div class="bc-section-label">Be Civic — Officer notes</div>
+  </header>
+
+  <h1 class="notes-title">{{ procedure_title }}</h1>
+  <p class="notes-subtitle">Routing call, applicable statute, and commune-specific notes for the receiving officer.</p>
+
+  <div class="notes-meta">
+    <dl>
+      <dt>Applicant</dt><dd>{{ applicant_name }}</dd>
+      <dt>Filing authority</dt><dd>{{ filing_authority }}</dd>
+      <dt>Filing date</dt><dd>{{ filing_date }}</dd>
+      <dt>Notes prepared</dt><dd>{{ generated_date }}</dd>
+    </dl>
+  </div>
+
+  <div class="notes-body">
+    {{ notes_html|safe }}
+  </div>
+
+  <div class="notes-foot">
+    <span>Be Civic — becivic.be — agent-authored notes; verify with the relevant authority before filing.</span>
+    <span>Officer notes</span>
+  </div>
+</body>
+</html>

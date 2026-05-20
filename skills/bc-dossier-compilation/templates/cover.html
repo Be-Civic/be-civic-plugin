@@ -1,0 +1,264 @@
+<!--
+  Be Civic dossier — cover page.
+
+  Rendered through fpdf2's HTML-to-PDF path (or piped through pypdf as needed).
+  Bundled fonts at vendor/fonts/ (Inter for display, Source Sans Pro for body).
+
+  Jinja2-style placeholders, filled by be_civic_dossier.codegen:
+    {{ applicant_name }}        — user's preferred-form name (profile.json preferred_name)
+    {{ procedure_title }}       — e.g. "Belgian nationality declaration (art. 12bis §1, 2°)"
+    {{ procedure_id }}          — e.g. "nationality-application"
+    {{ filing_date }}           — ISO date string the dossier is intended for
+    {{ filing_authority }}      — e.g. "Commune d'Ixelles — Service Population, Nationalités"
+    {{ skill_version }}         — parent skill version (optional)
+    {{ skill_status }}          — alpha|beta|stable (optional)
+    {{ generated_date }}        — date the PDF was rendered
+
+  Page format: A4 portrait, 1.5cm margins. Layout is print-only; no interactive elements.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Be Civic dossier — cover</title>
+  <style>
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+
+    :root {
+      --brand-black: #0a0a0a;
+      --brand-gold: #fae042;
+      --brand-red: #ed2939;
+      --brand-cream: #f5f4ee;
+      --brand-ink: #1a1a18;
+      --brand-ink-body: #2a2a26;
+      --brand-mute: #6a6a65;
+      --brand-hairline: #ebe9e3;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: var(--brand-ink);
+      font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+    }
+
+    /* Top flag stripe — black/gold/red, full page width */
+    .bc-flag-stripe {
+      display: flex;
+      width: 100%;
+      height: 8mm;
+      margin-bottom: 12mm;
+    }
+    .bc-flag-stripe > div {
+      flex: 1 1 33.333%;
+      height: 100%;
+    }
+    .bc-flag-stripe > div:nth-child(1) { background: var(--brand-black); }
+    .bc-flag-stripe > div:nth-child(2) { background: var(--brand-gold); }
+    .bc-flag-stripe > div:nth-child(3) { background: var(--brand-red); }
+
+    /* Wordmark header row */
+    .bc-wordmark-row {
+      display: flex;
+      align-items: center;
+      gap: 10mm;
+      margin-bottom: 22mm;
+    }
+    .bc-wordmark-logo {
+      width: 16mm;
+      height: 16mm;
+      background: var(--brand-black);
+      border-radius: 3mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .bc-wordmark-text {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 22pt;
+      letter-spacing: -0.01em;
+      color: var(--brand-ink);
+    }
+    .bc-wordmark-tagline {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 9.5pt;
+      color: var(--brand-mute);
+      margin-top: 2mm;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    /* Procedure block — big title, applicant under, metadata grid below */
+    .bc-procedure-title {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 26pt;
+      line-height: 1.15;
+      color: var(--brand-ink);
+      margin: 0 0 4mm 0;
+      letter-spacing: -0.015em;
+    }
+    .bc-procedure-subtitle {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 13pt;
+      color: var(--brand-mute);
+      margin: 0 0 20mm 0;
+    }
+
+    .bc-applicant-block {
+      border-left: 3mm solid var(--brand-gold);
+      padding: 4mm 0 4mm 6mm;
+      margin-bottom: 18mm;
+    }
+    .bc-applicant-label {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--brand-mute);
+      margin-bottom: 2mm;
+    }
+    .bc-applicant-name {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 18pt;
+      color: var(--brand-ink);
+    }
+
+    /* Metadata grid */
+    .bc-meta-grid {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8mm;
+    }
+    .bc-meta-grid td {
+      padding: 3mm 4mm 3mm 0;
+      vertical-align: top;
+      border-top: 0.3mm solid var(--brand-hairline);
+    }
+    .bc-meta-grid tr:first-child td {
+      border-top: 0.6mm solid var(--brand-ink);
+    }
+    .bc-meta-grid tr:last-child td {
+      border-bottom: 0.6mm solid var(--brand-ink);
+    }
+    .bc-meta-label {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--brand-mute);
+      width: 38mm;
+      white-space: nowrap;
+    }
+    .bc-meta-value {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 11pt;
+      color: var(--brand-ink);
+      font-weight: 600;
+    }
+
+    /* Footer band */
+    .bc-cover-footer {
+      position: fixed;
+      bottom: 1.5cm;
+      left: 1.5cm;
+      right: 1.5cm;
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 8.5pt;
+      color: var(--brand-mute);
+      border-top: 0.3mm solid var(--brand-hairline);
+      padding-top: 3mm;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <div class="bc-flag-stripe" aria-hidden="true">
+    <div></div><div></div><div></div>
+  </div>
+
+  <div class="bc-wordmark-row">
+    <div class="bc-wordmark-logo" aria-hidden="true">
+      <svg width="9mm" height="9mm" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 9 h8 a4 4 0 0 1 0 8 h-8 z" fill="none" stroke="#fae042" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M10 15 h8 a4 4 0 0 1 0 8 h-8 z" fill="none" stroke="#ed2939" stroke-width="3" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="bc-wordmark-text">Be Civic</div>
+      <div class="bc-wordmark-tagline">Application dossier</div>
+    </div>
+  </div>
+
+  <h1 class="bc-procedure-title">{{ procedure_title }}</h1>
+  <p class="bc-procedure-subtitle">Reference dossier — to be filed with originals on hand</p>
+
+  <div class="bc-applicant-block">
+    <div class="bc-applicant-label">Prepared for</div>
+    <div class="bc-applicant-name">{{ applicant_name }}</div>
+  </div>
+
+  <table class="bc-meta-grid">
+    <tr>
+      <td class="bc-meta-label">Filing date</td>
+      <td class="bc-meta-value">{{ filing_date }}</td>
+    </tr>
+    <tr>
+      <td class="bc-meta-label">Filing authority</td>
+      <td class="bc-meta-value">{{ filing_authority }}</td>
+    </tr>
+    <tr>
+      <td class="bc-meta-label">Procedure</td>
+      <td class="bc-meta-value">{{ procedure_id }}</td>
+    </tr>
+    <tr>
+      <td class="bc-meta-label">Skill version</td>
+      <td class="bc-meta-value">{{ skill_version|default("—") }} ({{ skill_status|default("stable") }})</td>
+    </tr>
+    <tr>
+      <td class="bc-meta-label">Generated</td>
+      <td class="bc-meta-value">{{ generated_date }}</td>
+    </tr>
+  </table>
+
+  <div class="bc-cover-footer">
+    <span>Be Civic — becivic.be</span>
+    <span>Verify with the relevant authority before filing.</span>
+  </div>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!--
+  Be Civic dossier — checklist table.
+
+  One row per dossier item. Columns: § / Document name / Form requirement / Source.
+  The renderer passes a `rows` list of dicts:
+    [{ index: 1, name: "...", form: "Apostilled", source: "...", is_placeholder: false }, ...]
+
+  "Bring originals" callout above the table lists items where form != "Printout acceptable".
+  Renderer passes a separate `originals` list of the same item names.
+
+  Jinja2-style placeholders:
+    {{ procedure_title }}
+    {% for row in rows %}...{% endfor %}
+    {% for item in originals %}...{% endfor %}
+    {{ language_label }}    — short label for the Bring-originals heading (en/fr/nl/de/ar/uk)
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Be Civic dossier — checklist</title>
+  <style>
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Inter";
+      src: url("../vendor/fonts/Inter-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Source Sans Pro";
+      src: url("../vendor/fonts/SourceSansPro-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+
+    :root {
+      --brand-black: #0a0a0a;
+      --brand-gold: #fae042;
+      --brand-red: #ed2939;
+      --brand-cream: #f5f4ee;
+      --brand-ink: #1a1a18;
+      --brand-ink-body: #2a2a26;
+      --brand-mute: #6a6a65;
+      --brand-hairline: #ebe9e3;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: var(--brand-ink);
+      font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+    }
+
+    /* Page header — thin flag stripe + section label */
+    .bc-page-head {
+      display: flex;
+      align-items: center;
+      gap: 6mm;
+      margin-bottom: 10mm;
+      padding-bottom: 4mm;
+      border-bottom: 0.6mm solid var(--brand-ink);
+    }
+    .bc-mini-stripe {
+      display: flex;
+      width: 18mm;
+      height: 4mm;
+      flex-shrink: 0;
+    }
+    .bc-mini-stripe > div { flex: 1 1 33.333%; height: 100%; }
+    .bc-mini-stripe > div:nth-child(1) { background: var(--brand-black); }
+    .bc-mini-stripe > div:nth-child(2) { background: var(--brand-gold); }
+    .bc-mini-stripe > div:nth-child(3) { background: var(--brand-red); }
+    .bc-section-label {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 9.5pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--brand-mute);
+    }
+
+    h1.bc-section-title {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 20pt;
+      letter-spacing: -0.01em;
+      color: var(--brand-ink);
+      margin: 0 0 3mm 0;
+    }
+    .bc-section-sub {
+      font-family: "Source Sans Pro", sans-serif;
+      font-size: 11pt;
+      color: var(--brand-mute);
+      margin: 0 0 10mm 0;
+    }
+
+    /* Bring originals callout */
+    .bc-callout {
+      background: #fff8d8;
+      border-left: 3mm solid var(--brand-red);
+      padding: 5mm 6mm;
+      margin-bottom: 10mm;
+    }
+    .bc-callout-title {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 11pt;
+      color: var(--brand-ink);
+      margin: 0 0 3mm 0;
+      letter-spacing: -0.005em;
+    }
+    .bc-callout ul {
+      margin: 0;
+      padding-left: 6mm;
+    }
+    .bc-callout li {
+      font-size: 10.5pt;
+      color: var(--brand-ink-body);
+      margin-bottom: 1.5mm;
+    }
+
+    /* Checklist table */
+    table.bc-checklist {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    .bc-checklist th {
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      font-size: 9pt;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--brand-mute);
+      text-align: left;
+      padding: 3mm 3mm;
+      border-bottom: 0.6mm solid var(--brand-ink);
+    }
+    .bc-checklist td {
+      font-size: 10pt;
+      color: var(--brand-ink-body);
+      padding: 4mm 3mm;
+      vertical-align: top;
+      border-bottom: 0.2mm solid var(--brand-hairline);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    .bc-checklist td.col-index {
+      width: 10mm;
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-weight: 700;
+      color: var(--brand-mute);
+    }
+    .bc-checklist td.col-name {
+      width: auto;
+      font-weight: 600;
+      color: var(--brand-ink);
+    }
+    .bc-checklist td.col-form {
+      width: 36mm;
+    }
+    .bc-checklist td.col-source {
+      width: 50mm;
+      color: var(--brand-mute);
+      font-size: 9.5pt;
+    }
+
+    /* Form-requirement pill */
+    .bc-form-pill {
+      display: inline-block;
+      padding: 1mm 2.5mm;
+      border-radius: 1.5mm;
+      font-family: "Inter", "Source Sans Pro", sans-serif;
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .bc-form-original     { background: #fde2e4; color: #8a1b25; }
+    .bc-form-certified    { background: #fde9c8; color: #8a4d10; }
+    .bc-form-apostilled   { background: #fbd9d9; color: #8a1b25; }
+    .bc-form-translation  { background: #e5d6f4; color: #4a236a; }
+    .bc-form-printout     { background: #e7efe5; color: #2c5a3a; }
+    .bc-form-other        { background: var(--brand-cream); color: var(--brand-ink); }
+
+    .bc-row-placeholder td.col-name {
+      color: var(--brand-mute);
+      font-style: italic;
+    }
+    .bc-row-placeholder td.col-name::before {
+      content: "TO COLLECT — ";
+      color: var(--brand-red);
+      font-weight: 700;
+      font-style: normal;
+    }
+  </style>
+</head>
+<body>
+  <header class="bc-page-head">
+    <div class="bc-mini-stripe" aria-hidden="true">
+      <div></div><div></div><div></div>
+    </div>
+    <div class="bc-section-label">Be Civic — Checklist</div>
+  </header>
+
+  <h1 class="bc-section-title">{{ procedure_title }}</h1>
+  <p class="bc-section-sub">Every document this dossier contains, in filing order.</p>
+
+  {% if originals and originals|length > 0 %}
+  <div class="bc-callout">
+    <div class="bc-callout-title">{{ originals_heading|default("Bring these in original — the printout is not sufficient") }}</div>
+    <ul>
+      {% for item in originals %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <table class="bc-checklist">
+    <thead>
+      <tr>
+        <th style="width: 10mm;">§</th>
+        <th>Document</th>
+        <th style="width: 36mm;">Form</th>
+        <th style="width: 50mm;">Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr class="{% if row.is_placeholder %}bc-row-placeholder{% endif %}">
+        <td class="col-index">{{ row.index }}</td>
+        <td class="col-name">{{ row.name }}</td>
+        <td class="col-form">
+          <span class="bc-form-pill bc-form-{{ row.form_class|default('other') }}">{{ row.form }}</span>
+        </td>
+        <td class="col-source">{{ row.source }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
