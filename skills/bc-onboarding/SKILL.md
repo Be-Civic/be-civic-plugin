@@ -77,20 +77,27 @@ Fire the MCP call (step 4) immediately after sending the line — the call runs 
 
 ---
 
-## Step 4. MCP `read_skill --with_form` call (D30, D33, D34, D42, D43)
+## Step 4. MCP fetch — canonical + form (D30, D33, D34, D42)
 
-Pick one of two MCP tools based on whether the gate skill produced a candidate procedure.
+**Two separate MCP calls**, each within tool-output budget on its own. The 2026-05-20 form-rendering refactor split the W24 single-round-trip (D43) shape into two surfaces because the combined payload (~135K wire) blew the host agent's tool-output budget. Now: one call for the canonical, one for the form HTML.
 
 ### 4.1. With a candidate procedure (most cases)
 
-Call `mcp__becivic__read_skill` with `with_form: true`. Single round-trip — returns canonical body + form HTML together (D43, §1 of phase-2-contracts).
+**(a) Fetch the canonical** via `mcp__becivic__read_skill`:
+
+```json
+{ "skill_id": "<gate-skill's match>" }
+```
+
+Cache the `body` field (markdown canonical) in your context — Section 2 validation (step 6.1) and post-submit sentinel-payload validation (step 7.2) both read the procedure's `inputs:` block from it. Do not re-fetch within this session.
+
+**(b) Fetch the form HTML** via `mcp__becivic__get_onboarding_form` with the same `skill_id` so the server fetches the canonical, extracts its `inputs:` block, and renders Section 1 + Section 2 + consent.
 
 Request shape:
 
 ```json
 {
   "skill_id": "<gate-skill's match, e.g. 'nationality-application' or 'apostille-foreign-document-hague'>",
-  "with_form": true,
   "app": "cowork",
   "locale": "<detected, one of: en | fr | nl | de | ar | uk>",
   "mode": "first-contact",
@@ -105,12 +112,11 @@ Request shape:
 }
 ```
 
-Response shape (per phase-2-contracts §1):
+Response shape:
 
 ```json
 {
   "skill_id": "nationality-application",
-  "canonical": "<markdown body — cache in your context; bc-path-traversal will use it>",
   "form_html": "<branded HTML — pass directly to show_widget>",
   "locale_actual": "en",
   "locale_fallback_reason": null,
@@ -121,12 +127,12 @@ Response shape (per phase-2-contracts §1):
 - **`mode: first-contact` is the only value this skill ever sends.** Returning and multi-active modes are owned by the harness, not by this skill (D34).
 - **`pre_selected` derivation (D33):** scan the opener (and any preceding chat context) for the fields above. Extract conservatively — categorical fields only, never names / NN/NISS / addresses / document numbers. If unsure about a value, omit the key (the form will leave it blank). Procedure-specific fields go in `pre_selected` too if the opener volunteered them — e.g. `years_legal_residence_bucket: "5_to_10"` when the user said "I've been here 6 years."
 - **`locale`** = the language the user opened in. Detect from the opener text. Mapping: EN → `en`, FR → `fr`, NL → `nl`, DE → `de`, Arabic → `ar`, Ukrainian → `uk`. Anything else → `en` (server returns `locale_fallback_reason` so you can surface the fallback note to the user — see step 6.4).
-- **Cache the `canonical` field in your context** — `bc-path-traversal` will need it when this skill exits. Do not re-fetch.
 - **Cache the `version` field** — it lands in the form's hidden inputs and must match on submit (§5 of phase-2-contracts).
+- **Parallelise the two calls** if your tool runtime supports concurrent MCP invocations — they're independent reads. If not, do them sequentially in (a) then (b) order; (a) returns markdown the agent must hold, (b) returns HTML the agent passes straight to show_widget.
 
 ### 4.2. Without a candidate procedure (low-confidence intent, "let's figure it out")
 
-When the gate skill's intent classification was procedure-intent-vague AND no skill matched (zero hits on `find_skill`), call `mcp__becivic__get_onboarding_form` instead:
+When the gate skill's intent classification was procedure-intent-vague AND no skill matched (zero hits on `find_skill`), call `get_onboarding_form` **without** `skill_id`:
 
 ```json
 {
@@ -140,7 +146,7 @@ Returns Section-1-only HTML (`form_html`). After submit, the agent runs procedur
 
 ### 4.3. Failure handling
 
-If either MCP call fails (timeout, connection error, HTTP 5xx, malformed response), drop straight to the fallback path in §11. Do not retry more than once; one retry max, then fallback.
+If the MCP call fails (timeout, connection error, HTTP 5xx, malformed response), drop straight to the fallback path in §11. Do not retry more than once; one retry max, then fallback.
 
 ---
 
@@ -418,12 +424,21 @@ Exit this skill cleanly. Do not loop. Subsequent procedure work (path traversal,
 
 ## Fallback path — MCP unreachable (D44, §11 of phase-2-contracts)
 
-Selection rule, in order:
+The Step 4 two-call pattern is the primary path. Each call has its own fallback chain. On any failure in any leg, try the next rung; if all rungs fail for the form fetch, drop to local-locale-HTML + chat-driven Section-2 capture.
 
-1. **Primary**: `mcp__becivic__read_skill --with_form` (step 4).
-2. **HTTP parity** (per phase-2-contracts §3): if MCP errors, `GET https://becivic.be/api/skills/<skill_id>?with_form=1&app=cowork&locale=<locale>&mode=first-contact` via WebFetch. Same response shape as MCP. Use `POST` if `pre_selected` or `profile_snapshot` need to ride along.
-3. **WebFetch the canonical**: `https://becivic.be/skills/<skill_id>/canonical.md`. No form HTML; agent runs the form-equivalent inline.
-4. **Local locale fallback HTML**: read `${CLAUDE_PLUGIN_ROOT}/skills/bc-onboarding/references/onboarding.<locale>.html` directly from disk. Pass to `mcp__visualize__show_widget`. **Section 1 only — no Section 2** (D45). After submit, run procedure-routing via AskUserQuestion (≤4 simple categorical prompts) or a Tier-2 elicitation form.
+**Canonical fetch fallback chain** (Step 4 (a)):
+
+1. **MCP**: `mcp__becivic__read_skill { skill_id }`.
+2. **HTTP parity**: `GET https://becivic.be/api/skills/<skill_id>` via WebFetch. Returns the canonical markdown directly.
+3. **Direct canonical**: `WebFetch https://becivic.be/skills/<skill_id>/canonical.md`. Last-resort if the api Worker is down too.
+
+If all three fail: continue without the cached canonical. Section 2 validation degrades to a server-side-only check (the form composer already validated the inputs); post-submit sentinel-payload validation reads `data-rowlist="*"` attributes off the rendered form_html to identify which fields support sentinels.
+
+**Form fetch fallback chain** (Step 4 (b)):
+
+1. **MCP**: `mcp__becivic__get_onboarding_form { skill_id, ... }`.
+2. **HTTP parity**: `GET https://becivic.be/api/onboarding-form?skill_id=<id>&app=cowork&locale=<locale>&mode=first-contact` via WebFetch. Same response shape as MCP. Use `POST` to ride `pre_selected` and `profile_snapshot` if they're too large for query strings.
+3. **Local locale fallback HTML**: read `${CLAUDE_PLUGIN_ROOT}/skills/bc-onboarding/references/onboarding.<locale>.html` directly from disk. Pass to `mcp__visualize__show_widget`. **Section 1 only — no Section 2** (D45). After submit, run procedure-routing via AskUserQuestion (≤4 simple categorical prompts) or a Tier-2 elicitation form.
 
 **Surface the fallback notice to the user** (G24, Sc 20). In conversation language:
 
@@ -447,7 +462,7 @@ Do not re-run onboarding. Do not overwrite profile.json. Do not re-write CLAUDE.
 
 ## Multi-active mode (short-circuit)
 
-`bc-onboarding` **does not handle multi-active pivots**. When a returning user with existing active projects opens a new procedure mid-session, the harness CLAUDE.md handles it (per harness §9, §13). The harness calls `read_skill --with_form` with `mode: multi-active` and `profile_snapshot: <existing profile.json>`, gets back Section-2-only HTML, renders it, creates a new procedure subfolder under the existing BeCivic root. No Section 1, no consent, no new CLAUDE.md.
+`bc-onboarding` **does not handle multi-active pivots**. When a returning user with existing active projects opens a new procedure mid-session, the harness CLAUDE.md handles it (per harness §9, §13). The harness calls `get_onboarding_form` with the new `skill_id`, `mode: multi-active`, and `profile_snapshot: <existing profile.json>`, gets back Section-2-only HTML, renders it, creates a new procedure subfolder under the existing BeCivic root. No Section 1, no consent, no new CLAUDE.md. (Canonical for the new procedure is fetched via `read_skill` in parallel, same two-call pattern as first-contact.)
 
 If you are invoked when active projects exist (again, shouldn't happen — gate skill checks first), refuse and route back to the harness:
 
