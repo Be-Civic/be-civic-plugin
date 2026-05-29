@@ -29,8 +29,8 @@ def add_cover_page(
     filing_authority: str,
     filing_date: str,
     generated_date: str = "",
-    skill_version: str = "",
-    skill_status: str = "",
+    process_version: str = "",
+    process_status: str = "",
 ) -> None:
     """Append a cover page to ``pdf`` (an ``fpdf.FPDF`` instance).
 
@@ -77,8 +77,8 @@ def add_cover_page(
             ("Filing authority", filing_authority),
             ("Filing date", filing_date),
         ] + (
-            [("Skill version", f"{skill_version} ({skill_status})")]
-            if skill_version else []
+            [("Process version", f"{process_version} ({process_status})")]
+            if process_version else []
         ),
     )
 

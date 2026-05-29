@@ -10,8 +10,8 @@
     {{ procedure_id }}          — e.g. "nationality-application"
     {{ filing_date }}           — ISO date string the dossier is intended for
     {{ filing_authority }}      — e.g. "Commune d'Ixelles — Service Population, Nationalités"
-    {{ skill_version }}         — parent skill version (optional)
-    {{ skill_status }}          — alpha|beta|stable (optional)
+    {{ process_version }}         — parent process version (optional)
+    {{ process_status }}          — alpha|beta|stable (optional)
     {{ generated_date }}        — date the PDF was rendered
 
   Page format: A4 portrait, 1.5cm margins. Layout is print-only; no interactive elements.
@@ -248,7 +248,7 @@
     </tr>
     <tr>
       <td class="bc-meta-label">Skill version</td>
-      <td class="bc-meta-value">{{ skill_version|default("—") }} ({{ skill_status|default("stable") }})</td>
+      <td class="bc-meta-value">{{ process_version|default("—") }} ({{ process_status|default("stable") }})</td>
     </tr>
     <tr>
       <td class="bc-meta-label">Generated</td>

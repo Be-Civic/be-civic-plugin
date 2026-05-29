@@ -97,8 +97,8 @@ class Dossier:
         self.officer_notes_md: str = ""
 
         # Optional metadata captured for tests / debugging.
-        self.skill_version: str = ""
-        self.skill_status: str = ""
+        self.process_version: str = ""
+        self.process_status: str = ""
 
     # ----------------------------------------------------------------------
     # Public API
@@ -185,8 +185,8 @@ class Dossier:
             filing_authority=self.filing_authority,
             filing_date=self.filing_date,
             generated_date=self.filing_date,
-            skill_version=self.skill_version,
-            skill_status=self.skill_status,
+            process_version=self.process_version,
+            process_status=self.process_status,
         )
         metadata.apply_deterministic_metadata(pdf)
         return bytes(pdf.output())
