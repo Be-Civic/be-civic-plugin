@@ -5,7 +5,7 @@ description: Use when the customer presents a document — paste, upload, attach
 
 # Be Civic — Document Handler
 
-This skill applies CLAUDE.md §7 at the moment of document presentation. §7 sets the always-on rules (take only what the procedure needs, archive originals, never write document bodies to routing stores, cross-procedure index); this skill runs the per-drop dialogue and abort handling.
+This skill applies the data minimisation rules at the moment of document presentation: take only what the procedure needs, archive originals, never write document bodies to routing stores, maintain the cross-procedure index. This skill runs the per-drop dialogue and abort handling.
 
 ## When this fires
 
@@ -16,7 +16,7 @@ This skill applies CLAUDE.md §7 at the moment of document presentation. §7 set
 
 Handle inline. Don't context-switch back to the procedure skill for every drop — extract, archive, confirm, return.
 
-## Resource reads — V2 REST
+## Resource reads
 
 When the procedure body references a resource by UID to provide document metadata, fetch it via:
 
@@ -32,7 +32,7 @@ Response: `{ "status": 200, "data": { ... } }`. Branch on HTTP status code first
 1. **Read the document.** Identify the routing fields the active procedure actually needs from its frontmatter `inputs:` plus any fields its body references by name.
 2. **Take only those.** Routing fields are categorical or bucketed: a type letter (residence card series), a month-bucket date (`YYYY-MM`), an ISO country code, a NIS5 commune code, boolean inventory flags. Never identity-shaped values.
 3. **Never retain:** document numbers, full names, exact dates of birth, exact addresses, photographs, biometric data, signatures, full text blocks beyond the categorical routing fields.
-4. **Original document content never gets written to any file under `profile.json` or `MEMORY.md`.** It exists only in the active conversation context and is gone when the conversation ends. The original goes to the visible surface per CLAUDE.md §7 — that's the customer's archive, recoverable next session.
+4. **Original document content never gets written to any file under `profile.json` or `MEMORY.md`.** It exists only in the active conversation context and is gone when the conversation ends. The original goes to the visible surface (`${SUBSTRATE_DATA}`) — that's the customer's archive, recoverable next session.
 
 ## Archive paths — visible surface
 
@@ -75,7 +75,7 @@ Do NOT silently retry. Do NOT silently write a degraded version. The scrub is lo
 
 ## Cross-procedure index
 
-When the archived document is reusable across procedures (birth certificate, residence certificate, marriage certificate, apostille, EU 2016/1191 multilingual form), record the path in `MEMORY.md` under a `documents:` section per CLAUDE.md §7. Future procedures find it without re-asking the customer to fetch it again.
+When the archived document is reusable across procedures (birth certificate, residence certificate, marriage certificate, apostille, EU 2016/1191 multilingual form), record the path in `MEMORY.md` under a `documents:` section. Future procedures find it without re-asking the customer to fetch it again.
 
 The `documents:` block is path-only — no field values, no transcriptions. Example:
 

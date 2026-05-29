@@ -22,9 +22,9 @@ Be Civic is a tool for the user's agent, not an agent itself. The user already h
 
 This skill owns **first-contact only**. It runs once per Be Civic substrate: show the user product taste, capture and verify their email, mint their pseudonymous identity, write the two-surface state shape, hand off to `bc-path-traversal`. Returning sessions (marker already exists) and mid-session pivots to a second procedure are handled by the harness `CLAUDE.md`, not here.
 
-The crux is **taste before gate** (51-cowork §11A.1, 50-harness §6.1). The first thing the user sees is what Be Civic does, never an email field. Onboarding that opens with an email ask is non-compliant.
+The crux is **taste before gate**. The first thing the user sees is what Be Civic does, never an email field. Onboarding that opens with an email ask is non-compliant.
 
-### Two substrate surfaces (contract §1)
+### Two substrate surfaces
 
 Everything this skill writes lands on one of two surfaces. Read their paths from the preamble's session-state lines — never hardcode.
 
@@ -34,11 +34,11 @@ Everything this skill writes lands on one of two surfaces. Read their paths from
 | Visible, user-picked | `${SUBSTRATE_DATA}` (= `<picked-parent>/BeCivic/`) | `CLAUDE.md`, `MEMORY.md`, `.be-civic/marker` (version stamp), `documents/`, `<procedure-slug>/` |
 | Read-only install | `${SUBSTRATE_ROOT}` (= `${CLAUDE_PLUGIN_ROOT}`) | the shipped plugin (templates, schemas, data, scripts) |
 
-**Identity rule (contract §1).** The harness key in `.env` is NEVER committed, echoed to chat, or logged. It is excluded from git structurally — it is simply absent from the hidden-surface `.gitignore` allowlist. Do not print it back to the user, ever.
+**Identity rule.** The harness key in `.env` is NEVER committed, echoed to chat, or logged. It is excluded from git structurally — it is simply absent from the hidden-surface `.gitignore` allowlist. Do not print it back to the user, ever.
 
 ---
 
-## Step 1. Taste first — product context before any email ask (51-cowork §11A.1)
+## Step 1. Taste first — product context before any email ask
 
 The gate (`be-civic`) invoked you on confirmed procedure intent + absent marker. It passed you the classified intent shape (`procedure_intent_clear` or `procedure_intent_vague`), a candidate Process id if it matched one, the conversation language, and the opener text.
 
@@ -67,16 +67,16 @@ If at any point the user declines to verify by email — "I don't want to give m
 
 ---
 
-## Step 2. Email capture — single-field widget (51-cowork §11A.2)
+## Step 2. Email capture — single-field widget
 
-When the user signals they want to proceed (after the taste beat, or after a "yes, set me up"), present an **email-capture widget** via `mcp__visualize__show_widget`. This replaces the old server-rendered onboarding form — there is no `get_onboarding_form` fetch anymore; you build the widget client-side.
+When the user signals they want to proceed (after the taste beat, or after a "yes, set me up"), present an **email-capture widget** via `mcp__visualize__show_widget`. You build the widget client-side.
 
 The widget is deliberately minimal:
 
 - **One field: email.** A single text input, type `email`, labelled in the conversation language.
 - **A submit button** (`Continue →`, translated).
 - **A privacy link below the field** — `[Privacy](https://becivic.be/privacy)` (markdown-link style in any chat copy; an `<a href>` inside the widget).
-- **No separate consent checkbox.** Form-fill IS consent for using the email to verify (02-trust-and-privacy §8.1). Do not add an opt-in box; submitting the email is the consent act.
+- **No separate consent checkbox.** Form-fill IS consent for using the email to verify. Do not add an opt-in box; submitting the email is the consent act.
 
 Build it as a self-contained branded `<div>` following the styling rules in the header comment of `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding.<locale>.html` (bare `<input>` / `<button>` need inline `style="all: unset; …"` or Cowork's CSS washes them out; brand palette as above; `dir="rtl"` for Arabic). Keep the hero light: Be Civic wordmark, one-line tagline, the email field, the privacy link.
 
@@ -86,7 +86,7 @@ If the user **closes the widget without submitting**, do not re-pop it. Treat it
 
 ---
 
-## Step 3. Start verification — `POST /api/auth/start-verification` (contract §2)
+## Step 3. Start verification — `POST /api/auth/start-verification`
 
 With a locally-valid email, call the verification-start endpoint via the **`WebFetch`** tool. **No auth header** — the user has no key yet.
 
@@ -97,7 +97,7 @@ Content-Type: application/json
 { "email": "<validated address>", "locale": "<conversation language: en|fr|nl|de|ar|uk>" }
 ```
 
-**Response is UNWRAPPED** (auth endpoints carry the payload directly, not a `{status,data}` envelope — contract §2). On HTTP `202`:
+**Response is UNWRAPPED** (auth endpoints carry the payload directly, not a `{status,data}` envelope). On HTTP `202`:
 
 ```json
 { "verification_id": "<id>", "expires_at": "<RFC3339>" }
@@ -115,11 +115,11 @@ Tell the user, in conversation language: *"Check your email — I've sent a magi
 
 ---
 
-## Step 4. Magic-link paste-back (contract §2)
+## Step 4. Magic-link paste-back
 
 The server emails a magic link of the shape `https://becivic.be/api/auth/verify?token=<token>`.
 
-**`verify` is POST-only.** There is no GET handler, no confirm page, and no status-poll endpoint deployed in W33. Completion is therefore **paste-back**, not a click-through: the user opens the email and pastes the link (or the bare token) back into chat, and you extract the token and POST it yourself.
+**`verify` is POST-only.** There is no GET handler, no confirm page, and no status-poll endpoint. Completion is therefore **paste-back**, not a click-through: the user opens the email and pastes the link (or the bare token) back into chat, and you extract the token and POST it yourself.
 
 - Instruct the user (conversation language): *"Open the email from Be Civic and paste the whole link here — or just the long token from it. I'll take it from there."*
 - When the user pastes, **extract the `token`**: if they pasted the full URL, parse the `token` query parameter; if they pasted a bare string, use it as the token.
@@ -129,7 +129,7 @@ Do not poll. Do not wait for a click signal. The paste is the trigger.
 
 ---
 
-## Step 5. Verify the token — `POST /api/auth/verify` (contract §2)
+## Step 5. Verify the token — `POST /api/auth/verify`
 
 Redeem the token via the **`WebFetch`** tool. **No auth header** — the key is what this call mints.
 
@@ -156,7 +156,7 @@ Branch on HTTP status first:
 
 ---
 
-## Step 6. State-shape activation (contract §6, 50-harness §6.1 step 6, 51-cowork §11A.5)
+## Step 6. State-shape activation
 
 A confirmed verification with absent marker triggers the full two-surface write. The folder picker fires here if it has not already.
 
@@ -197,7 +197,7 @@ In this order:
 
 ### 6.3. Write the hidden→visible pointer marker
 
-Write **`${SUBSTRATE_STATE}/.be-civic/marker`** containing the absolute path to the visible surface (`${SUBSTRATE_DATA}`), one line. This is the pointer the auto-commit monitor and `preamble.py` read to locate the user-picked folder (contract §1 / §5; `_resolve_substrate_data` in `preamble.py` reads exactly this file). Without it, the monitor watches the hidden surface only.
+Write **`${SUBSTRATE_STATE}/.be-civic/marker`** containing the absolute path to the visible surface (`${SUBSTRATE_DATA}`), one line. This is the pointer the auto-commit monitor and `preamble.py` read to locate the user-picked folder (`_resolve_substrate_data` in `preamble.py` reads exactly this file). Without it, the monitor watches the hidden surface only.
 
 ### 6.4. Write the visible surface (`${SUBSTRATE_DATA}`)
 
@@ -209,7 +209,7 @@ In this order:
 4. **`${SUBSTRATE_DATA}/CLAUDE.md`** — the harness ambient-instruction template, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/harness-CLAUDE.md`. Cowork's ancestor-walk auto-loads this when the user opens any procedure subfolder. **Do NOT write a CLAUDE.md inside per-procedure subfolders.**
 5. **`${SUBSTRATE_DATA}/MEMORY.md`** — the empty narrative store, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/MEMORY.md`.
 
-**Do not pre-create empty subdirectories.** No `documents/`, no `sessions/`, no per-procedure folder upfront — they are created lazily by the relevant skills when there is real content (40-substrate §4.3).
+**Do not pre-create empty subdirectories.** No `documents/`, no `sessions/`, no per-procedure folder upfront — they are created lazily by the relevant skills when there is real content.
 
 ### 6.5. Acknowledge with the path (JIT trust clause)
 
@@ -221,7 +221,7 @@ This is the anonymity trust clause; it fires naturally at folder-mount time. Kee
 
 ---
 
-## Step 7. Hand off to `bc-path-traversal` (subsumes the old W25 Step-8 fix)
+## Step 7. Hand off to `bc-path-traversal`
 
 Once the two-surface state is written and the identity is live, hand control to `bc-path-traversal`. This is the clean, explicit handoff — onboarding does not walk the procedure itself.
 
@@ -238,7 +238,7 @@ The folder is already mounted in this conversation and the harness `CLAUDE.md` i
 
 ## Returning-user mode (short-circuit)
 
-`bc-onboarding` **does not handle returning users.** The gate (`be-civic`) detects the marker and routes to `bc-path-traversal` (continuing) or surfaces the inline framing (returning / multi_active) itself (50-harness §5.1, §5.4).
+`bc-onboarding` **does not handle returning users.** The gate (`be-civic`) detects the marker and routes to `bc-path-traversal` (continuing) or surfaces the inline framing (returning / multi_active) itself.
 
 If you are somehow invoked when a `.be-civic/marker` already exists (shouldn't happen — the gate checks first), refuse and route back:
 
@@ -250,10 +250,10 @@ Do not re-run onboarding. Do not overwrite `profile.json`. Do not re-mint identi
 
 ## Imported-state branch (returning user, new machine)
 
-A returning user may arrive with a `bc-import` bundle from another machine (50-harness §5.5, 40-substrate §9.2). When the gate flags an import bundle in scope, it routes here to the imported-state branch instead of first-contact:
+A returning user may arrive with a `bc-import` bundle from another machine. When the gate flags an import bundle in scope, it routes here to the imported-state branch instead of first-contact:
 
-1. **Validate the bundle** per 40-substrate §9.2 — confirm the visible/hidden split is preserved and the bundle's `state_version` is not newer than this plugin (if it is, tell the user to upgrade the receiving plugin first; do not activate).
-2. **Activate both surfaces** — write the hidden side (including its `.env` Identity slot) into the current `${SUBSTRATE_STATE}`, and the visible side into a newly-picked parent as `${SUBSTRATE_DATA}`. Write/update both markers (hidden pointer + visible version-stamp) to cross-reference them.
+1. **Validate the bundle** — confirm the visible/hidden split is preserved and the bundle's `state_version` is not newer than this plugin (if it is, tell the user to upgrade the receiving plugin first; do not activate).
+2. **Activate both surfaces** — write the hidden side (including its `.env` key slot) into the current `${SUBSTRATE_STATE}`, and the visible side into a newly-picked parent as `${SUBSTRATE_DATA}`. Write/update both markers (hidden pointer + visible version-stamp) to cross-reference them.
 3. **Frame as a returning user**, not a new one — no taste beat, no email gate, no re-mint. Hand off to `bc-path-traversal` (or the inline framing) as if the user were returning natively.
 
 ---
@@ -272,7 +272,7 @@ Frame the limit as a choice the user can reverse any time, never as a failure.
 
 ## Meta-question handling
 
-`bc-onboarding` **does not own meta questions.** The `be-civic` gate answers them in chat from `${SUBSTRATE_ROOT}/data/privacy-snippet.md` **verbatim** (50-harness §5.2).
+`bc-onboarding` **does not own meta questions.** The `be-civic` gate answers them in chat from `${SUBSTRATE_ROOT}/data/privacy-snippet.md` **verbatim**.
 
 If the user asks a meta question mid-onboarding (between the taste beat and the email submit), pause the flow, quote `privacy-snippet.md` verbatim (load it from the file — **never paraphrase**), then offer:
 

@@ -82,7 +82,7 @@ System state (observation buffers, pending submissions, session traces) lives un
 
 ## 6. Wire transport — WebFetch against the REST API
 
-Base URL `${BASE}` = `https://becivic.be`. All library reads and all submissions go over HTTPS via the **`WebFetch`** tool. (V1's `mcp__becivic__*` MCP tools are retired; the REST API at `becivic.be/api/*` is the single surface.)
+Base URL `${BASE}` = `https://becivic.be`. All library reads and all submissions go over HTTPS via the **`WebFetch`** tool against `https://becivic.be/api/*`.
 
 **Two response envelopes — branch on the HTTP status code first.**
 
@@ -118,14 +118,14 @@ If preamble reported `SUBMIT_OBSERVATIONS_THIS_SESSION: no` (scrub-rules fetch f
 
 ## 6a. Inline tag handling (composed canonical body)
 
-Process canonical bodies carry MDX tags that anchor where each composition fires in the prose. **Trust composed tags from the canonical fetch — don't make per-tag wire calls.** The renderer composes VV / Ref into the children-form of the tag at fetch time; Path / Skill / Risk pass through and are interpreted by the harness at walk time.
+Process canonical bodies carry MDX tags that anchor where each composition fires in the prose. **Trust composed tags from the canonical fetch — don't make per-tag wire calls.** The renderer composes VV / Ref into the children-form of the tag at fetch time; Path / Process / Risk pass through and are interpreted by the harness at walk time.
 
 | Tag | Shape (as you receive it) | Resolution |
 |---|---|---|
 | `<VV name="..." uid="val-NN">1030 EUR</VV>` | Volatile value (fee, deadline, threshold) — value is in the tag body. | Use the body value verbatim. Render with the "as of `last_verified`" qualifier per §12. If the body shows `[unresolved]`, the catalogue row isn't yet served — offer to look up the current figure online; do NOT make per-tag wire calls. |
 | `<Ref name="..." uid="ref-NN" url="..." last_verified="...">label</Ref>` | Reference (statute, official page) — url + last_verified composed in. | Use the url and date directly. Render conversationally; cite the url only when the user asks for source. |
 | `<Path id="..." />` | Composition: route to a single outcome (document, portal, commune visit) | Invoke `be-civic:bc-path-traversal` peer skill with the path id. The tag IS the trigger — don't wait for a separate "now we'll get the document" beat. For `purpose: tool` paths, offer to navigate the user to the live tool URL rather than handle the data yourself. |
-| `<Process id="..." />` | Composition: sub-process peer invocation | Load the referenced Process body via `GET ${BASE}/api/processes/<id>` and walk it. Returns to the current process at the same point in the body when the sub-process exits. (V2 renders `<Process>` — it replaces the pre-rename `<Skill>` inline tag per 50-harness §6 / vocabulary §6.) |
+| `<Process id="..." />` | Composition: sub-process peer invocation | Load the referenced Process body via `GET ${BASE}/api/processes/<id>` and walk it. Returns to the current process at the same point in the body when the sub-process exits. |
 | `<Risk reason="...">...</Risk>` | Wrapping: marks a step where a wrong call has real consequence | On entering the wrapped content, slow down and name the stakes in plain language (use `reason` if present, else summarise the wrapped prose). Apply focused attention until the closing tag. The tag's presence IS the signal — there is no severity level. |
 
 When a tag's referenced row is missing from the catalogue (volatile-value with no current value, path id not in catalogue, process id not shipped), follow the relevant fallback: VV → render the prose without a value, offer to look up the figure online; Path → `be-civic:bc-discovery` in path mode; Process → `be-civic:bc-discovery` in process mode.
@@ -145,11 +145,11 @@ When the procedure declares its required documents up front — via frontmatter 
 
 ## 8. Observations: the watch list
 
-Watch every turn for things the catalogue should know. In V2 each becomes a **submission** to one of four endpoints; the submission's `target_type` + `label` carry the semantic shape. Buffer to `${SUBSTRATE_STATE}/sessions/<session_id>/observations-buffer.jsonl` (one JSON object per line) for per-item review at close — except inline-commit Validations on `target_type: path_source`, which `be-civic:bc-path-traversal` POSTs directly.
+Watch every turn for things the catalogue should know. Each becomes a **submission** to one of four endpoints; the submission's `target_type` + `label` carry the semantic shape. Buffer to `${SUBSTRATE_STATE}/sessions/<session_id>/observations-buffer.jsonl` (one JSON object per line) for per-item review at close — except inline-commit Validations on `target_type: path_source`, which `be-civic:bc-path-traversal` POSTs directly.
 
 **The four submission endpoints:**
 
-- **Issue** (`POST ${BASE}/api/issues`) — something a shipped artefact has wrong, OR a gap, OR a proposal. `target_type` ∈ {`process`, `path`, `path_source`, `tool`, `provider`, `volatile_value`, `reference`, `resource`, `knowledge_graph`}; `label` ∈ {`bug`, `missing`, `rotted`, `divergence`, `gap`}. This single type subsumes V1's old concern + amendment + draft:
+- **Issue** (`POST ${BASE}/api/issues`) — something a shipped artefact has wrong, OR a gap, OR a proposal. `target_type` ∈ {`process`, `path`, `path_source`, `tool`, `provider`, `volatile_value`, `reference`, `resource`, `knowledge_graph`}; `label` ∈ {`bug`, `missing`, `rotted`, `divergence`, `gap`}. This single type covers reporting an inaccuracy, flagging a gap, and proposing new content:
   - Body or process inaccuracy (citation 404, statutory change, factual error) → `target_type: process`, `label: bug|divergence`.
   - A fee / deadline / threshold differs from a cited `<VV>` → `target_type: volatile_value`, carry the VV `uid`.
   - A citation URL dead or out of date → `target_type: reference`, `label: rotted`.
@@ -160,7 +160,7 @@ Watch every turn for things the catalogue should know. In V2 each becomes a **su
 - **Feedback** (`POST ${BASE}/api/feedback`) — open free-text channel; no `target_type` required. Moderation queue, not auto-public.
 - **Rating** (`POST ${BASE}/api/ratings`) — 5-star ratings, one axis per submission: process quality, agent experience, or session experience (proxied at close). Optional `would_be_5_stars` anchor text.
 
-**Issue body shape** (full contract in `${SUBSTRATE_ROOT}` schemas): `{ schema_version, submission_id, submitted_at (RFC3339 UTC), submitting_harness ("be-civic-plugin/0.3.0"), submitting_model, submission_contract_version, target_type, target_id, title (≤120, no newlines), body (markdown ≤2000), label, context{language_used, region?, commune_nis5?}, evidence{…per-target} }`. Generate `submission_id` with `${SUBSTRATE_ROOT}/scripts/gen_submission_id.py issue`. Never carry `process_version` yourself — the Worker server-resolves and stamps `cohort_anchor: <process_id>@<version>` at acceptance. `session_id` is preserved as a client-side correlation token.
+**Issue body shape** (full schema in `${SUBSTRATE_ROOT}` schemas): `{ schema_version, submission_id, submitted_at (RFC3339 UTC), submitting_harness ("be-civic-plugin/0.3.0"), submitting_model, target_type, target_id, title (≤120, no newlines), body (markdown ≤2000), label, context{language_used, region?, commune_nis5?}, evidence{…per-target} }`. Generate `submission_id` with `${SUBSTRATE_ROOT}/scripts/gen_submission_id.py issue`. Never carry `process_version` yourself — the server resolves and stamps `cohort_anchor: <process_id>@<version>` at acceptance. `session_id` is preserved as a client-side correlation token.
 
 **Type/label decision rule** (deterministic, not for the user to elect):
 
@@ -174,7 +174,7 @@ Watch every turn for things the catalogue should know. In V2 each becomes a **su
 | Star-rating opportunity at session close | Rating (per the axis the user engages) |
 | General feedback, suggestion, praise, confusion | Feedback |
 
-On detection: apply Layer-1 scrub (`${SUBSTRATE_ROOT}/scripts/scrub-layer1.py` with the candidate item) before appending to the buffer. If scrub rejects, rewrite the field more abstractly or drop. Never silently submit. Per-item review at close handles approval; tell the user briefly which type you chose and why. `be-civic:bc-session-close` POSTs each approved item directly (the old two-call validate-then-stage collapses to a single POST after user review).
+On detection: apply Layer-1 scrub (`${SUBSTRATE_ROOT}/scripts/scrub-layer1.py` with the candidate item) before appending to the buffer. If scrub rejects, rewrite the field more abstractly or drop. Never silently submit. Per-item review at close handles approval; tell the user briefly which type you chose and why. `be-civic:bc-session-close` POSTs each approved item directly after user review.
 
 **Proactive feedback-ask on step completion** — when the user reports completing a step, ask 1–2 low-friction AUQ items to capture experience (fee, missing/extra docs, wait time).
 

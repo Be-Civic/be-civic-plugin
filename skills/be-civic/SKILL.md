@@ -57,9 +57,9 @@ When the marker is **absent** (new user or outside any project folder), classify
 | `meta` | User asks about Be Civic itself or its data practices ("what does Be Civic do with my data?", "how does this work?") | Answer in chat from the canonical privacy snippet (§6); never paraphrase it; no AskUserQuestion; no folder created |
 | `off_topic` / `no_intent` | No Belgian admin signal at all, or user typed `/be-civic` without context | 2–3 line tour or polite redirect; no folder created |
 
-**MECE rule (50-harness §9.10):** every AskUserQuestion this skill issues must be Mutually Exclusive + Collectively Exhaustive. The gate's own question (§4) satisfies this by design: the three options cover the full decision space (proceed fully / proceed partially / decline) with no overlap. When designing any additional question in this skill, use two labelled options + a free-text fallback if three clean options cannot be found.
+**MECE rule:** every AskUserQuestion this skill issues must be Mutually Exclusive + Collectively Exhaustive. The gate's own question (§4) satisfies this by design: the three options cover the full decision space (proceed fully / proceed partially / decline) with no overlap. When designing any additional question in this skill, use two labelled options + a free-text fallback if three clean options cannot be found.
 
-If the user's message matches a procedure by name, you may use `WebFetch GET https://becivic.be/api/manifest` to confirm the process ID before routing — search client-side over the returned entries by title / summary / applies_to. Do not use the legacy MCP get_graph or find_skill calls.
+If the user's message matches a procedure by name, you may use `WebFetch GET https://becivic.be/api/manifest` to confirm the process ID before routing — search client-side over the returned entries by title / summary / applies_to.
 
 ## 4. Project NOT found, user has procedure intent (clear or vague)
 
@@ -77,7 +77,7 @@ For `procedure_intent_vague`: route identically. bc-onboarding's Section 2 will 
 
 ## 5. bc-import bundle detection
 
-Before routing on marker presence, check whether the user has attached or referenced a **bc-import bundle** (a `.tar.gz` archive created by `scripts/bc_import.py`, per 40-substrate §9.2). Signals: file named `bc-export-*.tar.gz`, a `.tar.gz` that contains `manifest.json` at the root, or the user explicitly says "I'm importing my Be Civic data from another device".
+Before routing on marker presence, check whether the user has attached or referenced a **bc-import bundle** (a `.tar.gz` archive created by `scripts/bc_import.py`). Signals: file named `bc-export-*.tar.gz`, a `.tar.gz` that contains `manifest.json` at the root, or the user explicitly says "I'm importing my Be Civic data from another device".
 
 When an import bundle is supplied, run the activation script:
 
@@ -90,7 +90,7 @@ The script validates the bundle, checks `state_version` against the running plug
 If an import bundle is detected:
 
 1. Route to `bc-onboarding` in **imported-state** mode regardless of whether a local marker exists.
-2. bc-onboarding validates the bundle (40-substrate §9.2), activates into both the hidden and visible surfaces, writes the marker, and frames the experience as a returning user continuing their work.
+2. bc-onboarding validates the bundle, activates into both the hidden and visible surfaces, writes the marker, and frames the experience as a returning user continuing their work.
 3. Do NOT treat an import as a new-user setup; preserve the existing process state.
 
 ## 6. Project NOT found, user has no specific query yet (off_topic / no_intent)
@@ -112,7 +112,7 @@ After delivering this snippet, offer to continue with the user's original goal i
 ## What this skill does NOT own
 
 - The harness rules (Iron Law, situation assessment, observation handling, document handling, session close). Those live in the project's CLAUDE.md.
-- Process identification beyond a quick manifest lookup, the process graph walk, MCP calls. Those happen in CLAUDE.md and the peer skills.
+- Process identification beyond a quick manifest lookup, the process graph walk, catalogue calls. Those happen in CLAUDE.md and the peer skills.
 - Onboarding intake, project initialisation. That is `bc-onboarding`.
 - Discovery flow, path traversal, dossier compilation. Those are peer skills invoked by the harness.
 

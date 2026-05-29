@@ -4,7 +4,7 @@ description: Use at the end of a Be Civic application procedure, after eligibili
 ---
 
 <Tip>
-Stable skill — agent-tooling sub-skill. Produces an artefact rather than running a Belgian admin process; no consumer-side validation submission applies. The parent process files validation against its own proposal.
+Stable skill — agent-tooling sub-skill. Produces a filing dossier artefact rather than running a Belgian admin process. It does not submit anything over the wire.
 </Tip>
 
 Invoked from a `kind: main` application skill at session end, after eligibility has passed, intent is confirmed, and the checklist of required documents has been gathered. Produces a Be Civic-styled application dossier — an index page listing every document the user must file, the "bring originals" callout, the checklist table, and the filled official forms — that the user prints and submits to the filing authority.
@@ -15,7 +15,7 @@ The dossier is the artefact the user files. Be Civic does not stage or store it;
 
 Invoke this sub-skill only when:
 
-- The parent process's intro paragraph declared the artefact class as `application dossier` (per `meta-draft-l1-skill` step 9).
+- The parent process's intro paragraph declared the artefact class as `application dossier`.
 - The parent process listed `dossier-compilation` in its `requires`.
 - The session has reached the point where every checklist item is gathered or accounted for (the user knows where each document comes from, which form is required, and whether it must be brought in original).
 - The user has confirmed they are ready to file.
@@ -40,7 +40,6 @@ The index page is the cover of the dossier. Render the template below, filling e
 
 ````markdown
 <!-- Be Civic Application Index — generated {generated_date} -->
-<!-- Process: {parent_process_id} v{parent_process_version} ({version_status}); last verified {parent_process_last_verified} -->
 
 ![Be Civic](https://becivic.be/logo/light-inline.png){ width=120px }
 
@@ -86,7 +85,7 @@ Columns:
 
 - **§** — index number (1, 2, 3, ...)
 - **Document** — the official name of the document, in the language used by the issuing authority
-- **Form** — one of `Original`, `Certified copy`, `Apostilled`, `Sworn translation`, `Printout acceptable`. Pull from the parent process's `## Required documents` section, where each row carries a form-required marker per `meta-draft-l1-skill` step 10.
+- **Form** — one of `Original`, `Certified copy`, `Apostilled`, `Sworn translation`, `Printout acceptable`. Pull from the parent process's `## Required documents` section, where each row carries a form-required marker.
 - **Source** — where the user obtained it (commune, origin sub-skill name, payment receipt, etc.)
 
 The "Form" column drives Step 5.
@@ -134,14 +133,9 @@ Save the dossier to the visible surface with the user's permission. Default path
 
 Repeat the originals reminder from Step 5. Confirm the user understands the dossier is a reference, not a substitute for the originals.
 
-This sub-skill does not file a validation submission at session end. Validation is filed by the parent process (against the parent's `proposal_id`, per `agents/submit/validation`). The dossier is rendered; the parent's lifecycle continues.
+This sub-skill does not submit anything at session end. The dossier is rendered locally; the parent process's own lifecycle continues independently.
 
 ---
 
 *Verify with the relevant authority before filing — procedures vary and change.*
 
-## References
-
-- `[meta-draft-l1-skill]` — `skills/meta-draft-l1-skill/canonical.md` — drafting protocol; step 9 sets the dossier artefact class; step 10 sets the form-required markers on the checklist
-- `[agents-protocol]` — `agents.mdx`
-- `[agents-submit-validation]` — `agents/submit/validation.mdx`

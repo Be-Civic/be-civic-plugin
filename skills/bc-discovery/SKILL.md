@@ -10,7 +10,7 @@ Two modes:
 - **`process` mode** — fires on graph zero-match for the customer's intent, or when `bc-path-traversal` returns `unknown-process-fallback`.
 - **`path` mode** — fires when `bc-path-traversal` returns a structured miss signal (`unknown-path-id` or `all-sources-failed-with-alternative`).
 
-The framing matters: **this is "discovery mode," not "no-process fallback."** First use of the term in a session MUST carry a gloss; the bare phrase is fine thereafter (CLAUDE.md §16 jargon rule).
+The framing matters: **this is "discovery mode," not "no-process fallback."** First use of the term in a session MUST carry a gloss; the bare phrase is fine thereafter.
 
 ## 1. Opening
 
@@ -22,9 +22,9 @@ The framing matters: **this is "discovery mode," not "no-process fallback."** Fi
 
 > "We needed [path name / source] for this step, and Be Civic doesn't have a verified path entry yet. Let's switch to discovery mode (same idea — we walk it together and document what works). I'll log every source I can verify and we'll see where it lands."
 
-Don't preamble the contribution framing every turn after that — once is enough (CLAUDE.md §14 voice rule).
+Don't preamble the contribution framing every turn after that — once is enough.
 
-## 2. Corpus search — V2 REST
+## 2. Corpus search
 
 Before declaring a zero-match, fetch the full entity graph and search client-side:
 
@@ -61,7 +61,7 @@ If a sub-step in the discovery walk is covered by an existing Be Civic process (
 
 ## 6. Research-notes file (the durable artefact)
 
-Write to `${SUBSTRATE_DATA}/<procedure-slug>/memory/research-notes-<slug>.md` (per-Procedure visible content, per 50-harness §4.3 / §6.4 — this is the path `bc-session-close` scans for `ready_to_draft` notes). Create the `<procedure-slug>/memory/` directory if absent. Slug is kebab-case of the procedure name (process mode) or path id (path mode), truncated to ≤32 chars. Frontmatter:
+Write to `${SUBSTRATE_DATA}/<procedure-slug>/memory/research-notes-<slug>.md`. This is the path `bc-session-close` scans for `ready_to_draft` notes. Create the `<procedure-slug>/memory/` directory if absent. Slug is kebab-case of the procedure name (process mode) or path id (path mode), truncated to ≤32 chars. Frontmatter:
 
 ```yaml
 ---
@@ -87,7 +87,7 @@ Body: prose with tagged claims. Every claim carries one of:
 - `[customer-report: <date>]` — customer told us; not independently verified.
 - `[verify-with-commune]` — needs a commune visit or appointment to confirm.
 
-The drafter at session close reads this file and produces a `process_draft` (or `path_draft`) submission with `provenance.research_notes_markdown` set to this file's body. The CC BY 4.0 grant the customer makes at submission covers both canonical and research-notes jointly (lifecycle.md §9.6).
+The drafter at session close reads this file and produces a `process_draft` (or `path_draft`) submission with `provenance.research_notes_markdown` set to this file's body. The CC BY 4.0 grant the customer makes at submission covers both canonical and research-notes jointly.
 
 ## 7. Buffering findings as Issues
 

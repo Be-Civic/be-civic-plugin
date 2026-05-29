@@ -1,14 +1,8 @@
 # `render.py` codegen — how the agent writes and refreshes the dossier script
 
-This document specifies the agent-authored `render.py` flow described in the
-[dossier-rebuild design](../../../bc-operations/docs/agent-ux/dossier-rebuild-design.md)
-§5 and SKILL.md Step 5. It is the contract between the agent's reasoning (which
-decides *what* goes in the dossier) and the plugin's Python module (which
-decides *how* it gets rendered).
+This document specifies the agent-authored `render.py` flow described in SKILL.md Step 5. It is the contract between the agent's reasoning (which decides *what* goes in the dossier) and the plugin's Python module (which decides *how* it gets rendered).
 
-The codegen module is `scripts/be_civic_dossier/codegen.py`. Stream B
-(W25.1b) owns it; Stream A (W25.1a) owns the renderer classes it generates
-calls into.
+The codegen module is `scripts/be_civic_dossier/codegen.py`.
 
 ## What gets generated
 
@@ -31,7 +25,7 @@ can be edited independently:
 
 1. **Import header** — auto-generated, marked "do not edit by hand", contains
    the absolute-path + `CLAUDE_PLUGIN_ROOT` + `ImportError` probe fallback per
-   SKILL.md Step 3 and design doc §5. Reasoning is at the bottom of this doc.
+   SKILL.md Step 3. Reasoning is at the bottom of this doc.
 2. **`Dossier(...)` constructor** — written once at script creation; preserved
    verbatim on refresh. The user can edit fields (e.g. correct the spelling of
    their name or change the filing authority) and the agent will not stomp on
@@ -166,7 +160,7 @@ demands. Advisory only — don't drive destructive edits off this alone.
 
 Resolve a template by canonical name. The codegen module prefers a project-local
 override at `<project>/<procedure-id>/dossier/templates/<name>` before falling
-back to the plugin-bundled copy. Used by the renderer (Stream A) when it loads
+back to the plugin-bundled copy. Used by the renderer when it loads
 templates at render time.
 
 ## Refresh flow — preserve user edits
@@ -191,12 +185,10 @@ this with marker comments and `refresh_items()`. The agent's contract:
 
 ## Why the absolute-path + env-var + ImportError-probe header
 
-Open question O2 in the design doc asks: what happens when the plugin moves on
-disk but an old `render.py` is still around? The header tries three locations
-in order:
+The header handles the case where the plugin moves on disk but an old `render.py` is still around. It tries three locations in order:
 
-1. **`CLAUDE_PLUGIN_ROOT` env var** — set by the Cowork harness when it's
-   driving the script. If the user re-runs `render.py` from inside a Cowork
+1. **`CLAUDE_PLUGIN_ROOT` env var** — set by the plugin harness when it's
+   driving the script. If the user re-runs `render.py` from inside a plugin
    session, this is correct by construction.
 2. **Baked-in absolute path** (the `_PLUGIN_ROOT_BAKED` literal) — captured at
    codegen time. Works for any direct `python3 render.py` invocation as long
@@ -211,28 +203,24 @@ throwaway code. The user might re-run an old `render.py` weeks later after
 upgrading the plugin, and we'd rather raise a clear error than fail with a
 cryptic `ImportError`.
 
-## Coordination with Stream A
+## Coordination with the renderer module
 
-Stream A owns `Dossier`, `IdCard`, `FullPageCert`, `MultiPageDoc`,
+The renderer module owns `Dossier`, `IdCard`, `FullPageCert`, `MultiPageDoc`,
 `FeeReceipt`, `FilledForm`, `Placeholder`, and `watermark`. They live in
-sibling modules inside `scripts/be_civic_dossier/`. The `__init__.py` shipped
-by Stream B re-exports them defensively (`try / except ImportError` → `None`)
-so the codegen path remains usable even when Stream A's modules haven't
-landed yet — the codegen is a pure-Python concern with no runtime dependency
-on the renderer.
+sibling modules inside `scripts/be_civic_dossier/`. The `__init__.py` re-exports
+them defensively (`try / except ImportError` → `None`) so the codegen path
+remains usable even when the renderer modules are not yet available — the
+codegen is a pure-Python concern with no runtime dependency on the renderer.
 
-When Stream A merges, the only `__init__.py` edit needed is to confirm the
-import names match (`renderer.Dossier`, `layouts.IdCard`, etc.). If Stream A
-prefers different file names, update the `try: from .renderer import ...`
-block — the contract is "the public class names are exported from the
-package", the internal layout is Stream A's call.
+The contract is that the public class names are exported from the package;
+the internal module layout is the renderer's concern.
 
 ## Out of scope
 
 - **Validating that field values match what the receiving authority expects.**
   The agent does that before writing the script; this module is structural.
 - **Filling Annexe 1 from `profile.json`.** Filling values is the renderer's
-  job (Stream A). This module emits the `FilledForm(...)` call; the renderer
-  reads the user's `profile.json` and the procedure's filled-fields spec.
-- **Watermarking.** Applied at render time by `be_civic_dossier.watermark`
-  (Stream A). The templates carry the structure; the watermark is overlaid.
+  job. This module emits the `FilledForm(...)` call; the renderer reads the
+  user's `profile.json` and the procedure's filled-fields spec.
+- **Watermarking.** Applied at render time by `be_civic_dossier.watermark`.
+  The templates carry the structure; the watermark is overlaid.

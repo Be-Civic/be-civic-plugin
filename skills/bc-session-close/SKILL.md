@@ -14,7 +14,7 @@ The customer-facing language for the observation buffer is **list** or **notes**
 
 ## Wire basics (read once)
 
-All submissions are **direct typed POSTs** over `WebFetch` against the REST surface at `https://becivic.be/api`. There is no validate-then-stage round-trip in V2 — the per-item user review below IS the gate, and it is harness behaviour, not an API call. Once the user approves an item, exactly one POST leaves the machine.
+All submissions are **direct typed POSTs** over `WebFetch` against the REST surface at `https://becivic.be/api`. The per-item user review below IS the gate — it is harness behaviour, not an API call. Once the user approves an item, exactly one POST leaves the machine.
 
 - **Auth.** Read `BECIVIC_HARNESS_KEY` from `${SUBSTRATE_STATE}/.env` and send `Authorization: Bearer <harness_key>` on every submission. Never echo or log the key. If the session is in anonymous-read mode (no key — user declined verification), **no submissions are possible**: tell the customer plainly that their notes can't be sent without verification, offer to verify (hand back to onboarding) or to hold the notes locally (step 6 fallback), and do not POST.
 - **submission_id.** Generate client-side before each POST:
@@ -35,7 +35,7 @@ One short paragraph in plain English. What you covered today, what's done, what'
 
 Update each procedure walked this session: write its visible progress at `${SUBSTRATE_DATA}/<procedure-slug>/progress.md` (last step reached, what's pending, anything the user said worth holding) and refresh that procedure's entry `status` / `updated_at` in `${SUBSTRATE_STATE}/procedures.json`. Skip on resume-submit.
 
-### 3. Per-item observation review (consume the buffer — W33.4g / 50-harness §6.4)
+### 3. Per-item observation review (consume the buffer)
 
 Read this session's observation list at `${SUBSTRATE_STATE}/sessions/<session_id>/observations-buffer.jsonl` (on resume-submit, read `pending-submissions.jsonl` instead). One JSON object per line, each an `observation.v3`-shaped item written by `bc-path-traversal` and `bc-discovery` as observations accumulated this session. Inline-commit Validations on path sources (`target_type: path_source`) were already POSTed at traversal time and are **not** in this buffer — do not re-submit them.
 
@@ -55,7 +55,7 @@ Approved items carry forward to step 6 for submission. The buffer file itself is
 Scan `${SUBSTRATE_DATA}/<procedure-slug>/memory/research-notes-*.md` (the preamble surfaced these as `PENDING_STATE: ready_to_draft`) for files with frontmatter `status: ready_to_draft`. For each:
 
 - Surface to customer: "I have research-notes from [N] session(s) about [target]. Submit now, keep researching, or discard?"
-- **Submit now:** spawn the relevant drafter via the Agent tool. Dispatch in parallel when multiple distinct entities are ready (50-harness §7.3); collect results and surface them to the user one at a time for review.
+- **Submit now:** spawn the relevant drafter via the Agent tool. Dispatch in parallel when multiple distinct entities are ready; collect results and surface them to the user one at a time for review.
   - `bc-process-drafter` for process-shaped notes (`model: opus` for a new-Process proposal — judgment-heavy; `model: sonnet` only for a trivial amendment to an existing Process). If the drafter's Step 0 finds the notes are path-shaped, it hands off to `bc-path-drafter` itself.
   - `bc-path-drafter` for path-shaped notes (`model: sonnet` usually; `model: opus` for cross-region / cross-commune scope judgment).
   - Pass the research-notes path and the customer's profile snapshot.
@@ -78,7 +78,7 @@ For every procedure Process walked this session, read its body's `[Requests for 
 
 Present the survivors (typically 0–2 items) as: "Things you've seen firsthand that would help others." Frame as contribution, not extraction. If zero survive, skip the section entirely — don't manufacture asks.
 
-For each item the customer commits to, map to the right submission shape (Amendment type is removed in V2 — concern/amendment-shaped items all become **Issues**, per the routing table below):
+For each item the customer commits to, map to the right submission shape (concern/amendment-shaped items are all submitted as **Issues**, per the routing table below):
 
 - "I saw an extra step / a missing doc on this Process" → Issue, `target_type: process`, `label: missing` (or `bug` for an incorrect step).
 - "A citation / source link is dead" → Issue, `target_type: process | path | path_source`, `label: rotted`.
@@ -110,8 +110,8 @@ One sentence per active item. "Next session we'll pick up at [step]." / "When yo
 
 ### 8. Defensive dossier check, then cleanup
 
-**Defensive dossier check (W33.4e).**
-<!-- Judgment-call interpretation: 50-harness §6.5 is SILENT on a distinct close-time dossier check; §6.6 lists dossier triggers (first archive, terminal step, explicit user ask) but does not mandate a close-time guard. This is a minimal operator-judgment safety net to catch a terminal procedure that never produced its filing artefact, pending handbook clarification. Keep it small. -->
+**Defensive dossier check.**
+<!-- Safety net: catch a finished procedure that never produced its filing dossier. -->
 Before the goodbye, scan `${SUBSTRATE_STATE}/procedures.json`. For any procedure whose `status` is `completed` (terminal / dossier-eligible) **and** whose visible folder `${SUBSTRATE_DATA}/<slug>/` holds no dossier artefact (nothing under `${SUBSTRATE_DATA}/<slug>/documents/dossier/`), offer once: "You finished [procedure] but we never built the dossier you'd file — want me to compile it now?" On yes, hand off to `bc-dossier-compilation` for that procedure. On no, drop it — don't re-ask. Skip this check entirely on resume-submit.
 
 **Cleanup.** Delete `${SUBSTRATE_STATE}/sessions/<session_id>/observations-buffer.jsonl` once every item is submitted, discarded, or written into `pending-submissions.jsonl`. Leave the session directory for the orphan-buffer scan to handle on a hard close. Do not delete `pending-submissions.jsonl` — the preamble owns its lifecycle. Skip on resume-submit.
@@ -120,7 +120,7 @@ Before the goodbye, scan `${SUBSTRATE_STATE}/procedures.json`. For any procedure
 
 One sentence. Warm, specific to what the customer worked through. No "great chatting!" Don't preamble. Skip on resume-submit.
 
-## Portability — bc-export (W33.4h)
+## Portability — bc-export
 
 If the customer asks "how do I back up my Be Civic data?" or "can I use this on another machine?", run the export script at session close (after cleanup in step 8):
 
@@ -143,6 +143,3 @@ then re-verifies via the onboarding flow. See `CAPABILITIES.md` at the plugin ro
 - Inline-commit Validations on path sources — those POST directly from `bc-path-traversal` at traversal time and never enter this skill's buffer.
 - Re-running scrub on items already at Layer-1. The worker runs Layer-2 at ingress. A Layer-1 re-run is needed only when an item is edited at step 3 — call `scripts/scrub-layer1.py` then.
 
-## Authoring source
-
-Close sequence + per-item review + multi-procedure attribution lift from the V1 close skill; the drafter handoff and the §8 double-filter are W22 content. V2 (W33) collapses the two-call validate-then-stage to a single direct typed POST per the W33 migration contract §3 + 33-submission-contract §5–§7, consumes the observation buffer per 50-harness §6.4, routes amendment-shaped items to Issue (Amendment type removed), renames the drafter to `bc-process-drafter`, and adds the defensive dossier check (W33.4e, judgment-call).

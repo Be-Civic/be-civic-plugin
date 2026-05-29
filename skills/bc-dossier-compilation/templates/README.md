@@ -1,7 +1,6 @@
 # Be Civic dossier templates
 
-Jinja2-style HTML templates consumed by `be_civic_dossier` (Stream A's Python
-module) and by the `render.py` codegen flow described in `../RENDER_PY_CODEGEN.md`.
+Jinja2-style HTML templates consumed by `be_civic_dossier` and by the `render.py` codegen flow described in `../RENDER_PY_CODEGEN.md`.
 
 | Template | Purpose | Pages | Branding |
 |---|---|---|---|
@@ -16,21 +15,21 @@ module) and by the `render.py` codegen flow described in `../RENDER_PY_CODEGEN.m
 
 These templates are **Be-Civic-generated pages only**. User-uploaded documents
 (`id-card`, `full-page-cert`, `multi-page-doc`, `fee-receipt`) pass through without
-Be Civic header/footer — see design doc §3 "branding discipline" for the reason.
-The watermark on original-required pages is the one exception and is applied by
-`be_civic_dossier.watermark`, not by these templates.
+Be Civic header/footer — branding appears only on pages Be Civic generates, not on
+the user's own documents. The watermark on original-required pages is the one
+exception and is applied by `be_civic_dossier.watermark`, not by these templates.
 
 ## Placeholders
 
 All placeholders use Jinja2 syntax (`{{ var }}`, `{% if %}`, `{% for %}`). Header
 comments in each file list the variables that template expects. The
-`be_civic_dossier.codegen` module (Stream A) is the canonical caller; see
+`be_civic_dossier.codegen` module is the canonical caller; see
 `../RENDER_PY_CODEGEN.md` for how `render.py` wires user data through to these
 templates.
 
 ## Fonts
 
-The `@font-face` rules reference fonts that Stream A bundles under
+The `@font-face` rules reference fonts bundled under
 `be-civic-plugin/vendor/fonts/`:
 
 - `Inter-Regular.ttf`, `Inter-Bold.ttf` — display / headers

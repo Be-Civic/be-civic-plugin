@@ -1,6 +1,6 @@
 ---
 name: bc-path-traversal
-description: Walk the user step-by-step through a Belgian-administration procedure once onboarding has captured the profile and the procedure has been routed. Owns the §6.12 Path Directory traversal contract — batched-phase loop, Chrome MCP site discovery, browser_driving_preference honouring, eligibility-first / commune-last / consent-before-audited-delivery invariants, inline-commit path-source validations on each attempt. Hands off to bc-onboarding (returning mode) when the user signals a new procedure mid-session. Hands back to the harness at procedure completion.
+description: Walk the user step-by-step through a Belgian-administration procedure once onboarding has captured the profile and the procedure has been routed. Owns the Path Directory traversal contract — batched-phase loop, browser-driven site discovery, browser_driving_preference honouring, eligibility-first / commune-last / consent-before-audited-delivery invariants, inline-commit path-source validations on each attempt. Hands off to bc-onboarding (returning mode) when the user signals a new procedure mid-session. Hands back to the harness at procedure completion.
 version: 1.0.0
 requires_capabilities:
   - multi_turn
@@ -43,7 +43,7 @@ Two surfaces inform path discovery, in order:
 
 1. **The procedure's declared paths.** Build the working set from the canonical's `requires_paths:` frontmatter joined with the inline `<Path>` tags in the body. This is the deterministic, corpus-grounded list.
 
-2. **Chrome MCP site discovery — only when needed.** Some path sources gate on commune-specific or region-specific portal behaviour the canonical cannot enumerate (a Brussels-only deeplink, a Wallonia population-register sitemap page, a federal CSAM auth wall that re-clicks differently per portal). When the user's profile points at a region or commune whose path source is not deterministic from the catalogue, call `mcp__Claude_in_Chrome__list_connected_browsers` to confirm the user has a paired browser. If paired, use Chrome MCP to navigate the portal and confirm the deeplink the catalogue cites still resolves before walking the user to it. Site-discovery probes are read-only: navigate, read page text, screenshot if needed, never submit a form.
+2. **Browser-driven site discovery — only when needed.** Some path sources gate on commune-specific or region-specific portal behaviour the canonical cannot enumerate (a Brussels-only deeplink, a Wallonia population-register sitemap page, a federal CSAM auth wall that re-clicks differently per portal). When the user's profile points at a region or commune whose path source is not deterministic from the catalogue, call `mcp__Claude_in_Chrome__list_connected_browsers` to confirm the user has a paired browser. If paired, use the browser automation tool to navigate the portal and confirm the deeplink the catalogue cites still resolves before walking the user to it. Site-discovery probes are read-only: navigate, read page text, screenshot if needed, never submit a form.
 
 3. **`GET /api/paths/<id>` for surface enumeration.** When the procedure references a path id whose entry the catalogue has multiple sources for, call `WebFetch GET https://becivic.be/api/paths/<id>` (Bearer when present) to enumerate the catalogued sources and their source list. To fetch a single source, call `WebFetch GET https://becivic.be/api/path-sources/<path_id>:<source_id>`. Filter by the user's profile fields (region, residency_status) before presenting any source to the user — eligibility-first invariant applies at discovery, not just execution.
 
@@ -53,9 +53,9 @@ Do not probe an audited source (`audited_document_delivery: true`) during discov
 
 Read `browser_driving_preference` from `profile.json`. Three values; behaviour for each is sticky for the session and never re-asked:
 
-- **`drive-by-default`** — agent drives the user's paired browser via Chrome MCP up to authentication walls. At each auth wall, hand off using the source's `actor.handoff` text and pause for the user to sign in. Resume on the user's signal (typically "got it" or a downloaded file).
+- **`drive-by-default`** — agent drives the user's paired browser via browser automation up to authentication walls. At each auth wall, hand off using the source's `actor.handoff` text and pause for the user to sign in. Resume on the user's signal (typically "got it" or a downloaded file).
 - **`ask-each-time`** — agent presents the source's deeplink, the agent-responsibility and user-responsibility text, and an explicit choice for this step: drive the browser, or hand over the link. The user's choice on this step does not bind subsequent steps; the next browser-needing source asks again.
-- **`never-drive`** — agent never invokes Chrome MCP for navigation; every source is presented as a clean markdown link with the user-responsibility text, and the user clicks themselves. Validation signals for these sources come from the user reporting back what happened ("got it" / "couldn't find the link" / "got a 404"), not from agent-observed page state.
+- **`never-drive`** — agent never invokes browser automation for navigation; every source is presented as a clean markdown link with the user-responsibility text, and the user clicks themselves. Validation signals for these sources come from the user reporting back what happened ("got it" / "couldn't find the link" / "got a 404"), not from agent-observed page state.
 
 If `browser_driving_preference` is `drive-by-default` but no browser is paired, do not silently downgrade. Surface once: "Your preference is set to drive your browser, but I can't see a paired browser. Want to pair Chrome and the Be Civic extension now, or hand you links for this session?" The user's answer either pairs the browser (preference stands) or updates the preference to `never-drive` for the session.
 
@@ -67,7 +67,7 @@ At the start of each phase, name it plainly to the user — what is happening in
 
 For each step in the phase, in canonical order:
 
-1. **Advance.** Read the next step's body. If the step body is wrapped in `<Risk>` per the §6.10 inline-tag schema, slow down and name the stakes before proceeding; the wrapped step describes an irreversible routing call the user must understand before acting.
+1. **Advance.** Read the next step's body. If the step body is wrapped in `<Risk>`, slow down and name the stakes before proceeding; the wrapped step describes an irreversible routing call the user must understand before acting.
 
 2. **Resolve inline tags.** If the step contains `<Path id="…" />`, the path is the step. Move to step 3. If the step contains `<Process id="…" />`, peer-invoke that procedure skill via `Skill` and return here when it exits. If the step is prose only, present it to the user, take their answer, and move on.
 
@@ -98,7 +98,7 @@ For every source attempt:
 
 4. **Validate against `validation_path`.** Apply the success and failure signals the source declared. For a tier-1 deeplink, this is a content-type and PDF-magic check on the downloaded artefact. For a sitemap page, the user's verbal confirmation. For a federal form, a success-page signature. Use the source's signals, not general knowledge.
 
-5. **Submit the validation, inline.** Path-source validations bypass the observation buffer and POST directly (inline-commit carve-out per contract §8). On success or failure:
+5. **Submit the validation, inline.** Path-source validations bypass the observation buffer and POST directly. On success or failure:
    a. Generate a `submission_id` by running `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_submission_id.py validation` (yields `val_<uuidv7>`).
    b. Build the submission body:
       ```json
@@ -142,7 +142,7 @@ Two channels for feedback against path-step quality:
 - **Path-source validations** — the inline-commit channel covered in Step 6. Per attempt, anonymous-by-construction, no buffering.
 - **Issues against path or process quality** — buffered, surfaced at session close. When the user reports that a document name is wrong, a fee figure is stale, a step description misses a commune-specific detail, the path catalogue has a gap, or the canonical body is unclear, do not POST inline. Append a JSON line to `${SUBSTRATE_STATE}/sessions/<session_id>/observations-buffer.jsonl` with the appropriate `target_type` and `label`, then let `bc-session-close` present each item to the user for per-item approval before submitting `POST /api/issues`.
 
-  Route to the correct Issue shape per contract §3:
+  Route to the correct Issue shape:
   - Scoped path issue → `target_type: path`, `label: bug|missing|divergence`.
   - Specific source concern → `target_type: path_source`, `label: bug|rotted|divergence`.
   - Fee or date discrepancy → `target_type: volatile_value`, `label: rotted`.
@@ -192,8 +192,5 @@ To start a brand-new procedure mid-session, route back to `bc-onboarding` in `re
 - Document handling once delivered (extraction of routing fields from the artefact) — `bc-document-handler`.
 - The unknown-path or all-sources-failed escalation walkthrough — `bc-discovery` in `path` mode.
 - Session-close review and submission of buffered concerns and amendments — `bc-session-close`.
-- The path catalogue itself — authored in `bc-knowledge-graph/paths/index.json`; this skill reads it via `WebFetch GET https://becivic.be/api/paths/<id>`.
+- The path catalogue itself — read via `WebFetch GET https://becivic.be/api/paths/<id>`.
 
-## Authoritative references
-
-Path schema and three invariants: `schemas.md` §6.12 and `architecture.md` §24.9. Harness obligations 17, 18, 19: `skills.md` §15.7. Skill body discipline: `skills.md` §15.8. Inline-commit carve-out for `target_type=path_source`: harness CLAUDE.md §6. Browser_driving_preference, mini-header firing rules, and confirmation-gate copy: `decisions-applied-2026-05-17.md` D29, D32, D40, D42, D50.
