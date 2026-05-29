@@ -77,7 +77,15 @@ For `procedure_intent_vague`: route identically. bc-onboarding's Section 2 will 
 
 ## 5. bc-import bundle detection
 
-Before routing on marker presence, check whether the user has attached or referenced a **bc-import bundle** (a zip or directory exported from another Be Civic installation, per 40-substrate §9.2). Signals: file named `bc-import-*.zip`, a directory containing `CLAUDE.md` + `MEMORY.md` + `.be-civic/marker`, or the user explicitly says "I'm importing my Be Civic data from another device".
+Before routing on marker presence, check whether the user has attached or referenced a **bc-import bundle** (a `.tar.gz` archive created by `scripts/bc_import.py`, per 40-substrate §9.2). Signals: file named `bc-export-*.tar.gz`, a `.tar.gz` that contains `manifest.json` at the root, or the user explicitly says "I'm importing my Be Civic data from another device".
+
+When an import bundle is supplied, run the activation script:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/bc_import.py <bundle.tar.gz> --cowork --data-parent <user-chosen-parent>
+```
+
+The script validates the bundle, checks `state_version` against the running plugin, restores both surfaces, and writes the `.be-civic/marker` cross-references. Identity is not in the bundle; post-import state is "returning user, needs to re-verify".
 
 If an import bundle is detected:
 

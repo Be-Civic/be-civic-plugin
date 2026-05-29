@@ -120,6 +120,22 @@ Before the goodbye, scan `${SUBSTRATE_STATE}/procedures.json`. For any procedure
 
 One sentence. Warm, specific to what the customer worked through. No "great chatting!" Don't preamble. Skip on resume-submit.
 
+## Portability — bc-export (W33.4h)
+
+If the customer asks "how do I back up my Be Civic data?" or "can I use this on another machine?", run the export script at session close (after cleanup in step 8):
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/bc_export.py --cowork --out ~/Desktop
+```
+
+The script bundles both surfaces (visible + hidden) into a single `bc-export-<timestamp>.tar.gz` and prints the mandatory Identity warning. Identity (harness key) is NOT in the bundle — it is excluded by construction (gitignored, never committed). On the destination machine the user runs:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/bc_import.py <bundle.tar.gz> --cowork --data-parent <parent>
+```
+
+then re-verifies via the onboarding flow. See `CAPABILITIES.md` at the plugin root for the full portability contract and bundle format, and `skills/be-civic/SKILL.md §5` for import detection in the gate skill.
+
 ## What this skill does NOT own
 
 - Generating canonical markdown from research-notes. The drafter subagent does that; close hands off, reviews, and owns the single wire POST.
