@@ -187,6 +187,19 @@ async function commitOnce(repoRoot, messageFor) {
     return "skipped:not-a-repo";
   }
 
+  // Identity guard (contract §5 / 40-substrate §6.1): `add -A` relies on the
+  // .gitignore allowlist to exclude the Identity slot. If `.env` exists but is
+  // NOT gitignored (e.g. the allowlist was not written yet), committing would
+  // leak the harness key. Refuse this cycle. `check-ignore -q` exits 0 iff
+  // `.env` is ignored; any non-zero (not-ignored OR error) → refuse (fail-safe).
+  if (fs.existsSync(path.join(repoRoot, ".env"))) {
+    const chk = await git(repoRoot, ["check-ignore", "-q", ".env"]);
+    if (chk.spawnError || chk.code !== 0) {
+      logErr(`.env present but not gitignored in ${repoRoot}; refusing commit to protect Identity (40 §6.1)`);
+      return "skipped:env-not-ignored";
+    }
+  }
+
   // Lock-aware: if the index is locked, back off then give up this cycle.
   for (let attempt = 0; ; attempt += 1) {
     if (!fs.existsSync(indexLockPath(repoRoot))) break;

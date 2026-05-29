@@ -7,14 +7,14 @@ description: Use when Be Civic has no verified process for the customer's proced
 
 Two modes:
 
-- **`skill` mode** — fires on graph zero-match for the customer's intent, or when `bc-path-traversal` returns `unknown-process-fallback`.
+- **`process` mode** — fires on graph zero-match for the customer's intent, or when `bc-path-traversal` returns `unknown-process-fallback`.
 - **`path` mode** — fires when `bc-path-traversal` returns a structured miss signal (`unknown-path-id` or `all-sources-failed-with-alternative`).
 
 The framing matters: **this is "discovery mode," not "no-process fallback."** First use of the term in a session MUST carry a gloss; the bare phrase is fine thereafter (CLAUDE.md §16 jargon rule).
 
 ## 1. Opening
 
-**Skill mode:**
+**Process mode:**
 
 > "Be Civic doesn't have a verified procedure for [name the procedure] yet — so let's switch to discovery mode (where we walk through this together and document what we find for the next person filing the same thing). I'll ask you what you know, look up what I can verify, and keep notes as we go. You get help with your procedure today; the next person filing this hits a verified process instead of a blank."
 

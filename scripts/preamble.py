@@ -135,8 +135,10 @@ PREAMBLE_JIT_GUIDANCE: |
   - SUBSTRATE_STATE: assume the hidden plugin-data folder.
   - PENDING_STATE: assume none. If you find unsubmitted observation files
     or research-notes files older than this session start, treat as pending.
-  - BECIVIC_MCP_CONNECTED: check your own tool list for `mcp__becivic__*`.
-  - CHROME_MCP_CONNECTED: same — check for `mcp__claude_in_chrome__*`.
+  - BECIVIC_WIRE: library reads + submissions go over HTTPS via the WebFetch
+    tool against `becivic.be/api/*`, Bearer key from `${SUBSTRATE_STATE}/.env`
+    when present (V1 `mcp__becivic__*` is retired — REST is the only surface).
+  - CHROME_MCP_CONNECTED: check your own tool list for `mcp__claude_in_chrome__*`.
   - CHROME_INSTALLED: ask the customer once at first browser-needing step
     rather than running a pre-emptive setup walkthrough.
 
@@ -231,6 +233,20 @@ def _commit_all(repo: Path, message_template: str) -> int:
     is staged; .env is never in it. Never raises."""
     if not _is_git_repo(repo):
         return 0
+    # Identity guard (contract §5 / 40-substrate §6.1): `git add -A` relies on
+    # the .gitignore allowlist to exclude the Identity slot. If `.env` exists
+    # but is NOT yet gitignored (e.g. onboarding wrote the key before the
+    # allowlist), committing would leak the harness key into history. Refuse +
+    # alert rather than risk it. `check-ignore -q` exits 0 iff `.env` is ignored.
+    if (repo / ".env").exists():
+        chk = _git(repo, ["check-ignore", "-q", ".env"])
+        if not chk or chk.returncode != 0:
+            print(
+                f"OPERATOR_ALERT: .env present but not gitignored in {repo}; "
+                "refusing auto-commit to protect Identity (40-substrate §6.1). "
+                "Write the .gitignore allowlist before committing."
+            )
+            return 0
     add = _git(repo, ["add", "-A"])
     if not add or add.returncode != 0:
         return 0

@@ -9,9 +9,9 @@ model: sonnet
 
 This repo is the harness binding that runs Be Civic inside the user's Cowork agent runtime. It provides the platform-facing Claude Code Skills (`bc-document-handler`, `bc-dossier-compilation`, `bc-path-traversal`, `bc-discovery`, `bc-onboarding`), the prompt → form → install flow, and the wire-side tool calls that connect the Cowork substrate to the Be Civic platform. It sits substrate-side — it runs in the user's agent environment, not on Be Civic's infrastructure.
 
-## V2 transition
+## V2 wire
 
-The plugin currently calls `mcp__becivic__*` MCP tools. V2 migration moves to `WebFetch` against the REST API at `becivic.be/api/*`; W33 sprint handles the cutover. The MCP path is retained as a fallback for legacy clients until that sprint lands.
+The plugin calls the Be Civic REST API at `becivic.be/api/*` via the `WebFetch` tool, authenticated with a per-installation Bearer harness key (`${SUBSTRATE_STATE}/.env`). V1 `mcp__becivic__*` MCP tools are retired — the hard cutover landed in W33; there is no MCP fallback.
 
 ## Hard rules
 

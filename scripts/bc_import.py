@@ -196,7 +196,12 @@ def run_import(
 
         # ── Step 2: Probe — extract and read manifest ─────────────────────────
         with tarfile.open(archive, "r:gz") as tar:
-            tar.extractall(tmp_path)
+            # filter="data" (Python 3.12+) blocks path-traversal / absolute-path
+            # members in a crafted bundle; fall back gracefully on older Python.
+            try:
+                tar.extractall(tmp_path, filter="data")
+            except TypeError:
+                tar.extractall(tmp_path)
 
         manifest_path = tmp_path / "manifest.json"
         if not manifest_path.exists():

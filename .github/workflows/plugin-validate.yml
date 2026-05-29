@@ -23,3 +23,27 @@ jobs:
         # PLUGIN_VALIDATION_RULES.md), add targeted Python/shell checks back
         # as separate workflow steps.
         run: claude plugin validate .claude-plugin/plugin.json
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # W33: the auto-commit monitor is the only shipping executable and is
+      # Identity-safety-critical (it must never commit `.env`). These tests run
+      # the real git plumbing in temp dirs and must stay green.
+      - name: Monitor unit tests (Node built-in test runner)
+        run: node --test hooks/auto-commit-monitor.test.mjs
+
+      - name: Submission-id generator tests
+        run: python3 scripts/test_gen_submission_id.py
+
+      - name: Python syntax check (preamble + portability + dossier scripts)
+        run: |
+          python3 -m py_compile \
+            scripts/preamble.py \
+            scripts/gen_submission_id.py \
+            scripts/bc_export.py \
+            scripts/bc_import.py \
+            scripts/be_civic_dossier/cover.py \
+            scripts/be_civic_dossier/dossier.py

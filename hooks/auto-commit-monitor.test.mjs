@@ -1,10 +1,12 @@
-// auto-commit-monitor.test.mjs — run with `node --test hooks/`.
+// auto-commit-monitor.test.mjs — run with `node --test hooks/auto-commit-monitor.test.mjs`
+// (a bare `node --test hooks/` is treated as an entrypoint, not a dir, and fails).
 //
-// Exercises the four behaviours called out in the W33 contract §5:
+// Exercises the behaviours called out in the W33 contract §5:
 //   1. debounce collapses a burst of file events into ONE commit
 //   2. allowlist excludes .env (.env never lands in a commit)
 //   3. lock-retry-then-give-up (index.lock held → backoff → give up this cycle)
 //   4. missing-repo-no-crash (a non-repo directory is skipped, not fatal)
+//   5. Identity guard: .env present but not gitignored → refuse (no key leak)
 //
 // Uses real temp dirs + real `git init`. Node built-ins only.
 
@@ -162,6 +164,24 @@ test("a non-repo directory is skipped, not fatal", async () => {
   const res = await mon.commitOnce(dir, mon.monitorMessage);
   assert.equal(res, "skipped:not-a-repo", `expected skip, got ${res}`);
   // No throw == no crash. Reaching this line is the assertion.
+});
+
+// ---- 5. Identity guard: .env present but NOT gitignored → refuse -----------
+
+test("refuses to commit when .env is present but not gitignored (Identity guard)", async () => {
+  const repo = mkTmp("bc-mon-envguard-");
+  // Init a repo WITHOUT writing the .gitignore allowlist — simulates an
+  // onboarding interrupted after `git init` + key write but BEFORE the
+  // allowlist landed. .env is therefore not ignored; `add -A` would leak it.
+  git(repo, ["init", "-q"]);
+  git(repo, ["config", "user.email", "test@example.com"]);
+  git(repo, ["config", "user.name", "Test"]);
+  fs.writeFileSync(path.join(repo, ".env"), "BECIVIC_HARNESS_KEY=supersecret\n");
+  fs.writeFileSync(path.join(repo, "profile.json"), '{"ok":true}');
+
+  const res = await mon.commitOnce(repo, mon.monitorMessage);
+  assert.equal(res, "skipped:env-not-ignored", `must refuse to protect Identity, got ${res}`);
+  assert.equal(commitCount(repo), 0, "must not commit at all while .env is exposed");
 });
 
 test("startMonitor on a hidden-only setup (absent marker) does not throw", () => {
