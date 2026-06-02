@@ -36,15 +36,15 @@ If the bash tool is unavailable, fall back to checking just the current working 
 
 Also check whether the user's message or attached files contain a **bc-import bundle** (see §5 below) before branching on marker presence.
 
-## 2. Project found (marker present) — returning user
+## 2. Project found (marker present) — harness is driving
 
 The CLAUDE.md harness inside this folder is already loaded as session context and is driving. Don't re-read CLAUDE.md, don't re-deliver framing, don't repeat onboarding.
 
-Confirm briefly and route to bc-path-traversal / resume:
+**First, confirm the harness file actually exists.** A marker can be present while `CLAUDE.md` is missing — a setup that crashed between writing `.be-civic/marker` and writing the harness `CLAUDE.md`. In that half-written state nothing auto-loads, so no harness is there to greet the user or self-check, and a silent return would leave the user with no response. So before deferring, check that the project root (the folder holding the marker, or its parent if the marker is in a `.be-civic/` subdir) contains a `CLAUDE.md`. If it does **not**, this is a half-written project: route to `be-civic:bc-onboarding`, which runs its **harness-repair mode** (writes the missing harness `CLAUDE.md` + carry-over from the existing registry/preferences, or re-runs setup if those are missing too) — rather than deferring into a void. (`bc-onboarding` explicitly allows this even though a marker is present.)
 
-> "You're in your Be Civic project — the harness is loaded and active. Let me know what you'd like to work on."
+**When `CLAUDE.md` is present, defer silently — do NOT emit your own greeting or confirmation.** The harness opens the session with its own project-specific greeting (it names the user's procedure in their language as the first message — its load self-confirmation). If you post a generic "you're in your Be Civic project" line first, you pre-empt that signal and the user can't tell the harness actually loaded. So when the marker AND the harness file are present, return control immediately and let the harness's first message stand as the opener.
 
-Return control to the conversation. The harness handles everything from here.
+Return control to the conversation. The harness handles everything from here, including the opening greeting.
 
 ## 3. Intent classification (four classes — MECE)
 

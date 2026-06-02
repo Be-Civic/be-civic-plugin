@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -565,6 +566,43 @@ def surface_pending_verification() -> None:
         print(f"PENDING_VERIFICATION_DETAIL: {body}")
 
 
+_HARNESS_KEY_PRESENT_RE = re.compile(r"^\s*BECIVIC_HARNESS_KEY\s*=\s*\S")
+
+
+def surface_harness_key() -> None:
+    """Surface HARNESS_KEY: present | absent — PRESENCE ONLY, value never bound.
+
+    The harness key lives at ${SUBSTRATE_STATE}/.env as the `BECIVIC_HARNESS_KEY=`
+    line. This probe reports only whether such a line exists with *something*
+    after the `=`, so the harness can branch into the keyless-half-state recovery
+    (re-run email→code verification) without itself reading .env. It NEVER binds,
+    slices, retains, prints, or echoes the key value: it runs a boolean regex
+    (`= ` followed by at least one non-whitespace char) per line and keeps only
+    the True/False result. The secret substring is never assigned to a variable.
+    Identity stays substrate-side; this probe treats the value as untouchable.
+    """
+    env_path = SUBSTRATE_STATE / ".env"
+    present = False
+    try:
+        if env_path.is_file():
+            with env_path.open(encoding="utf-8") as fh:
+                for line in fh:
+                    # Boolean match only — does NOT capture or materialise the
+                    # value. `.search` returns a match object we coerce to bool.
+                    if _HARNESS_KEY_PRESENT_RE.search(line):
+                        present = True
+                        break
+    except (OSError, UnicodeDecodeError):
+        # Can't read .env (permissions, or non-UTF-8 bytes) — report unknown so
+        # the harness verifies for itself rather than assuming a key is present.
+        # UnicodeDecodeError is a ValueError subclass (not OSError), so it is
+        # caught explicitly here to keep a local .env problem from cascading into
+        # a whole-preamble JIT fallback.
+        print("HARNESS_KEY: unknown")
+        return
+    print(f"HARNESS_KEY: {'present' if present else 'absent'}")
+
+
 # ----------------------------------------------------------------------------
 # §H4 — Profile inline
 # ----------------------------------------------------------------------------
@@ -687,6 +725,10 @@ def main() -> int:
 
     # 9. Pending-verification flag.
     surface_pending_verification()
+
+    # 9a. Harness-key presence (presence only; value never read/echoed) so the
+    #     harness can branch into keyless-half-state recovery without a Read.
+    surface_harness_key()
 
     # 10. Browser + vision capability (OS_PLATFORM, CHROME_INSTALLED,
     #     BROWSER_TOOL_AVAILABLE, VISION_AVAILABLE). On probe failure, emit the
