@@ -1,8 +1,8 @@
 ---
 id: bc-onboarding
 name: bc-onboarding
-description: First-contact onboarding for Be Civic. Runs the six-step verified flow — taste before any email ask, email capture via a Cowork widget, magic-link email verification (start-verification → paste-back → verify), then state-shape activation across the hidden and visible substrate surfaces — and hands off to bc-path-traversal. Falls back to anonymous read-only mode if the user declines verification. Owns first-contact only; returning and multi-active modes are owned by the harness.
-version: 3.0.0
+description: First-contact onboarding for Be Civic. Runs the verified flow — taste before any email ask, then an email→code access widget (start-verification emails a 6-digit code → verify with the code), then state-shape activation across the hidden and visible substrate surfaces — and hands off to bc-path-traversal. Falls back to anonymous read-only mode if the user declines verification. Owns first-contact only; returning and multi-active modes are owned by the harness.
+version: 3.1.0
 requires_capabilities:
   - cowork_directory_tool: mcp__cowork__request_cowork_directory
   - cowork_widget_tool: mcp__visualize__show_widget
@@ -67,34 +67,38 @@ If at any point the user declines to verify by email — "I don't want to give m
 
 ---
 
-## Step 2. Email capture — single-field widget
+## Step 2. Email + code — the access widget
 
-When the user signals they want to proceed (after the taste beat, or after a "yes, set me up"), present an **email-capture widget** via `mcp__visualize__show_widget`. You build the widget client-side.
+When the user signals they want to proceed (after the taste beat, or a "yes, set me up"), render the **shipped access widget** via `mcp__visualize__show_widget`, passing the contents of `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding-access.<locale>.html` as `widget_code`. (EN ships today; for a locale not yet authored, fall back to the EN file.)
 
-The widget is deliberately minimal:
+This is **one widget, two steps** — you do not render a second widget:
 
-- **One field: email.** A single text input, type `email`, labelled in the conversation language.
-- **A submit button** (`Continue →`, translated).
-- **A privacy link below the field** — `[Privacy](https://becivic.be/privacy)` (markdown-link style in any chat copy; an `<a href>` inside the widget).
-- **No separate consent checkbox.** Form-fill IS consent for using the email to verify. Do not add an opt-in box; submitting the email is the consent act.
+- **Email step.** A single email field with live validation. Submitting it **is** the consent (no checkbox); the widget then reveals the code field in place.
+- **Code step.** The user types the 6-digit code you email them (Step 3) and submits.
 
-Build it as a self-contained branded `<div>` following the styling rules in the header comment of `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding.<locale>.html` (bare `<input>` / `<button>` need inline `style="all: unset; …"` or Cowork's CSS washes them out; brand palette as above; `dir="rtl"` for Arabic). Keep the hero light: Be Civic wordmark, one-line tagline, the email field, the privacy link.
+The widget talks back to you via `sendPrompt`, as plain chat messages with three prefixes:
 
-On submit, Cowork's `sendPrompt` returns `{ "email": "<value>" }` to you as a chat message. **Validate the email shape locally** with a basic RFC-5322 regex before going to the wire. If it fails, re-render the widget with an inline error ("That doesn't look like an email address — mind checking it?"). 
+| Message you receive | Meaning | Your action |
+|---|---|---|
+| `[Be Civic access] email: <addr>` | User submitted their email | Step 3 — start verification for `<addr>` |
+| `[Be Civic access] code: <digits>` | User entered the code | Step 5 — verify with the held `verification_id` + `<digits>` |
+| `[Be Civic access] resend` | User asked to resend | Re-run Step 3 for the held email; a fresh code is emailed |
 
-If the user **closes the widget without submitting**, do not re-pop it. Treat it as a decline and fall to the anonymous-read fallback (§1.1).
+Hold the email address and the `verification_id` (from Step 3) in working memory across these messages.
+
+If the user **closes the widget without submitting**, treat it as a decline and fall to the anonymous-read fallback (§1.1).
 
 ---
 
 ## Step 3. Start verification — `POST /api/auth/start-verification`
 
-With a locally-valid email, call the verification-start endpoint via the **`WebFetch`** tool. **No auth header** — the user has no key yet.
+On the `[Be Civic access] email: <addr>` message, validate the address shape locally (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`), then call the start endpoint via **`WebFetch`**. **No auth header** — the user has no key yet.
 
 ```
 POST https://becivic.be/api/auth/start-verification
 Content-Type: application/json
 
-{ "email": "<validated address>", "locale": "<conversation language: en|fr|nl|de|ar|uk>" }
+{ "email": "<address>" }
 ```
 
 **Response is UNWRAPPED** (auth endpoints carry the payload directly, not a `{status,data}` envelope). On HTTP `202`:
@@ -103,41 +107,33 @@ Content-Type: application/json
 { "verification_id": "<id>", "expires_at": "<RFC3339>" }
 ```
 
-Branch on the **HTTP status code first** (auth envelopes are not wrapped):
+This emails the user a **6-digit code** (not a link). The widget is already showing the code field, so you don't tell the user to "check their email for a link" — just hold the `verification_id` and wait for the `code:` message.
 
-- **`202`** — proceed to step 4.
-- **Network failure / timeout** — retry with exponential backoff (250 ms → 500 ms → 1 s → 2 s). On persistent failure, tell the user plainly the verification service is unreachable and fall to anonymous-read mode (§1.1) for this session; offer to retry later.
-- **Email delivery / address rejected** — surface plainly: *"I couldn't send the email — want to try a different address?"* Re-open the email widget (§2) on confirm.
+- **`202`** — hold `verification_id`; write `${SUBSTRATE_STATE}/.pending-verification` with `verification_id`, `email`, and `expires_at` (one line) so a half-finished ceremony resumes on next session. Transient; never committed (absent from the hidden-surface `.gitignore` allowlist).
+- **Network failure / timeout** — retry with exponential backoff (250 ms → 500 ms → 1 s → 2 s). On persistent failure, tell the user the verification service is unreachable and fall to anonymous-read mode (§1.1); offer to retry later.
+- **Address rejected** — surface plainly: *"I couldn't send to that address — want to try another?"* and re-render the access widget.
 
-**Write the transient pending flag.** Before handing the user off to their inbox, write `${SUBSTRATE_STATE}/.pending-verification` with the `verification_id` and `expires_at` (one line, e.g. `verification_id=<id> expires_at=<ts>`). This is transient and never committed (absent from the hidden-surface allowlist). The preamble's pending-verification scan surfaces it on next session start so a half-finished ceremony can be resumed rather than restarted.
-
-Tell the user, in conversation language: *"Check your email — I've sent a magic link to confirm it's you. Open it, then paste the link (or the token in it) back here and I'll finish setting you up."*
+On a `[Be Civic access] resend` message, re-run this step for the held email; a fresh `verification_id` + code are issued (replace the held one).
 
 ---
 
-## Step 4. Magic-link paste-back
+## Step 4. Receive the code
 
-The server emails a magic link of the shape `https://becivic.be/api/auth/verify?token=<token>`.
+The user reads the 6-digit code from the email and enters it in the widget; you receive `[Be Civic access] code: <digits>`. That is the trigger for Step 5 — no link, no paste-back, no polling.
 
-**`verify` is POST-only.** There is no GET handler, no confirm page, and no status-poll endpoint. Completion is therefore **paste-back**, not a click-through: the user opens the email and pastes the link (or the bare token) back into chat, and you extract the token and POST it yourself.
-
-- Instruct the user (conversation language): *"Open the email from Be Civic and paste the whole link here — or just the long token from it. I'll take it from there."*
-- When the user pastes, **extract the `token`**: if they pasted the full URL, parse the `token` query parameter; if they pasted a bare string, use it as the token.
-- **If the token expired** (the user says it's been a while, or the verify call returns an expired error in step 5) — offer to re-send: re-issue `start-verification` (step 3) for the same email, rewrite `.pending-verification`, and ask for the new link.
-
-Do not poll. Do not wait for a click signal. The paste is the trigger.
+If a `code:` message arrives but you have no held `verification_id` (e.g. a stale session resumed from `.pending-verification` that has since expired), re-run Step 3 first, then ask the user — in chat — for the fresh code.
 
 ---
 
-## Step 5. Verify the token — `POST /api/auth/verify`
+## Step 5. Verify the code — `POST /api/auth/verify`
 
-Redeem the token via the **`WebFetch`** tool. **No auth header** — the key is what this call mints.
+Redeem the code via **`WebFetch`**. **No auth header** — the key is what this call mints.
 
 ```
 POST https://becivic.be/api/auth/verify
 Content-Type: application/json
 
-{ "token": "<extracted token>" }
+{ "verification_id": "<held id>", "code": "<6-digit code>" }
 ```
 
 **Response is UNWRAPPED.** On HTTP `200`:
@@ -146,13 +142,15 @@ Content-Type: application/json
 { "user_id": "<id>", "harness_key": "<secret>", "tier": "pseudonymous" }
 ```
 
-Branch on HTTP status first:
+Branch on the **HTTP status code first**:
 
-- **`200`** — capture `user_id`, `harness_key`, `tier`; proceed to step 6 (state activation).
-- **Token expired / invalid** — go back to step 4's re-send branch; offer a fresh link. Do not loop silently.
-- **Network failure** — retry with the same backoff as step 3; on persistent failure, keep `.pending-verification` in place (so next session resumes) and tell the user to come back and paste again.
+- **`200`** — capture `user_id`, `harness_key`, `tier`; delete `.pending-verification`; proceed to Step 6 (state activation).
+- **`400` with `detail` "Incorrect code"** — wrong code. Tell the user plainly (*"That code didn't match — what's the 6-digit code from the email?"*) and re-call this step with the **same** `verification_id` and the new code. The server caps attempts at 5.
+- **`400` with `detail` "Verification expired"** — the code timed out. Re-run Step 3 (fresh `verification_id` + code), then ask the user for the new code.
+- **`429` `{ "error": "rate_limit_exceeded" }`** — too many wrong attempts; this verification is burned. Re-run Step 3 to send a fresh code, then ask for it.
+- **Network failure** — retry with the Step 3 backoff; keep `.pending-verification` in place so the next session can resume.
 
-**Never echo `harness_key` to chat.** From here it lives only in `.env`.
+**Never echo `harness_key` to chat.** From here it lives only in `.env` (Step 6).
 
 ---
 
