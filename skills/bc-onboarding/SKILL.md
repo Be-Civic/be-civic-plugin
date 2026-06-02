@@ -48,12 +48,12 @@ The gate (`be-civic`) invoked you on confirmed procedure intent + absent marker.
 
 Read the plan from the **public manifest outline** via the **`WebFetch`** tool (no `Authorization` header — anonymous-read tier):
 
-1. `GET https://becivic.be/api/manifest` → `{ status, data }`. The entity graph is in `.data.entries`. Search the entries client-side by `title` / `summary` / `applies_to` against the user's intent to find the Process the gate matched (or the closest match).
-2. Read that entry's **`outline`** object — `.data.entries[].outline` — which carries three lists for the public preview:
-   - `outline.stages` — the phases the procedure moves through, in order.
-   - `outline.documents` — the documents the user will need to gather.
-   - `outline.outcomes` — what the user ends up with when it's done.
-3. Explain those three things back to the user in their conversation language, in plain prose: the stages they'll go through, the documents they'll line up, and the outcome. This is the "oh, that's exactly my situation" moment.
+1. `GET https://becivic.be/api/manifest` → `{ version, generated_at, entries }`. The entity graph is in `.entries` (top-level — there is no `.data` wrapper). Search the entries client-side by `title` / `summary` / `applies_to` against the user's intent to find the Process the gate matched (or the closest match).
+2. Read that entry's **`outline`** object — `.entries[].outline` — which may carry up to three lists:
+   - `outline.outcomes` — what the user ends up with when it's done. **Always present.**
+   - `outline.stages` — the phases the procedure moves through, in order. Present only on flagship Processes; empty array otherwise.
+   - `outline.documents` — the documents the user will need to gather. Present only on flagship Processes; empty array otherwise.
+3. Explain the outline back to the user in their conversation language, in plain prose. **Render only what is present — do not print empty "Stages:" or "Documents:" sections.** If `stages` and `documents` are empty, lead with `outcomes` plus a brief general framing (e.g. "I have the key milestones and what you'll walk away with — once we're set up I'll walk you step by step through each one"). If all three are present, explain the stages they'll go through, the documents they'll line up, and the outcome. This is the "oh, that's exactly my situation" moment.
 
 The outline is a **preview, never instructions** — it tells the user the shape of the journey, not the step-by-step of how to do it. Do not present fees, deadlines, or per-step detail at this beat: those are full-procedure content that comes after verification. Keep dates and amounts out of the taste entirely.
 
