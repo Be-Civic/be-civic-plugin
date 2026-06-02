@@ -260,9 +260,11 @@
         Continue →
       </button>
 
-      <p class="bc-consent-note">
-        By continuing, you agree that Be Civic may use your email to authorise access and send you the verification code. <a href="https://becivic.be/privacy" target="_blank" rel="noopener">Privacy</a>.
-      </p>
+      <label id="bc-ack" style="display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 0; font-size: 12.5px; line-height: 1.5; color: #2a2a26; cursor: pointer;">
+        <span id="bc-ack-box" role="checkbox" aria-checked="false" tabindex="0"
+              style="all: unset; flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; border: 1.5px solid #c8c7c1; border-radius: 5px; background: #ffffff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 700; font-size: 13px; line-height: 1; color: #1a1a18;"></span>
+        <span>I acknowledge the <a href="https://becivic.be/privacy" target="_blank" rel="noopener">Privacy Statement</a> and <a href="https://becivic.be/terms" target="_blank" rel="noopener">Terms of Use</a>.</span>
+      </label>
     </div>
 
     <!-- ── STEP 2: Verification code (hidden until step 1 completes) ── -->
@@ -350,27 +352,10 @@
   /* ── Live email validation ── */
   emailInput.addEventListener('input', function () {
     var val = emailInput.value;
-    if (!val) {
-      emailHint.textContent = '';
-      emailHint.className = 'bc-valid-hint';
-      continueBtn.setAttribute('style', CONTINUE_DISABLED);
-      continueBtn.disabled = true;
-      continueBtn.setAttribute('aria-disabled', 'true');
-      return;
-    }
-    if (isValidEmail(val)) {
-      emailHint.textContent = '✓ Looks good';
-      emailHint.className = 'bc-valid-hint ok';
-      continueBtn.setAttribute('style', CONTINUE_ENABLED);
-      continueBtn.disabled = false;
-      continueBtn.setAttribute('aria-disabled', 'false');
-    } else {
-      emailHint.textContent = '✗ Enter a valid email address';
-      emailHint.className = 'bc-valid-hint err';
-      continueBtn.setAttribute('style', CONTINUE_DISABLED);
-      continueBtn.disabled = true;
-      continueBtn.setAttribute('aria-disabled', 'true');
-    }
+    if (!val) { emailHint.textContent = ''; emailHint.className = 'bc-valid-hint'; }
+    else if (isValidEmail(val)) { emailHint.textContent = '✓ Looks good'; emailHint.className = 'bc-valid-hint ok'; }
+    else { emailHint.textContent = '✗ Enter a valid email address'; emailHint.className = 'bc-valid-hint err'; }
+    updateContinue();
   });
 
   /* Focus styling for email input (border highlight) — inline, survives Cowork */
@@ -383,11 +368,42 @@
     emailInput.setAttribute('style', cur.replace(/border:\s*[^;]+;/, 'border: 1.5px solid #ebe9e3;'));
   });
 
+  /* ── Privacy + Terms acknowledgement (gates Continue alongside a valid email) ── */
+  var ackBox = root.querySelector('#bc-ack-box');
+  var ackLabel = root.querySelector('#bc-ack');
+  var acknowledged = false;
+
+  function updateContinue() {
+    var ok = isValidEmail(emailInput.value) && acknowledged;
+    continueBtn.setAttribute('style', ok ? CONTINUE_ENABLED : CONTINUE_DISABLED);
+    continueBtn.disabled = !ok;
+    continueBtn.setAttribute('aria-disabled', ok ? 'false' : 'true');
+  }
+
+  function toggleAck() {
+    acknowledged = !acknowledged;
+    ackBox.setAttribute('aria-checked', acknowledged ? 'true' : 'false');
+    ackBox.textContent = acknowledged ? '✓' : '';
+    ackBox.setAttribute('style', ackBox.getAttribute('style')
+      .replace(/background:\s*[^;]+;/, acknowledged ? 'background: #fae042;' : 'background: #ffffff;')
+      .replace(/border:\s*[^;]+;/, acknowledged ? 'border: 1.5px solid #fae042;' : 'border: 1.5px solid #c8c7c1;'));
+    updateContinue();
+  }
+  /* Clicking the box or the label text toggles; clicking a link follows the link. */
+  ackLabel.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') return;
+    e.preventDefault();
+    toggleAck();
+  });
+  ackBox.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleAck(); }
+  });
+
   /* ── Step 1 → Step 2 transition ── */
   continueBtn.addEventListener('click', function () {
     if (continueBtn.disabled) return;
     var email = emailInput.value.trim();
-    if (!isValidEmail(email)) return;
+    if (!isValidEmail(email) || !acknowledged) return;
 
     /* Fire the first sendPrompt */
     emit('[Be Civic access] email: ' + email);

@@ -73,7 +73,7 @@ When the user signals they want to proceed (after the taste beat, or a "yes, set
 
 This is **one widget, two steps** — you do not render a second widget:
 
-- **Email step.** A single email field with live validation. Submitting it **is** the consent (no checkbox); the widget then reveals the code field in place.
+- **Email step.** A single email field with live validation, plus a required one-time tick acknowledging the Privacy Statement + Terms of Use (`becivic.be/privacy` and `/terms`). Continue stays disabled until the email is valid **and** the box is ticked; on submit the widget reveals the code field in place. (Filling the email still *is* the consent to use it for verification; the tick is the separate Privacy/Terms acknowledgement.)
 - **Code step.** The user types the 6-digit code emailed to them (the service sends it when you call Step 3) and submits.
 
 The widget talks back to you via `sendPrompt`, as plain chat messages with three prefixes:
