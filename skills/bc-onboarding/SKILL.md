@@ -1,8 +1,8 @@
 ---
 id: bc-onboarding
 name: bc-onboarding
-description: First-contact onboarding for Be Civic. Runs the verified flow — taste (explain the plan from the public manifest) before any email ask, then an email→code access widget (start-verification emails a 6-digit code → verify with the code), then state-shape activation across the hidden and visible substrate surfaces — and ends with a clean handoff into a fresh chat opened inside the project folder, where the working session begins. Falls back to anonymous read-only mode if the user declines verification. Owns first-contact only; returning and multi-active modes are owned by the harness.
-version: 3.2.0
+description: First-contact onboarding for Be Civic. Runs the verified flow — an email→code access widget (start-verification emails a 6-digit code → verify with the code), then state-shape activation across the hidden and visible substrate surfaces — and ends with a clean handoff into a fresh chat opened inside the project folder, where the working session begins. Falls back to anonymous read-only mode if the user declines verification. Owns first-contact only; returning and multi-active modes are owned by the harness.
+version: 3.3.0
 requires_capabilities:
   - cowork_directory_tool: mcp__cowork__request_cowork_directory
   - cowork_widget_tool: mcp__visualize__show_widget
@@ -18,13 +18,11 @@ peer_skills:
 
 ## Preamble
 
-Be Civic is a tool for the user's agent, not an agent itself. The user already has an agent (you, running inside Cowork); Be Civic gives that agent a verified library of Belgian administrative procedures. This skill is the brand-impression beat where the user first sees Be Civic do something useful — *before* it asks for anything in return.
+Be Civic is a tool for the user's agent, not an agent itself. The user already has an agent (you, running inside Cowork); Be Civic gives that agent a verified library of Belgian administrative procedures. This skill is the "get set up" beat: the user has already said yes, and your job is to get them set up quickly and cleanly.
 
-This skill owns **first-contact only** — the "get set up" conversation (Chat 1). It runs once per Be Civic substrate: show the user product taste, capture and verify their email, mint their pseudonymous identity, write the two-surface state shape, then **end this conversation by moving the user into one fresh chat opened inside their project folder** where the work begins. Returning sessions (marker already exists) and mid-session pivots to a second procedure are handled by the harness `CLAUDE.md`, not here.
+This skill owns **first-contact only** — the "get set up" conversation (Chat 1). It runs once per Be Civic substrate: capture and verify the user's email, mint their pseudonymous identity, write the two-surface state shape, then **end this conversation by moving the user into one fresh chat opened inside their project folder** where the work begins. Returning sessions (marker already exists) and mid-session pivots to a second procedure are handled by the harness `CLAUDE.md`, not here.
 
-This conversation is **setup only**: taste, email, verification, and writing the project to disk. The procedure interview — the about-you form and the real walk-through — happens in the *next* chat, after the user opens their project folder and the harness loads. Do **not** ask the user about their situation here, and do **not** render the about-you onboarding form here. Setting up the project, then handing the user cleanly into it, is the whole job.
-
-The crux is **taste before gate**. The first thing the user sees is what Be Civic does, never an email field. Onboarding that opens with an email ask is non-compliant.
+This conversation is **setup only**: email, verification, and writing the project to disk. The procedure interview — the about-you form and the real walk-through — happens in the *next* chat, after the user opens their project folder and the harness loads. Do **not** ask the user about their situation here, and do **not** render the about-you onboarding form here. Setting up the project, then handing the user cleanly into it, is the whole job.
 
 ### Two substrate surfaces
 
@@ -40,34 +38,26 @@ Everything this skill writes lands on one of two surfaces. Read their paths from
 
 ---
 
-## Step 1. Taste first — explain the plan before any email ask
+## Step 1. Match the procedure, then go to the email ask
 
 The gate (`be-civic`) invoked you on confirmed procedure intent + absent marker. It passed you the classified intent shape (`procedure_intent_clear` or `procedure_intent_vague`), a candidate Process id if it matched one, the conversation language, and the opener text.
 
-**Before you ask for anything, show the user what Be Civic does — by explaining the plan for their procedure.** The taste is not a half-performed run of their case and it is not a generic brochure: it is an honest preview of the procedure they came for — the stages they'll go through, the documents they'll gather, and what they'll walk away with. At this point the harness has only the anonymous-read tier (`corpus:read:public`) — no Bearer, no local state.
+The user has already said yes — they came to be set up. **Do not introduce or pitch the plan here.** The introduction (what the procedure involves, the documents, the outcome) is the cold agent's job at `becivic.be/agents`, before install; an installed user has already had it, and re-introducing it stalls the set-up they asked for. Your first beat is a short, honest framing and the email ask — nothing more.
 
-Read the plan from the **public manifest outline** via the **`WebFetch`** tool (no `Authorization` header — anonymous-read tier):
+First, **silently identify which procedure the user came for** so the rest of setup can seed it correctly. This is internal bookkeeping, not something you narrate to the user. At this point the harness has only the anonymous-read tier (`corpus:read:public`) — no Bearer, no local state. Read the **public manifest** via the **`WebFetch`** tool (no `Authorization` header — anonymous-read tier):
 
 1. `GET https://becivic.be/api/manifest` → `{ version, generated_at, entries }`. The entity graph is in `.entries` (top-level — there is no `.data` wrapper). Search the entries client-side by `title` / `summary` / `applies_to` against the user's intent to find the Process the gate matched (or the closest match).
-2. Read that entry's **`outline`** object — `.entries[].outline` — which may carry up to three lists:
-   - `outline.outcomes` — what the user ends up with when it's done. **Always present.**
-   - `outline.stages` — the phases the procedure moves through, in order. Present only on flagship Processes; empty array otherwise.
-   - `outline.documents` — the documents the user will need to gather. Present only on flagship Processes; empty array otherwise.
-3. Explain the outline back to the user in their conversation language, in plain prose. **Render only what is present — do not print empty "Stages:" or "Documents:" sections.** If `stages` and `documents` are empty, lead with `outcomes` plus a brief general framing (e.g. "I have the key milestones and what you'll walk away with — once we're set up I'll walk you step by step through each one"). If all three are present, explain the stages they'll go through, the documents they'll line up, and the outcome. This is the "oh, that's exactly my situation" moment.
+2. Hold the matched entry's `title`, its Process `id`, and its `version`. These feed the procedures registry seed (§6.2) and the carry-over the next chat reads (§6.4a). If nothing in the manifest matches the user's intent (or the gate classified `procedure_intent_vague` with zero hits), hold the `intake` slug instead — `bc-discovery` resolves it in the next chat.
 
-The outline is a **preview, never instructions** — it tells the user the shape of the journey, not the step-by-step of how to do it. Do not present fees, deadlines, or per-step detail at this beat: those are full-procedure content that comes after verification. Keep dates and amounts out of the taste entirely.
+**Do NOT fetch a Process body here** — no Process is public; an anonymous `GET https://becivic.be/api/processes/<id>` without a Bearer returns `401`. The match runs off the manifest only. **Do not present the procedure's stages, documents, fees, deadlines, or per-step detail** — none of that is introduced in the plugin; it belongs to the working session after verification.
 
-**Do NOT fetch a Process body at this beat.** No Process is public; an anonymous `GET https://becivic.be/api/processes/<id>` without a Bearer returns `401`. The taste reads only the manifest `outline`. If the manifest entry has no `outline` yet, or nothing in the manifest matches the user's intent, fall back to a short branded framing of what Be Civic is and what it covers in plain language:
-
-- **Branded framing via `mcp__visualize__show_widget`** — a short branded panel that says what Be Civic is (a verified library of Belgian procedures, run by the user's own agent, kept on the user's own machine) and what's about to happen. Use the brand palette documented in `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding.<locale>.html` (gold `#fae042`, red `#ed2939`, cream `#f5f4ee`, ink `#1a1a18`; remember Cowork's `all: unset` rule for bare form elements).
-
-Keep this beat short. The goal is one clear "that's my procedure" moment, then the email ask — not an exhaustive walkthrough before the user has opted in.
+Then go straight to the email ask (Step 2). Keep your framing to one short beat — who you are and what's about to happen — for example, in the conversation language: *"Let's get you set up. I'll take an email so I can save your progress to a folder on your machine and so your anonymous notes can help the next person — then we're into it."* Do not render a branded introduction panel.
 
 ### 1.1. Anonymous-read fallback (user declines verification)
 
 If at any point the user declines to verify by email — "I don't want to give my email", "can I just look around?", "not yet" — **do not push.** Skip steps 2–6 entirely and operate read-only:
 
-- Reads run against `corpus:read:public` with **no Bearer** — the manifest and its per-Process `outline` (the `WebFetch` calls above). Process bodies stay gated (anonymous `GET /api/processes/<id>` returns `401`).
+- Reads run against `corpus:read:public` with **no Bearer** — the manifest and its per-Process `outline` via `WebFetch`. Process bodies stay gated (anonymous `GET /api/processes/<id>` returns `401`).
 - **No submissions are possible** — Issues, Validations, Feedback, Ratings all require the pseudonymous tier. No folder is mounted; no `${SUBSTRATE_STATE}` state is written; no marker.
 - Frame the limit kindly, in conversation language: *"No problem — I can show you what's in the library and walk you through procedures right now, without an email. The thing email unlocks is saving your progress to a folder on your machine and contributing anonymous notes back so the next person has it easier. Say the word whenever you'd like to set that up."*
 - The mode persists for the session. The user can opt in later by re-stating intent — pick back up at step 2.
@@ -76,7 +66,7 @@ If at any point the user declines to verify by email — "I don't want to give m
 
 ## Step 2. Email + code — the access widget
 
-When the user signals they want to proceed (after the taste beat, or a "yes, set me up"), render the **shipped access widget** via `mcp__visualize__show_widget`, passing the contents of `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding-access.<locale>.html` as `widget_code`. (EN ships today; for a locale not yet authored, fall back to the EN file.)
+After the Step 1 framing (or on a direct "yes, set me up"), render the **shipped access widget** via `mcp__visualize__show_widget`, passing the contents of `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding-access.<locale>.html` as `widget_code`. (EN ships today; for a locale not yet authored, fall back to the EN file.)
 
 This is **one widget, two steps** — you do not render a second widget:
 
@@ -240,7 +230,7 @@ Two places, both required:
    or which language.
    ```
 
-   Fill `<procedure title>`, `<process_id>`, `<procedure-slug>`, `<language name>`, and `<locale>` from what you matched at the taste beat and the registry entry you just wrote. If the gate matched no Process (`intake` slug), write `Chosen procedure: to be routed (slug `intake`)` and the next chat will route it before the form.
+   Fill `<procedure title>`, `<process_id>`, `<procedure-slug>`, `<language name>`, and `<locale>` from what you matched in Step 1 and the registry entry you just wrote. If the gate matched no Process (`intake` slug), write `Chosen procedure: to be routed (slug `intake`)` and the next chat will route it before the form.
 
 The next chat's first job is to read this carry-over and the preferences/registry, greet the user about their procedure in their language, then surface the about-you form. If either value is missing when the next chat loads, it asks the user rather than guessing — so writing both, correctly, here is what keeps the next chat from defaulting to the wrong procedure or the wrong language.
 
@@ -345,7 +335,7 @@ A returning user may arrive with a `bc-import` bundle from another machine. When
 
 1. **Validate the bundle** — confirm the visible/hidden split is preserved and the bundle's `state_version` is not newer than this plugin (if it is, tell the user to upgrade the receiving plugin first; do not activate).
 2. **Activate both surfaces** — write the hidden side (including its `.env` key slot) into the current `${SUBSTRATE_STATE}`, and the visible side into a newly-picked parent as `${SUBSTRATE_DATA}`. Write/update both markers (hidden pointer + visible version-stamp) to cross-reference them.
-3. **Frame as a returning user**, not a new one — no taste beat, no email gate, no re-mint. Hand off to `bc-path-traversal` (or the inline framing) as if the user were returning natively.
+3. **Frame as a returning user**, not a new one — no email gate, no re-mint. Hand off to `bc-path-traversal` (or the inline framing) as if the user were returning natively.
 
 ---
 
@@ -365,7 +355,7 @@ Frame the limit as a choice the user can reverse any time, never as a failure.
 
 `bc-onboarding` **does not own meta questions.** The `be-civic` gate answers them in chat from `${SUBSTRATE_ROOT}/data/privacy-snippet.md` **verbatim**.
 
-If the user asks a meta question mid-onboarding (between the taste beat and the email submit), pause the flow, quote `privacy-snippet.md` verbatim (load it from the file — **never paraphrase**), then offer:
+If the user asks a meta question mid-onboarding (between the Step 1 framing and the email submit), pause the flow, quote `privacy-snippet.md` verbatim (load it from the file — **never paraphrase**), then offer:
 
 > "Want me to carry on setting you up, or keep talking about the data side first?"
 
@@ -381,4 +371,4 @@ If they want to keep talking about data, hold position. If they decide not to pr
 - Meta-question answering, off-topic redirect, no-intent tour. The `be-civic` gate handles those.
 - The auto-commit monitor (`hooks/auto-commit-monitor.js`) and the recovery sweep (`preamble.py`). This skill writes the markers and `.gitignore` files they depend on, then gets out of the way.
 
-This skill exists for one thing: take a user who said yes at the gate → explain the plan for their procedure → verify their email → mint their pseudonymous identity → write the two-surface state shape with the carry-over → hand the user cleanly into a fresh chat inside their project folder, where the harness takes over. It does not run the procedure, and it does not render the about-you form — those are the next chat's job.
+This skill exists for one thing: take a user who said yes at the gate → match the procedure they came for → verify their email → mint their pseudonymous identity → write the two-surface state shape with the carry-over → hand the user cleanly into a fresh chat inside their project folder, where the harness takes over. It does not introduce the plan, it does not run the procedure, and it does not render the about-you form — those are not this conversation's job.
