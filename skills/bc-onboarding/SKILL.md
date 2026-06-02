@@ -74,7 +74,7 @@ When the user signals they want to proceed (after the taste beat, or a "yes, set
 This is **one widget, two steps** — you do not render a second widget:
 
 - **Email step.** A single email field with live validation. Submitting it **is** the consent (no checkbox); the widget then reveals the code field in place.
-- **Code step.** The user types the 6-digit code you email them (Step 3) and submits.
+- **Code step.** The user types the 6-digit code emailed to them (the service sends it when you call Step 3) and submits.
 
 The widget talks back to you via `sendPrompt`, as plain chat messages with three prefixes:
 
@@ -107,7 +107,7 @@ Content-Type: application/json
 { "verification_id": "<id>", "expires_at": "<RFC3339>" }
 ```
 
-This emails the user a **6-digit code** (not a link). The widget is already showing the code field, so you don't tell the user to "check their email for a link" — just hold the `verification_id` and wait for the `code:` message.
+This emails the user a **6-digit code**. The widget is already showing the code field, so just hold the `verification_id` and wait for the `code:` message.
 
 - **`202`** — hold `verification_id`; write `${SUBSTRATE_STATE}/.pending-verification` with `verification_id`, `email`, and `expires_at` (one line) so a half-finished ceremony resumes on next session. Transient; never committed (absent from the hidden-surface `.gitignore` allowlist).
 - **Network failure / timeout** — retry with exponential backoff (250 ms → 500 ms → 1 s → 2 s). On persistent failure, tell the user the verification service is unreachable and fall to anonymous-read mode (§1.1); offer to retry later.
