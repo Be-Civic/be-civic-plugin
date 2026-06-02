@@ -7,7 +7,7 @@ description: Use at the end of a Be Civic application procedure, after eligibili
 Stable skill — agent-tooling sub-skill. Produces a filing dossier artefact rather than running a Belgian admin process. It does not submit anything over the wire.
 </Tip>
 
-Invoked from a `kind: main` application skill at session end, after eligibility has passed, intent is confirmed, and the checklist of required documents has been gathered. Produces a Be Civic-styled application dossier — an index page listing every document the user must file, the "bring originals" callout, the checklist table, and the filled official forms — that the user prints and submits to the filing authority.
+Invoked from a parent application process at session end, after eligibility has passed, intent is confirmed, and the checklist of required documents has been gathered. Produces a Be Civic-styled application dossier — an index page listing every document the user must file, the "bring originals" callout, the checklist table, and the filled official forms — that the user prints and submits to the filing authority.
 
 The dossier is the artefact the user files. Be Civic does not stage or store it; the agent renders it locally on the user's machine.
 
@@ -102,7 +102,7 @@ Before closing the dossier handoff (Step 8), say this out loud to the user:
 
 > *"You'll need to bring these documents in original form — the dossier I'm preparing is for your reference, not a substitute for the originals. Specifically: {list}."*
 
-If the parent process's `## Bring in original` section is empty (rare for application skills, but possible — e.g., a fully digital filing), omit both the callout and the verbal reminder.
+If the parent process's `## Bring in original` section is empty (rare for application processes, but possible — e.g., a fully digital filing), omit both the callout and the verbal reminder.
 
 ## Step 6 — append the official forms
 

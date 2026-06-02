@@ -14,9 +14,11 @@ This file is deliberately split into two clearly-bandered halves:
   │ migration. Touches disk; emits a few operator/diagnostic markers.         │
   └───────────────────────────────────────────────────────────────────────────┘
   ┌─ HARNESS BEHAVIOUR ──────────────────────────────────────────────────────┐
-  │ What gets surfaced into the agent's first turn: session id, the three     │
-  │ session-start scans (orphan buffers, pending state, browser capability),  │
-  │ pending-verification surfacing, and the inline profile.json.              │
+  │ What gets surfaced into the agent's first turn: session id, the           │
+  │ session-start scans (orphan buffers, pending state), pending-verification │
+  │ surfacing, the capability probes (browser/vision/MCP-fallback + the       │
+  │ scrub-rules freshness that gates observation submission), and the inline  │
+  │ profile.json.                                                             │
   └───────────────────────────────────────────────────────────────────────────┘
 
 Surfaces:
@@ -131,9 +133,14 @@ PREAMBLE_JIT_GUIDANCE: |
   - BECIVIC_WIRE: library reads + submissions go over HTTPS via the WebFetch
     tool against `becivic.be/api/*`, Bearer key from `${SUBSTRATE_STATE}/.env`
     when present.
-  - CHROME_MCP_CONNECTED: check your own tool list for `mcp__claude_in_chrome__*`.
-  - CHROME_INSTALLED: ask the customer once at first browser-needing step
-    rather than running a pre-emptive setup walkthrough.
+  - BECIVIC_MCP_CONNECTED: check your own tool list for `mcp__becivic__*`
+    (fallback transport during MCP sunset); otherwise use WebFetch.
+  - BROWSER_TOOL_AVAILABLE: check your own tool list for a browser-control tool.
+  - VISION_AVAILABLE: assume from your own model capability.
+  - SUBMIT_OBSERVATIONS_THIS_SESSION: assume yes if the scrub-rules baseline is
+    present; hold submissions if you cannot confirm a scrub floor.
+    Ask the customer once at the first browser-needing step rather than running
+    a pre-emptive setup walkthrough.
 
   In short: behave as if all flags are unknown but DO actively check when a
   flag matters.
@@ -588,6 +595,60 @@ def emit_profile_json() -> None:
     print("PROFILE_JSON: absent")
 
 
+# ----------------------------------------------------------------------------
+# §H5 — Capability probes (BECIVIC_MCP_CONNECTED + scrub-rules freshness)
+# ----------------------------------------------------------------------------
+
+def emit_mcp_capability() -> None:
+    """Emit BECIVIC_MCP_CONNECTED.
+
+    The wire is WebFetch-against-REST first; the becivic MCP server is a
+    fallback transport that still ships in `.mcp.json` during its sunset. So the
+    key is still meaningful — it tells the harness whether the fallback transport
+    is reachable.
+
+    BUT a detached Python subprocess cannot see the host agent's connected-tool
+    list: there is no env var or file that lists `mcp__becivic__*`. The honest
+    value from here is `unknown`; the agent resolves it from its own tool list
+    (the harness instructions tell it to check for `mcp__becivic__*` and fall
+    back to WebFetch otherwise). We deliberately never assert `yes`/`no` from a
+    surface that can't observe the answer.
+    """
+    print("BECIVIC_MCP_CONNECTED: unknown")
+
+
+def emit_submit_observations() -> None:
+    """Emit SUBMIT_OBSERVATIONS_THIS_SESSION: yes | no.
+
+    The Layer-1 PII scrub floor is a regex pass against a scrub-rules file. The
+    plugin ships a baseline at ${SUBSTRATE_ROOT}/data/scrub-rules.json; the
+    harness may refresh it substrate-side at ${SUBSTRATE_STATE}/scrub-rules.json.
+    The preamble does NO network (it stays local + fast), so the freshness check
+    it can honestly make is: does a usable scrub-rules file exist at all?
+
+      - A usable rules file is present (cached refresh OR shipped baseline) ->
+        the regex scrub floor can run -> `yes`. The agent still re-checks its
+        own session-start network refresh and may downgrade to `no` later if
+        that fetch fails beyond retries (per the harness instructions); the
+        preamble sets the floor, not the ceiling.
+      - No usable rules file anywhere (corrupt/missing baseline — an install
+        error) -> the scrub floor cannot run -> `no`. Fail closed: never submit
+        without a scrub floor in place.
+    """
+    candidates = [
+        SUBSTRATE_STATE / "scrub-rules.json",
+        SUBSTRATE_ROOT / "data" / "scrub-rules.json",
+    ]
+    for rules_path in candidates:
+        try:
+            if rules_path.is_file() and rules_path.stat().st_size > 0:
+                print("SUBMIT_OBSERVATIONS_THIS_SESSION: yes")
+                return
+        except OSError:
+            continue
+    print("SUBMIT_OBSERVATIONS_THIS_SESSION: no")
+
+
 # ============================================================================
 # Orchestration
 # ============================================================================
@@ -627,15 +688,27 @@ def main() -> int:
     # 9. Pending-verification flag.
     surface_pending_verification()
 
-    # 10. Browser capability.
+    # 10. Browser + vision capability (OS_PLATFORM, CHROME_INSTALLED,
+    #     BROWSER_TOOL_AVAILABLE, VISION_AVAILABLE). On probe failure, emit the
+    #     honest conservative defaults for every key the sub-script owns so the
+    #     harness always sees the full set.
     ok, browser_output = run_script("detect-browser-capability.py")
     if ok and browser_output:
         print(browser_output)
     elif not ok:
-        print("CHROME_INSTALLED: unknown")
         print("OS_PLATFORM: unknown")
+        print("CHROME_INSTALLED: unknown")
+        print("BROWSER_TOOL_AVAILABLE: unknown")
+        print("VISION_AVAILABLE: unknown")
 
-    # 11. Profile inline.
+    # 11. MCP fallback-transport capability (agent resolves the true value from
+    #     its own tool list; the preamble emits the honest `unknown`).
+    emit_mcp_capability()
+
+    # 12. Scrub-rules freshness -> whether observations may be submitted.
+    emit_submit_observations()
+
+    # 13. Profile inline.
     emit_profile_json()
 
     return 0
