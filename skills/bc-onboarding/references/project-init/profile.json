@@ -5,7 +5,7 @@
   "region": null,
   "commune_nis5": null,
   "administration_language": null,
-  "other_languages": [],
+  "conversation_language": null,
 
   "civic_status": null,
   "nationality_status": null,
@@ -23,7 +23,7 @@
   "education_history": [],
 
   "document_inventory": {
-    "has_eID": null,
+    "has_id_card": null,
     "has_residence_card": null,
     "has_work_permit": null,
     "has_NN": null,
