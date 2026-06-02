@@ -1,0 +1,467 @@
+<!--
+  Be Civic — access gate widget (email → verification code)  EN
+
+  DELIVERY
+    Delivered via `mcp__visualize__show_widget` with this entire file as `widget_code`.
+    This is Pattern B (branded HTML) from cowork-form-mechanism.md.
+
+  TWO-STEP MECHANIC
+    Step 1 — Email: user types their email address. Live regex validates it
+    (/^[^\s@]+@[^\s@]+\.[^\s@]+$/). The Continue button is disabled until valid.
+    On Continue: fires sendPrompt('[Be Civic access] email: <address>'), then
+    reveals Step 2 in-place (email field collapses; code field appears).
+
+    Step 2 — Code: user types the 6-digit code the agent emails them. On Verify:
+    fires sendPrompt('[Be Civic access] code: <6-digit-code>'). A resend link
+    fires sendPrompt('[Be Civic access] resend').
+
+  SENDPROMPT MESSAGE FORMATS (the agent parses these three prefixes)
+    '[Be Civic access] email: henry@example.com'
+    '[Be Civic access] code: 123456'
+    '[Be Civic access] resend'
+
+  CSP / STYLING RULES
+    - No external assets — all visuals are inline SVG or system fonts.
+    - Every bare <input> and <button> uses inline style="all: unset; …" because
+      Cowork's own form CSS out-competes <style>-block rules on bare form tags.
+      The all: unset wipes Cowork defaults so inline declarations stick.
+    - Non-form elements (div, p, span, label) are styled via the <style> block.
+
+  LOCALE
+    English only. Other locales handled separately.
+-->
+<style>
+  .bc-access {
+    --brand-gold:      #fae042;
+    --brand-red:       #ed2939;
+    --brand-black:     #0a0a0a;
+    --brand-cream:     #f5f4ee;
+    --brand-ink:       #1a1a18;
+    --brand-ink-body:  #2a2a26;
+    --brand-mute:      #6a6a65;
+    --brand-hairline:  #ebe9e3;
+    --display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --body:    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    font-family: var(--body);
+    color: var(--brand-ink-body);
+    max-width: 540px;
+    margin: 1rem auto;
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+  }
+  .bc-access *, .bc-access *::before, .bc-access *::after { box-sizing: border-box; }
+
+  /* ── Hero ── */
+  .bc-hero {
+    background: var(--brand-cream);
+    padding: 26px 30px 22px;
+    border-bottom: 1px solid var(--brand-hairline);
+    position: relative;
+  }
+  .bc-hero__flag {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    display: flex;
+  }
+  .bc-hero__flag span { flex: 1; }
+  .bc-hero__flag span:nth-child(1) { background: var(--brand-black); }
+  .bc-hero__flag span:nth-child(2) { background: var(--brand-gold);  }
+  .bc-hero__flag span:nth-child(3) { background: var(--brand-red);   }
+
+  .bc-hero__mark {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--brand-ink);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .bc-hero__dot { color: var(--brand-red); }
+
+  .bc-hero__tag {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--brand-ink);
+    letter-spacing: -0.01em;
+    margin: 6px 0 4px;
+    line-height: 1.25;
+  }
+  .bc-hero__sub {
+    font-size: 13.5px;
+    color: var(--brand-ink-body);
+    line-height: 1.55;
+    margin: 6px 0 14px;
+  }
+
+  .bc-trust {
+    background: #ffffff;
+    border: 1px solid var(--brand-hairline);
+    border-left: 3px solid var(--brand-gold);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--brand-ink-body);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .bc-trust__icon { flex-shrink: 0; margin-top: 1px; color: var(--brand-ink); }
+  .bc-trust strong { color: var(--brand-ink); font-weight: 700; }
+
+  /* ── Body ── */
+  .bc-body {
+    padding: 28px 30px 20px;
+  }
+
+  .bc-field-label {
+    display: block;
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--brand-ink);
+    margin-bottom: 8px;
+    letter-spacing: -0.005em;
+  }
+
+  /* Validation hint line (✓ / ✗) */
+  .bc-valid-hint {
+    display: block;
+    font-size: 12px;
+    min-height: 18px;
+    margin-top: 5px;
+    line-height: 1.4;
+    color: var(--brand-mute);
+  }
+  .bc-valid-hint.ok  { color: #2a7d3f; }
+  .bc-valid-hint.err { color: #c0392b; }
+
+  /* Step 2 reveal */
+  .bc-step2 {
+    display: none;
+    margin-top: 22px;
+  }
+  .bc-step2-message {
+    font-size: 13px;
+    color: var(--brand-ink-body);
+    line-height: 1.55;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: var(--brand-cream);
+    border-radius: 8px;
+  }
+  .bc-step2-message strong { color: var(--brand-ink); font-weight: 700; }
+
+  /* Resend link */
+  .bc-resend {
+    display: block;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--brand-mute);
+    text-align: right;
+  }
+  .bc-resend a {
+    color: var(--brand-mute);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .bc-resend a:hover { color: var(--brand-ink-body); }
+
+  /* Submit note (form IS the consent) */
+  .bc-consent-note {
+    font-size: 11.5px;
+    color: var(--brand-mute);
+    margin: 14px 0 0;
+    line-height: 1.5;
+  }
+  .bc-consent-note a {
+    color: var(--brand-mute);
+    text-underline-offset: 2px;
+  }
+
+  /* ── Footer ── */
+  .bc-footer { padding: 0 30px 26px; background: #ffffff; }
+  .bc-footer-note {
+    font-size: 11.5px;
+    color: var(--brand-mute);
+    text-align: center;
+    margin: 14px 0 0;
+    line-height: 1.5;
+  }
+</style>
+
+<div class="bc-access" role="form" aria-label="Be Civic access">
+
+  <!-- ════ HERO ════ -->
+  <div class="bc-hero">
+    <div class="bc-hero__flag" aria-hidden="true"><span></span><span></span><span></span></div>
+
+    <div class="bc-hero__mark">
+      <!-- Wordmark SVG — identical to onboarding.en.html -->
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="3.5" ry="3.5" fill="#0a0a0a"/>
+        <path fill="#fae042" transform="translate(-0.1920 23.5) scale(0.011000 -0.011000)" d="M670 -30Q509 -30 401.0 45.0Q293 120 238.5 249.0Q184 378 184 540Q184 702 238.0 831.0Q292 960 397.0 1035.0Q502 1110 656 1110Q811 1110 926.0 1036.0Q1041 962 1104.5 833.5Q1168 705 1168 540Q1168 378 1105.5 249.0Q1043 120 931.0 45.0Q819 -30 670 -30ZM138 0V1440H412V740H378V0ZM626 212Q714 212 770.0 256.0Q826 300 853.0 374.5Q880 449 880 540Q880 630 852.0 704.5Q824 779 765.5 823.5Q707 868 616 868Q531 868 478.5 827.0Q426 786 402.0 712.0Q378 638 378 540Q378 442 402.0 368.0Q426 294 480.5 253.0Q535 212 626 212Z"/>
+        <path fill="#fae042" transform="translate(12.6560 23.5) scale(0.011000 -0.011000)" d="M642 -30Q476 -30 349.5 41.5Q223 113 151.5 238.5Q80 364 80 526Q80 703 150.0 834.0Q220 965 343.0 1037.5Q466 1110 626 1110Q796 1110 915.0 1030.0Q1034 950 1091.0 805.0Q1148 660 1131 464H862V564Q862 729 809.5 801.5Q757 874 638 874Q499 874 433.5 789.5Q368 705 368 540Q368 389 433.5 306.5Q499 224 626 224Q706 224 763.0 259.0Q820 294 850 360L1122 282Q1061 134 929.5 52.0Q798 -30 642 -30ZM284 464V666H1000V464Z"/>
+        <path fill="#ed2939" transform="translate(25.1520 23.5) scale(0.011000 -0.011000)" d="M184 0V272H456V0Z"/>
+      </svg>
+      <span>be civic<span class="bc-hero__dot">.</span></span>
+    </div>
+
+    <p class="bc-hero__tag">Belgian admin, written for the AI you already have.</p>
+    <p class="bc-hero__sub">
+      Your email gives your agent access to the Be Civic library of verified Belgian-admin
+      guides — and lets you save progress. It's the key to the service, nothing else.
+    </p>
+
+    <div class="bc-trust" role="note">
+      <svg class="bc-trust__icon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
+      </svg>
+      <span>
+        <strong>One key, one use.</strong>
+        Your email mints a pseudonymous access key — we don't tie it to any profile or share it. We use it only to authorise your agent's requests and remember your progress.
+      </span>
+    </div>
+  </div>
+
+  <!-- ════ BODY ════ -->
+  <div class="bc-body">
+
+    <!-- ── STEP 1: Email ── -->
+    <div id="bc-step1">
+      <label class="bc-field-label" for="bc-email">Your email address</label>
+      <input
+        id="bc-email"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+        aria-describedby="bc-email-hint"
+        style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; border: 1.5px solid #ebe9e3; border-radius: 9px; background: #ffffff; color: #1a1a18; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; transition: border-color 0.15s;"
+      >
+      <span id="bc-email-hint" class="bc-valid-hint" aria-live="polite"></span>
+
+      <button
+        id="bc-continue"
+        type="button"
+        disabled
+        aria-disabled="true"
+        style="all: unset; display: block; width: 100%; box-sizing: border-box; margin-top: 16px; background: #c8c7c1; color: #f5f4ee; padding: 13px 18px; border-radius: 10px; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; font-weight: 700; text-align: center; cursor: not-allowed;"
+      >
+        Continue →
+      </button>
+
+      <label id="bc-ack" style="display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 0; font-size: 12.5px; line-height: 1.5; color: #2a2a26; cursor: pointer;">
+        <span id="bc-ack-box" role="checkbox" aria-checked="false" tabindex="0"
+              style="all: unset; flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; border: 1.5px solid #c8c7c1; border-radius: 5px; background: #ffffff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 700; font-size: 13px; line-height: 1; color: #1a1a18;"></span>
+        <span>I acknowledge the <a href="https://becivic.be/privacy" target="_blank" rel="noopener">Privacy Statement</a> and <a href="https://becivic.be/terms" target="_blank" rel="noopener">Terms of Use</a>.</span>
+      </label>
+    </div>
+
+    <!-- ── STEP 2: Verification code (hidden until step 1 completes) ── -->
+    <div id="bc-step2" class="bc-step2" aria-live="polite">
+      <div class="bc-step2-message" id="bc-step2-message">
+        We've emailed a 6-digit code to <strong id="bc-step2-email"></strong>. Enter it below.
+      </div>
+
+      <label class="bc-field-label" for="bc-code">Verification code</label>
+      <input
+        id="bc-code"
+        type="text"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        maxlength="6"
+        placeholder="123456"
+        aria-describedby="bc-code-desc"
+        style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 13px 16px; border: 1.5px solid #ebe9e3; border-radius: 9px; background: #ffffff; color: #1a1a18; font-size: 26px; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; font-weight: 700; letter-spacing: 0.18em; text-align: center;"
+      >
+      <span id="bc-code-desc" class="bc-valid-hint" style="text-align: center;"></span>
+
+      <button
+        id="bc-verify"
+        type="button"
+        style="all: unset; display: block; width: 100%; box-sizing: border-box; margin-top: 16px; background: #1a1a18; color: #f5f4ee; padding: 13px 18px; border-radius: 10px; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; font-weight: 700; text-align: center; cursor: pointer;"
+      >
+        Verify →
+      </button>
+
+      <p class="bc-resend">
+        Didn't get it? <a id="bc-resend-link" role="button" tabindex="0">Resend</a>
+      </p>
+    </div>
+
+  </div><!-- /.bc-body -->
+
+  <!-- ════ FOOTER ════ -->
+  <div class="bc-footer">
+    <p class="bc-footer-note">
+      Independent project — not affiliated with the Belgian government, the EU, or any commune.
+    </p>
+  </div>
+
+</div><!-- /.bc-access -->
+
+<script>
+(function () {
+
+  /* ── sendPrompt guard ── */
+  function emit(text) {
+    if (typeof sendPrompt === 'function') {
+      sendPrompt(text);
+    } else {
+      console.log('[Be Civic access widget]', text);
+    }
+  }
+
+  /* ── Element refs ── */
+  var root       = document.currentScript
+                   ? document.currentScript.previousElementSibling
+                   : document.querySelector('.bc-access');
+  if (!root) return;
+
+  var emailInput    = root.querySelector('#bc-email');
+  var emailHint     = root.querySelector('#bc-email-hint');
+  var continueBtn   = root.querySelector('#bc-continue');
+  var step1         = root.querySelector('#bc-step1');
+  var step2         = root.querySelector('#bc-step2');
+  var step2Email    = root.querySelector('#bc-step2-email');
+  var codeInput     = root.querySelector('#bc-code');
+  var verifyBtn     = root.querySelector('#bc-verify');
+  var resendLink    = root.querySelector('#bc-resend-link');
+
+  /* ── Email regex (mirrors spec exactly) ── */
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function isValidEmail(val) {
+    return EMAIL_RE.test(val.trim());
+  }
+
+  /* ── Enabled / disabled visual states for the Continue button ── */
+  var CONTINUE_ENABLED  = 'all: unset; display: block; width: 100%; box-sizing: border-box; margin-top: 16px; background: #1a1a18; color: #f5f4ee; padding: 13px 18px; border-radius: 10px; font-family: \'Manrope\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-size: 14.5px; font-weight: 700; text-align: center; cursor: pointer;';
+  var CONTINUE_DISABLED = 'all: unset; display: block; width: 100%; box-sizing: border-box; margin-top: 16px; background: #c8c7c1; color: #f5f4ee; padding: 13px 18px; border-radius: 10px; font-family: \'Manrope\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-size: 14.5px; font-weight: 700; text-align: center; cursor: not-allowed;';
+
+  /* ── Live email validation ── */
+  emailInput.addEventListener('input', function () {
+    var val = emailInput.value;
+    if (!val) { emailHint.textContent = ''; emailHint.className = 'bc-valid-hint'; }
+    else if (isValidEmail(val)) { emailHint.textContent = '✓ Looks good'; emailHint.className = 'bc-valid-hint ok'; }
+    else { emailHint.textContent = '✗ Enter a valid email address'; emailHint.className = 'bc-valid-hint err'; }
+    updateContinue();
+  });
+
+  /* Focus styling for email input (border highlight) — inline, survives Cowork */
+  emailInput.addEventListener('focus', function () {
+    var cur = emailInput.getAttribute('style') || '';
+    emailInput.setAttribute('style', cur.replace(/border:\s*[^;]+;/, 'border: 1.5px solid #1a1a18;'));
+  });
+  emailInput.addEventListener('blur', function () {
+    var cur = emailInput.getAttribute('style') || '';
+    emailInput.setAttribute('style', cur.replace(/border:\s*[^;]+;/, 'border: 1.5px solid #ebe9e3;'));
+  });
+
+  /* ── Privacy + Terms acknowledgement (gates Continue alongside a valid email) ── */
+  var ackBox = root.querySelector('#bc-ack-box');
+  var ackLabel = root.querySelector('#bc-ack');
+  var acknowledged = false;
+
+  function updateContinue() {
+    var ok = isValidEmail(emailInput.value) && acknowledged;
+    continueBtn.setAttribute('style', ok ? CONTINUE_ENABLED : CONTINUE_DISABLED);
+    continueBtn.disabled = !ok;
+    continueBtn.setAttribute('aria-disabled', ok ? 'false' : 'true');
+  }
+
+  function toggleAck() {
+    acknowledged = !acknowledged;
+    ackBox.setAttribute('aria-checked', acknowledged ? 'true' : 'false');
+    ackBox.textContent = acknowledged ? '✓' : '';
+    ackBox.setAttribute('style', ackBox.getAttribute('style')
+      .replace(/background:\s*[^;]+;/, acknowledged ? 'background: #fae042;' : 'background: #ffffff;')
+      .replace(/border:\s*[^;]+;/, acknowledged ? 'border: 1.5px solid #fae042;' : 'border: 1.5px solid #c8c7c1;'));
+    updateContinue();
+  }
+  /* Clicking the box or the label text toggles; clicking a link follows the link. */
+  ackLabel.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') return;
+    e.preventDefault();
+    toggleAck();
+  });
+  ackBox.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleAck(); }
+  });
+
+  /* ── Step 1 → Step 2 transition ── */
+  continueBtn.addEventListener('click', function () {
+    if (continueBtn.disabled) return;
+    var email = emailInput.value.trim();
+    if (!isValidEmail(email) || !acknowledged) return;
+
+    /* Fire the first sendPrompt */
+    emit('[Be Civic access] email: ' + email);
+
+    /* Disable / visually collapse Step 1 */
+    emailInput.disabled = true;
+    emailInput.setAttribute('style', emailInput.getAttribute('style') + ' opacity: 0.45;');
+    continueBtn.setAttribute('style', CONTINUE_DISABLED);
+    continueBtn.disabled = true;
+    continueBtn.textContent = 'Code sent ✓';
+
+    /* Populate the destination email in the Step 2 message */
+    step2Email.textContent = email;
+
+    /* Reveal Step 2 */
+    step2.style.display = 'block';
+    codeInput.focus();
+  });
+
+  /* ── Focus styling for code input ── */
+  codeInput.addEventListener('focus', function () {
+    var cur = codeInput.getAttribute('style') || '';
+    codeInput.setAttribute('style', cur.replace(/border:\s*[^;]+;/, 'border: 1.5px solid #1a1a18;'));
+  });
+  codeInput.addEventListener('blur', function () {
+    var cur = codeInput.getAttribute('style') || '';
+    codeInput.setAttribute('style', cur.replace(/border:\s*[^;]+;/, 'border: 1.5px solid #ebe9e3;'));
+  });
+
+  /* ── Verify button ── */
+  verifyBtn.addEventListener('click', function () {
+    var code = codeInput.value.trim().replace(/\s+/g, '');
+    if (!code) return;
+    emit('[Be Civic access] code: ' + code);
+    /* Optimistic lock so user can't double-submit */
+    verifyBtn.setAttribute('style', verifyBtn.getAttribute('style').replace(/cursor:\s*[^;]+;/, 'cursor: not-allowed;'));
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Verifying…';
+  });
+
+  /* Allow Enter key on code input */
+  codeInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') verifyBtn.click();
+  });
+
+  /* ── Resend link ── */
+  resendLink.addEventListener('click', function () {
+    emit('[Be Civic access] resend');
+    resendLink.textContent = 'Resent!';
+    resendLink.style.pointerEvents = 'none';
+    setTimeout(function () {
+      resendLink.textContent = 'Resend';
+      resendLink.style.pointerEvents = '';
+    }, 4000);
+  });
+  resendLink.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); resendLink.click(); }
+  });
+
+})();
+</script>

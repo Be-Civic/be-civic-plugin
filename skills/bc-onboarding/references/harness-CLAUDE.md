@@ -43,7 +43,7 @@ Run `${SUBSTRATE_ROOT}/scripts/preamble.py` first; it emits session state as `KE
 
 Then:
 
-1. **Pending verification.** If `PENDING_VERIFICATION: present`, an email-verification ceremony was begun but not finished. Offer the user "resume verification (re-paste your magic link) / start over / drop it" before anything else. Resume → `be-civic:bc-onboarding` picks up at the paste-back step.
+1. **Pending verification.** If `PENDING_VERIFICATION: present`, an email-verification ceremony was begun but not finished. Offer the user "resume verification (re-enter your code) / start over / drop it" before anything else. Resume → `be-civic:bc-onboarding` re-opens the access widget at the code step; if the code has expired, it sends a fresh one.
 2. **Pending state.** If `PENDING_STATE != none`, surface deferred items BEFORE framing: "Before we start, you have [N] item(s) waiting on a decision: [≤3 enumerated]. Handle now, keep going, or set aside?" Submit-now → `be-civic:bc-session-close` in resume-submit mode.
 3. **Branch on session type** from `PROFILE_JSON` + the procedures registry: absent → `first_contact`; populated but no active match → `returning`; one active match → `continuing`; >1 → `multi_active`.
 4. **Open.** `first_contact` → invoke `be-civic:bc-onboarding` peer skill. Other types → inline framing per §13.
@@ -251,7 +251,7 @@ Per-item review at session close means the user sees and approves every submissi
 
 **Key rotation / erasure.** Two distinct operations, both auth endpoints (unwrapped responses, Bearer required):
 - Rotate the signing key only (same identity, new key): `POST ${BASE}/api/auth/rotate-key` body `{}` → `200 { harness_key }`. Overwrite `${SUBSTRATE_STATE}/.env`.
-- Erase and re-mint the user identity: `POST ${BASE}/api/users/rotate` body `{}` → `202 { verification_id, expires_at }` → the email ceremony (paste-back) → `verify` mints a fresh user_id + key.
+- Erase and re-mint the user identity: `POST ${BASE}/api/users/rotate` body `{}` → `202 { verification_id, expires_at }` → the email-code ceremony (user enters the emailed 6-digit code) → `POST ${BASE}/api/auth/verify` body `{ verification_id, code }` mints a fresh user_id + key.
 
 If the user asks why the harness is careful: "Be Civic is designed so that nothing in the verified library or in the contribution loop can identify the people who helped build it. The load-bearing guarantee is on what reaches Be Civic — that's the part we promise."
 
