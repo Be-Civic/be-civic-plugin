@@ -84,7 +84,7 @@
     },
     {
       "name": "long_digit_run",
-      "description": "Catch-all for ≥8-digit numeric runs that PR-CI guards against on path source bodies per §6.12.8 (see schemas.md). Flagged as indirect_identifier (advisory; not auto-reject) because legitimate runs occasionally appear in source URLs or reference numbers; the caller's LLM contextual pass disambiguates.",
+      "description": "Catch-all for ≥8-digit numeric runs that the PII guard checks on path source bodies. Flagged as indirect_identifier (advisory; not auto-reject) because legitimate runs occasionally appear in source URLs or reference numbers; the caller's LLM contextual pass disambiguates.",
       "pattern": "\\b\\d{8,}\\b",
       "flags": "",
       "checksum": null,

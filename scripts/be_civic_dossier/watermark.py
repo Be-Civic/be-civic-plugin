@@ -2,7 +2,7 @@
 
 The watermark is applied to every page of items where the user-facing
 "original required" form discipline holds (i.e. Form != "Printout acceptable").
-It is **a warning, not branding** — see design doc §3 branding discipline.
+It is a warning, not branding.
 
 Two flavours:
 
@@ -21,8 +21,6 @@ Architecture: we build a single-page watermark PDF via fpdf2 (one for each
 text variant), then use pypdf to layer it on top of each page of the target
 PDF. pypdf's ``Page.merge_page`` does the overlay; it preserves the original
 page content underneath.
-
-Stream A — owned by the W25.1a dossier-rebuild work.
 """
 
 from __future__ import annotations
@@ -38,7 +36,7 @@ from . import metadata
 # Localised watermark text
 # ---------------------------------------------------------------------------
 
-#: Original-required text per conversation language. Source: design doc §4.
+#: Original-required text per conversation language.
 WATERMARK_ORIGINAL_REQUIRED: Mapping[str, str] = {
     "en": "ORIGINAL REQUIRED — DO NOT FILE PRINTOUT",
     "fr": "ORIGINAL REQUIS — NE PAS DEPOSER L'IMPRESSION",

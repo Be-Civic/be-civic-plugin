@@ -15,11 +15,7 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code
 
       - name: Official schema validation
-        # Pure static schema check — verified 2026-05-16 to run without
-        # ANTHROPIC_API_KEY and without a prior `claude login`. No API
-        # credits consumed.
-        # If this proves insufficient (e.g. doesn't catch the empirical
-        # Cowork-UI rules in bc-operations/docs/agent-ux/sessions/2026-05-16-plugin-test/
-        # PLUGIN_VALIDATION_RULES.md), add targeted Python/shell checks back
-        # as separate workflow steps.
+        # Static manifest validation — no API key or prior `claude login` needed.
+        # The full test suite (monitor, submission-id, script syntax) runs in the
+        # development wrapper repo, which keeps test code out of the shipped plugin.
         run: claude plugin validate .claude-plugin/plugin.json

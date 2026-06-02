@@ -6,12 +6,10 @@ This module is the single source of truth for:
   produce byte-identical output;
 * the canonical font set bundled at ``vendor/fonts/``;
 * the agreed brand palette baked into Be-Civic-generated pages (kept in
-  sync with Stream B's HTML templates).
+  sync with the HTML templates).
 
 Nothing here renders a page; the rendering modules import these constants
 and helpers.
-
-Stream A — owned by the W25.1a dossier-rebuild work.
 """
 
 from __future__ import annotations
@@ -31,7 +29,7 @@ from typing import Dict, Iterable, Tuple
 #: PDF spec D-strings carry a creation date and modification date. fpdf2
 #: defaults to "now", which makes byte-identical re-runs impossible. We pin to
 #: 2000-01-01T00:00:00Z so the dossier renderer satisfies the determinism
-#: constraint from design doc §7 (same documents -> same output bytes).
+#: constraint (same documents -> same output bytes).
 DETERMINISTIC_TIMESTAMP = datetime.datetime(
     2000, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc
 )
@@ -97,7 +95,7 @@ def fonts_dir() -> Path:
 #:
 #: Family names ("Inter", "SourceSansPro", "NotoSans", "NotoSansArabic") are
 #: the strings rendering code uses with ``pdf.set_font(family, style, size)``.
-#: They match Stream B's HTML template ``font-family`` declarations.
+#: They match the HTML template ``font-family`` declarations.
 FONT_FAMILIES: Dict[str, Dict[str, str]] = {
     "Inter": {
         "": "Inter-Regular.ttf",
@@ -171,7 +169,7 @@ def font_for_language(conversation_language: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Brand palette — kept in sync with Stream B's HTML template :root variables.
+# Brand palette — kept in sync with the HTML template :root variables.
 # ---------------------------------------------------------------------------
 
 
@@ -187,7 +185,7 @@ class Color:
         return (self.r, self.g, self.b)
 
 
-#: Be Civic brand palette. Hex values mirror Stream B's templates.
+#: Be Civic brand palette. Hex values mirror the HTML templates.
 #: Black (ink), Gold, Red are the Belgian flag stripe colours.
 BRAND = {
     "black": Color(10, 10, 10),       # #0a0a0a — primary ink

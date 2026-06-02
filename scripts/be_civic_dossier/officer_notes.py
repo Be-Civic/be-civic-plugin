@@ -1,9 +1,8 @@
 """be_civic_dossier.officer_notes — agent-authored officer-notes prose.
 
-Section 4 of the dossier (per design doc §2): a markdown-source page (or
-pages) the agent authors, explaining the routing call, eligibility math,
-applicable statute, and any commune-specific notes for the receiving
-officer.
+Section 4 of the dossier: a markdown-source page (or pages) the agent
+authors, explaining the routing call, eligibility math, applicable statute,
+and any commune-specific notes for the receiving officer.
 
 This module renders a minimal subset of CommonMark — enough to express the
 prose the agent typically writes:
@@ -14,12 +13,10 @@ prose the agent typically writes:
 * inline bold (``**foo**``) and italic (``*foo*``)
 
 Anything more complex (tables, code blocks, links, nested lists) is
-intentionally out of scope for V1. The agent should split into paragraphs
+intentionally out of scope here. The agent should split into paragraphs
 and bullets if it wants richer structure.
 
-Branding: this is a Be-Civic-generated page (design doc §3).
-
-Stream A — owned by the W25.1a dossier-rebuild work.
+Branding: this is a Be-Civic-generated page.
 """
 
 from __future__ import annotations

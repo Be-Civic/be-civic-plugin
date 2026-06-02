@@ -9,13 +9,11 @@ Two independent checks for path-traversal's runtime needs:
   (b) Are the relevant MCP connectors connected in Claude Desktop?
       Detected via the harness's tool list at session start, not this script
       directly. This script reports the OS-side Chrome installation;
-      MCP-connection signals (BECIVIC_MCP_CONNECTED, CHROME_MCP_CONNECTED) come
-      from CLAUDE.md inspecting its own tool list and emitting the flags into
-      session state.
+      MCP-connection signals (CHROME_MCP_CONNECTED) come from CLAUDE.md
+      inspecting its own tool list and emitting the flags into session state.
 
 Derived flags computed by CLAUDE.md from these signals:
-  PATH_TRAVERSAL_CAPABLE = CHROME_INSTALLED && (BECIVIC_MCP_CONNECTED || CHROME_MCP_CONNECTED)
-  PATH_HANDOFF_CAPABLE   = CHROME_INSTALLED && BECIVIC_MCP_CONNECTED
+  PATH_TRAVERSAL_CAPABLE = CHROME_INSTALLED && CHROME_MCP_CONNECTED
 
 Cross-platform considerations: macOS / Windows / Linux paths differ; tolerate
 unknown-OS with CHROME_INSTALLED: unknown.

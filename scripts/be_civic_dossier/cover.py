@@ -4,15 +4,12 @@ Renders the first page of every dossier: flag stripe (black/gold/red),
 wordmark, procedure title + subtitle, applicant block, metadata grid,
 footer band.
 
-Visual reference: ``skills/bc-dossier-compilation/templates/cover.html``
-(Stream B). This file implements the same layout via fpdf2 primitives so
-the output is deterministic and works without a system HTML/CSS rendering
-toolchain (no weasyprint, no cairo).
+Visual reference: ``skills/bc-dossier-compilation/templates/cover.html``.
+This file implements the same layout via fpdf2 primitives so the output is
+deterministic and works without a system HTML/CSS rendering toolchain (no
+weasyprint, no cairo).
 
-Branding: this is a Be-Civic-generated page, so the full brand identity
-applies. See design doc §3 branding discipline.
-
-Stream A — owned by the W25.1a dossier-rebuild work.
+Branding: this is a Be-Civic-generated page; the full brand identity applies.
 """
 
 from __future__ import annotations
@@ -29,8 +26,8 @@ def add_cover_page(
     filing_authority: str,
     filing_date: str,
     generated_date: str = "",
-    skill_version: str = "",
-    skill_status: str = "",
+    process_version: str = "",
+    process_status: str = "",
 ) -> None:
     """Append a cover page to ``pdf`` (an ``fpdf.FPDF`` instance).
 
@@ -77,8 +74,8 @@ def add_cover_page(
             ("Filing authority", filing_authority),
             ("Filing date", filing_date),
         ] + (
-            [("Skill version", f"{skill_version} ({skill_status})")]
-            if skill_version else []
+            [("Process version", f"{process_version} ({process_status})")]
+            if process_version else []
         ),
     )
 

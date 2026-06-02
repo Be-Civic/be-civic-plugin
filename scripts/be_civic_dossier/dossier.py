@@ -10,23 +10,19 @@ user) builds one in ``render.py`` like::
     d.add_officer_notes(Path("officer-notes.md").read_text())
     d.render(output_path="dossier-2026-05-19.pdf")
 
-Re-running with the same documents folder produces byte-identical
-output (design doc §5).
+Re-running with the same documents folder produces byte-identical output.
 
 Architecture:
 
 1. Items are stored in insertion order.
-2. ``render()`` builds the dossier in seven sections per design doc §2:
-   cover, checklist, "bring originals" callout (embedded in checklist),
-   officer notes, then per-item content with section dividers between.
+2. ``render()`` builds the dossier in sections: cover, checklist, "bring
+   originals" callout (embedded in checklist), officer notes, then per-item
+   content with section dividers between.
 3. For each item, the layout class produces its own pages (via fpdf2 for
-   Be-Civic-generated content, or via pypdf passthrough for user
-   documents).
-4. Pages where ``original_required=True`` get the diagonal watermark
-   layered on via pypdf in a post-pass.
+   Be-Civic-generated content, or via pypdf passthrough for user documents).
+4. Pages where ``original_required=True`` get the diagonal watermark layered
+   on via pypdf in a post-pass.
 5. Final assembly is a pypdf merge of all the section PDFs into one.
-
-Stream A — owned by the W25.1a dossier-rebuild work.
 """
 
 from __future__ import annotations
@@ -61,7 +57,7 @@ DossierItem = object  # too broad to type usefully without a Protocol
 class Dossier:
     """Top-level dossier container.
 
-    Constructor per design doc §8::
+    Constructor::
 
         Dossier(
             procedure_id="nationality-application",
@@ -97,8 +93,8 @@ class Dossier:
         self.officer_notes_md: str = ""
 
         # Optional metadata captured for tests / debugging.
-        self.skill_version: str = ""
-        self.skill_status: str = ""
+        self.process_version: str = ""
+        self.process_status: str = ""
 
     # ----------------------------------------------------------------------
     # Public API
@@ -129,7 +125,7 @@ class Dossier:
 
         Re-running with the same documents/folder produces byte-identical
         bytes. Missing item files are auto-substituted by ``Placeholder``
-        pages (design doc §8 "Behaviour on missing files").
+        pages.
         """
         out_path = Path(output_path)
         if not out_path.is_absolute():
@@ -185,8 +181,8 @@ class Dossier:
             filing_authority=self.filing_authority,
             filing_date=self.filing_date,
             generated_date=self.filing_date,
-            skill_version=self.skill_version,
-            skill_status=self.skill_status,
+            process_version=self.process_version,
+            process_status=self.process_status,
         )
         metadata.apply_deterministic_metadata(pdf)
         return bytes(pdf.output())
@@ -369,10 +365,9 @@ class Dossier:
     def _normalise_items(self, base_dir: Path) -> List[DossierItem]:
         """Replace items whose source file is missing with Placeholders.
 
-        Per design doc §8: "if an item's file_path doesn't exist, the
-        renderer auto-substitutes a Placeholder for that slot (with a
-        console warning the agent surfaces in chat). No exceptions, no
-        halt."
+        If an item's file_path doesn't exist, the renderer auto-substitutes
+        a Placeholder for that slot (with a console warning the agent
+        surfaces in chat). No exceptions, no halt.
         """
         out: List[DossierItem] = []
         for item in self.items:
@@ -419,9 +414,7 @@ class Dossier:
             form_requirement = "Original"  # the user signs & files the printout-as-original
         elif original_required:
             # We don't know which specific sub-class (Original / Apostilled / etc.)
-            # without consulting the procedure canonical; the agent supplies
-            # the exact label via cert_type and/or via direct ChecklistRow
-            # construction in V2. For V1 we use the umbrella "Original".
+            # without consulting the procedure canonical; use the umbrella "Original".
             form_requirement = "Original"
         else:
             form_requirement = "Printout acceptable"

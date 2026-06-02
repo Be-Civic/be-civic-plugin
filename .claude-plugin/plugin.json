@@ -1,8 +1,18 @@
 {
   "name": "be-civic",
-  "version": "0.2.1",
-  "description": "Belgian administrative procedures assistant. Walks you through citizenship, residency, commune registration, mutualité enrolment, address change, residence card renewal, BIPL/inburgering integration parcours, apostille, EU multilingual forms, and dossier compilation. Verified library updates live via MCP.",
+  "version": "0.3.0",
+  "description": "Belgian administrative procedures assistant. Walks you through citizenship, residency, commune registration, mutualité enrolment, address change, residence card renewal, BIPL/inburgering integration parcours, apostille, EU multilingual forms, and dossier compilation. Verified library updates live via the becivic.be REST API.",
   "author": {
     "name": "Be Civic"
+  },
+  "experimental": {
+    "monitors": [
+      {
+        "name": "be-civic-auto-commit",
+        "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/auto-commit-monitor.js\"",
+        "description": "Auto-commits Be Civic substrate state (hidden + visible surfaces) as it changes",
+        "when": "always"
+      }
+    ]
   }
 }

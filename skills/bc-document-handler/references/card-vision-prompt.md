@@ -1,6 +1,6 @@
-# Card vision-extraction prompt (W25.14)
+# Card vision-extraction prompt
 
-Reference prompt for the agent's vision capability when reading Belgian residence-card images dropped into a `row_list` folder-drop input (Mode 2 of the `belgian_residence_card_history` capture). Invoked by **bc-onboarding** post-submit hydration (SKILL.md §7.1) — not by this skill directly. Lives here because card-image reading is a document-handling concern; it just doesn't go through the normal `bc-document-handler` extract-and-archive flow (the row_list hydration owns its own dialogue).
+Reference prompt for the agent's vision capability when reading Belgian residence-card images dropped into a `row_list` folder-drop input (Mode 2 of the `belgian_residence_card_history` capture). Invoked by **bc-onboarding** post-submit hydration — not by this skill directly. Lives here because card-image reading is a document-handling concern; it just doesn't go through the normal `bc-document-handler` extract-and-archive flow (the row_list hydration owns its own dialogue).
 
 ## When to use this prompt
 
@@ -67,14 +67,14 @@ Merge the paired results: `card_type` from the front-extraction; `start_month` /
 
 ## Two-fail fallback
 
-bc-onboarding owns the retry policy (per SKILL.md §7.1, R5). This reference describes what counts as a "fail" for the purposes of that retry:
+bc-onboarding owns the retry policy. This reference describes what counts as a "fail" for the purposes of that retry:
 
 - The vision call returns invalid JSON (parse error) — **fail**.
 - The vision call returns valid JSON but `confidence: low` AND `card_type` is null/empty/"other" with no recoverable signal in notes — **fail**.
 - The vision call returns valid JSON with `card_type` set but both `start_month` and `end_month` null — **fail** (we have no usable temporal anchor for this row).
 - Any other valid JSON with a non-null `card_type` and at least one non-null date — **pass**, even if confidence is low (the user re-confirms in the widget).
 
-After two consecutive fails on the same image (or paired image set), bc-onboarding surfaces the manual-entry fallback per the design doc R5.
+After two consecutive fails on the same image (or paired image set), bc-onboarding surfaces the manual-entry fallback.
 
 ## What this prompt does NOT do
 
@@ -87,7 +87,7 @@ After two consecutive fails on the same image (or paired image set), bc-onboardi
 Card-image reading is structurally a document-handling concern — it's "reading a document the user provided." It just doesn't go through the normal extract-archive-confirm dialogue in `SKILL.md` because:
 
 1. The row_list hydration owns its own confirmation surface (re-rendered widget), not the document-handler transparency dialogue.
-2. The archived images still go to `documents/<procedure-id>/inputs/<input-name>/` per harness §7 archive rule — the row_list hydration is responsible for that archive write before discarding the extraction-side image content.
-3. Layer-1 scrub still runs (on the resulting row's `notes` field, per bc-onboarding §7.1), preserving the privacy contract.
+2. The archived images still go to `documents/<procedure-id>/inputs/<input-name>/` — the row_list hydration is responsible for that archive write before discarding the extraction-side image content.
+3. Layer-1 scrub still runs on the resulting row's `notes` field, preserving the privacy contract.
 
 The reference file pattern keeps SKILL.md tight while making the prompt findable from the document-handler concept space, which is where an agent investigating "how do we read user-provided images?" will look first.

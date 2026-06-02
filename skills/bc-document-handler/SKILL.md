@@ -5,7 +5,7 @@ description: Use when the customer presents a document — paste, upload, attach
 
 # Be Civic — Document Handler
 
-This skill applies CLAUDE.md §7 at the moment of document presentation. §7 sets the always-on rules (take only what the procedure needs, archive originals, never write document bodies to routing stores, cross-procedure index); this skill runs the per-drop dialogue and abort handling.
+This skill applies the data minimisation rules at the moment of document presentation: take only what the procedure needs, archive originals, never write document bodies to routing stores, maintain the cross-procedure index. This skill runs the per-drop dialogue and abort handling.
 
 ## When this fires
 
@@ -16,12 +16,32 @@ This skill applies CLAUDE.md §7 at the moment of document presentation. §7 set
 
 Handle inline. Don't context-switch back to the procedure skill for every drop — extract, archive, confirm, return.
 
+## Resource reads
+
+When the procedure body references a resource by UID to provide document metadata, fetch it via:
+
+```
+GET https://becivic.be/api/resources/<uid>
+Authorization: Bearer <harness_key>   # omit if absent; public read works
+```
+
+Response: `{ "status": 200, "data": { ... } }`. Branch on HTTP status code first. Read the harness key from `${SUBSTRATE_STATE}/.env` (`BECIVIC_HARNESS_KEY=<value>`).
+
 ## The discard rule — as principles, not enumerations
 
 1. **Read the document.** Identify the routing fields the active procedure actually needs from its frontmatter `inputs:` plus any fields its body references by name.
 2. **Take only those.** Routing fields are categorical or bucketed: a type letter (residence card series), a month-bucket date (`YYYY-MM`), an ISO country code, a NIS5 commune code, boolean inventory flags. Never identity-shaped values.
 3. **Never retain:** document numbers, full names, exact dates of birth, exact addresses, photographs, biometric data, signatures, full text blocks beyond the categorical routing fields.
-4. **Original document content never gets written to any file under `profile.json` or `MEMORY.md`.** It exists only in the active conversation context and is gone when the conversation ends. The original goes to `documents/<procedure-id>/<doc-type>.<ext>` per CLAUDE.md §7 — that's the customer's archive, recoverable next session.
+4. **Original document content never gets written to any file under `profile.json` or `MEMORY.md`.** It exists only in the active conversation context and is gone when the conversation ends. The original goes to the visible surface (`${SUBSTRATE_DATA}`) — that's the customer's archive, recoverable next session.
+
+## Archive paths — visible surface
+
+Archive originals to the **visible surface** (`${SUBSTRATE_DATA}`), which is user-accessible from their file manager:
+
+- **Procedure-specific documents:** `${SUBSTRATE_DATA}/<procedure-slug>/documents/<doc-type>.<ext>`
+- **Cross-procedure documents** (birth certificate, marriage certificate, etc.): `${SUBSTRATE_DATA}/documents/<doc-type>.<ext>`
+
+Use the procedure-specific path when the document belongs to an active procedure context; use the top-level `documents/` path for documents that are reusable across procedures without a primary owner.
 
 ## Judgment heuristics for the model
 
@@ -37,11 +57,11 @@ After extraction, tell the customer in plain English what was kept and what wasn
 
 Example, after a birth certificate drop for a nationality-declaration procedure:
 
-> "Got it. From your birth certificate I kept: country of birth (BE), birth month-bucket (1985-04). The certificate itself I saved to your Be Civic folder under `documents/nationality-application/birth-certificate.pdf`. The full name, exact date, and certificate number don't get stored anywhere we share. Want to keep going?"
+> "Got it. From your birth certificate I kept: country of birth (BE), birth month-bucket (1985-04). The certificate itself I saved to your Be Civic folder under `nationality-application/documents/birth-certificate.pdf`. The full name, exact date, and certificate number don't get stored anywhere we share. Want to keep going?"
 
 If the procedure didn't need anything from the document (e.g., the customer dropped something not on the procedure's needs list): say so, archive the original, move on.
 
-> "Got it — saved to your folder under `documents/nationality-application/marriage-certificate.pdf`. The nationality declaration doesn't need anything from this one specifically, so I haven't pulled any routing fields. We'll have it on hand if a later step asks."
+> "Got it — saved to your folder under `nationality-application/documents/marriage-certificate.pdf`. The nationality declaration doesn't need anything from this one specifically, so I haven't pulled any routing fields. We'll have it on hand if a later step asks."
 
 ## Scrub-failure abort
 
@@ -55,21 +75,21 @@ Do NOT silently retry. Do NOT silently write a degraded version. The scrub is lo
 
 ## Cross-procedure index
 
-When the archived document is reusable across procedures (birth certificate, residence certificate, marriage certificate, apostille, EU 2016/1191 multilingual form), record the path in `MEMORY.md` under a `documents:` section per CLAUDE.md §7. Future procedures find it without re-asking the customer to fetch it again.
+When the archived document is reusable across procedures (birth certificate, residence certificate, marriage certificate, apostille, EU 2016/1191 multilingual form), record the path in `MEMORY.md` under a `documents:` section. Future procedures find it without re-asking the customer to fetch it again.
 
 The `documents:` block is path-only — no field values, no transcriptions. Example:
 
 ```markdown
 ## documents
-- birth-certificate (BE, archived 2026-05-14): documents/nationality-application/birth-certificate.pdf
-- marriage-certificate (BE, archived 2026-05-14): documents/nationality-application/marriage-certificate.pdf
+- birth-certificate (BE, archived 2026-05-14): nationality-application/documents/birth-certificate.pdf
+- marriage-certificate (BE, archived 2026-05-14): nationality-application/documents/marriage-certificate.pdf
 ```
 
 ## Dossier compilation trigger
 
 **After the first archive for a procedure completes,** if the parent procedure declares `application_dossier` as its artefact class, invoke `be-civic:bc-dossier-compilation` in `initial` mode. This produces the early-stage dossier with placeholders so the user sees value before the procedure completes. Don't fire again for subsequent archives in the same procedure — subsequent archives trigger `refresh` mode, which `bc-dossier-compilation` handles itself based on its own state detection.
 
-To check whether this is the first archive for the current procedure: look for any existing dossier file under `documents/dossier/` in the procedure's folder. If none exists, this is the first archive; fire `initial` mode. If one already exists, skip the `initial`-mode invocation (subsequent refresh is handled by `bc-dossier-compilation` on its own trigger).
+To check whether this is the first archive for the current procedure: look for any existing dossier file under `<procedure-slug>/documents/dossier/` in the visible surface. If none exists, this is the first archive; fire `initial` mode. If one already exists, skip the `initial`-mode invocation (subsequent refresh is handled by `bc-dossier-compilation` on its own trigger).
 
 ## Reference prompts
 

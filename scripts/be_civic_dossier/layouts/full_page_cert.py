@@ -1,14 +1,11 @@
 """be_civic_dossier.layouts.full_page_cert — single-page issued certificate.
 
 Layout: one user-supplied PDF page per A4 dossier page, fit-to-page,
-auto-rotated to readable orientation. **No Be Civic branding overlaid**
-— the document passes through as the issuing authority produced it
-(design doc §3 branding discipline).
+auto-rotated to readable orientation. No Be Civic branding overlaid —
+the document passes through as the issuing authority produced it.
 
 If the input PDF has multiple pages we still emit one page per source
 page; the class name is a hint about the dossier slot, not a hard cap.
-
-Stream A — owned by the W25.1a dossier-rebuild work.
 """
 
 from __future__ import annotations

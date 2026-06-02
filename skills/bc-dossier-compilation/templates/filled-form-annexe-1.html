@@ -6,8 +6,8 @@
   the agent fills field values at render time via Jinja2-style placeholders.
 
   This template structures the form. Page header watermark "SIGN BEFORE FILING"
-  is added at render time by be_civic_dossier.watermark (Stream A), not in this
-  template — keeps the template content / watermark concerns separated.
+  is added at render time by be_civic_dossier.watermark, not in this template —
+  keeps the template content / watermark concerns separated.
 
   Jinja2-style placeholders (all values filled by render.py from profile.json + answers):
     {{ filing_authority }}

@@ -1,0 +1,11 @@
+*
+!.gitignore
+!user-id
+!profile.json
+!preferences.json
+!events.jsonl
+!relationships.json
+!procedures.json
+!version.json
+!.be-civic/
+!.be-civic/marker

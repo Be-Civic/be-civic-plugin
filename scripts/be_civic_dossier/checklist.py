@@ -1,17 +1,15 @@
 """be_civic_dossier.checklist — dossier checklist + "bring originals" callout.
 
-Renders section 2 of the dossier (per design doc §2): a table with one row
-per dossier item showing the document name, the form requirement (Original /
-Certified copy / Apostilled / Sworn translation / Printout acceptable), and
-the source where the user obtained it.
+Renders section 2 of the dossier: a table with one row per dossier item
+showing the document name, the form requirement (Original / Certified copy /
+Apostilled / Sworn translation / Printout acceptable), and the source where
+the user obtained it.
 
 A "bring originals" callout follows, listing items whose Form column is not
 "Printout acceptable" — these are also the items that receive the diagonal
 watermark on their pages.
 
-Branding: this is a Be-Civic-generated page (design doc §3).
-
-Stream A — owned by the W25.1a dossier-rebuild work.
+Branding: this is a Be-Civic-generated page.
 """
 
 from __future__ import annotations

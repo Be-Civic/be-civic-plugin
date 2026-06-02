@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://becivic.be/schemas/procedures.registry.schema.json",
+  "title": "Be Civic — Procedures registry + substrate version stamp",
+  "description": "Validates the two hidden-surface state files introduced in W33 (§6 + §1c). `procedures.json` is the registry of every procedure the user has under way on this substrate, replacing the legacy per-procedure case.json machinery state. `version.json` is the substrate schema-version stamp the preamble migration runner reads to decide which ordered migration steps to run. Both live in ${SUBSTRATE_STATE} (= ${CLAUDE_PLUGIN_DATA}) and are committed by the auto-commit monitor (they are in the hidden-surface .gitignore allowlist).",
+
+  "$defs": {
+    "rfc3339": {
+      "type": "string",
+      "description": "RFC 3339 / ISO-8601 UTC timestamp, e.g. 2026-05-28T14:32:00Z.",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$"
+    },
+
+    "procedureEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slug",
+        "process_id",
+        "process_version",
+        "status",
+        "started_at",
+        "updated_at"
+      ],
+      "properties": {
+        "slug": {
+          "type": "string",
+          "description": "Folder-safe identifier for this procedure's case content under ${SUBSTRATE_DATA}/<slug>/. Lowercase kebab-case.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "process_id": {
+          "type": "string",
+          "description": "Canonical Be Civic Process id this procedure instantiates (V2 entity; renamed from V1 skill_id). Matches a process in /api/manifest.",
+          "minLength": 1
+        },
+        "process_version": {
+          "type": "string",
+          "description": "Pinned Process version at the time the procedure was started (renamed from V1 skill_version). Lets the harness detect when the canonical Process has moved on.",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle state of this procedure instance. `active` = currently in progress; `paused` = intentionally set down; `completed` = the procedure reached its terminal outcome; `abandoned` = inferred-dead (e.g. orphan-buffer sweep).",
+          "enum": ["active", "paused", "completed", "abandoned"]
+        },
+        "started_at": { "$ref": "#/$defs/rfc3339" },
+        "updated_at": { "$ref": "#/$defs/rfc3339" }
+      }
+    },
+
+    "proceduresRegistry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "procedures"],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "description": "Registry schema version sentinel. 1 for the W33 shape.",
+          "const": 1
+        },
+        "procedures": {
+          "type": "array",
+          "description": "Every procedure instance on this substrate. May be empty (no procedure started yet). Slugs are unique within the array.",
+          "items": { "$ref": "#/$defs/procedureEntry" },
+          "uniqueItems": false
+        }
+      }
+    },
+
+    "versionStamp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state_version"],
+      "description": "Shape of ${SUBSTRATE_STATE}/version.json (handbook 40-substrate §7.1). `state_version` is the schema version the on-disk state was last migrated to; the preamble migration runner compares it to the CURRENT_SCHEMA_VERSION constant baked into preamble.py (the schema version this plugin build targets, == §7.1 `plugin_version`). When state_version < CURRENT_SCHEMA_VERSION the runner applies the ordered migration steps in between, then bumps state_version. `plugin_version` records the plugin/manifest version that last wrote the stamp; `migrated_at` records the last successful migration time.",
+      "properties": {
+        "state_version": {
+          "type": "integer",
+          "description": "Schema version the on-disk substrate state was last migrated to (handbook §7.1). Compared against preamble.py CURRENT_SCHEMA_VERSION.",
+          "minimum": 0
+        },
+        "plugin_version": {
+          "type": "string",
+          "description": "Version of the harness code that last wrote this stamp, read from the shipped manifest in ${SUBSTRATE_ROOT} (e.g. \"0.3.0\"). Provenance; the integer state_version drives migration decisions.",
+          "minLength": 1
+        },
+        "migrated_at": { "$ref": "#/$defs/rfc3339" }
+      }
+    }
+  },
+
+  "$comment": "This file defines two shapes via $defs. procedures.json validates against #/$defs/proceduresRegistry; version.json validates against #/$defs/versionStamp. The top-level oneOf lets a validator check an arbitrary object against either shape; consumers that know which file they hold should $ref the specific $def directly. version.json field names follow handbook 40-substrate §7.1 (state_version / plugin_version), not the procedures-registry's schema_version sentinel.",
+  "oneOf": [
+    { "$ref": "#/$defs/proceduresRegistry" },
+    { "$ref": "#/$defs/versionStamp" }
+  ]
+}

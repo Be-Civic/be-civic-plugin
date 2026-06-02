@@ -10,8 +10,8 @@ Pre-launch. Public repo for early testers; not yet listed on the official Anthro
 
 - The **be-civic skill** — a thin gate that checks whether the conversation is running inside a Be Civic project folder, and starts onboarding if not.
 - **Peer skills** — `onboarding`, `discovery`, `document-handler`, `path-traversal`, `session-close`, `dossier-compilation`. Each is a focused mode that the harness invokes.
-- **Drafter sub-agents** — `be-civic-path-drafter`, `be-civic-skill-drafter`. Spawned by `session-close` to draft amendments and new entries from session research-notes.
-- **MCP wiring** — connects to `mcp.becivic.be` for the live skills graph, procedure canonicals, path directory, and submission endpoints.
+- **Drafter sub-agents** — `be-civic-path-drafter`, `be-civic-process-drafter`. Spawned by `session-close` to draft amendments and new entries from session research-notes.
+- **API wiring** — connects to `becivic.be/api` for the live process graph, procedure canonicals, path directory, and submission endpoints.
 - **State schemas** — `profile.schema.json`, `observation.v3.schema.json`. Stable contracts the harness writes against.
 - **Layer-1 scrub rules** — local PII scrub before any submission leaves the machine.
 
@@ -44,12 +44,6 @@ The plugin auto-updates on every push to this repo.
 ### Cowork desktop, zip-upload fallback
 
 If the marketplace path doesn't work for you (e.g. proxy, network restriction), download the source zip from this repo's [Releases](https://github.com/hk121992/be-civic-plugin/releases) and upload it via Customize → My Uploads.
-
-Tested on Cowork desktop 2026-05-16.
-
-## Companion repo
-
-- `hk121992/be-civic` — the public Be Civic corpus. Verified Belgian administrative procedures, paths, schemas, public site at `becivic.be`. This plugin fetches procedure content from there at runtime via MCP.
 
 ## License
 

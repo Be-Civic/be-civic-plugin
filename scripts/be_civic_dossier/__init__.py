@@ -1,19 +1,18 @@
 """be_civic_dossier — Be Civic dossier renderer package.
 
-The renderer is split across two streams:
+The renderer is split across two areas:
 
-* **Stream A** owns the Dossier / IdCard / FullPageCert / MultiPageDoc /
-  FeeReceipt / FilledForm / Placeholder classes plus the watermark module.
-  Those live in sibling files inside this package.
-* **Stream B** owns the HTML templates at
+* The Dossier / IdCard / FullPageCert / MultiPageDoc / FeeReceipt / FilledForm
+  / Placeholder classes plus the watermark module live in sibling files inside
+  this package.
+* The HTML templates live at
   ``../../skills/bc-dossier-compilation/templates/`` and the codegen module
-  (``codegen.py``) that the agent uses to write ``render.py`` into the user's
-  project folder.
+  (``codegen.py``) writes ``render.py`` into the user's project folder.
 
-This ``__init__`` re-exports the public surface from both streams. If Stream A's
-renderer classes aren't installed yet (partial install, mid-merge state, or
-running codegen tests in isolation), the imports below degrade to ``None`` so
-the codegen path stays usable — only end-to-end rendering will fail.
+This ``__init__`` re-exports the public surface from both areas. If the
+renderer classes aren't installed yet (partial install or running codegen tests
+in isolation), the imports below degrade to ``None`` so the codegen path stays
+usable — only end-to-end rendering will fail.
 
 Public surface used by user-side ``render.py``::
 
@@ -25,7 +24,7 @@ Public surface used by user-side ``render.py``::
 
 from __future__ import annotations
 
-# Codegen (Stream B) is always available — it has no external dependencies.
+# Codegen is always available — it has no external dependencies.
 from .codegen import (
     DossierConfig,
     ITEMS_BEGIN,
@@ -41,9 +40,9 @@ from .codegen import (
     resolve_template,
 )
 
-# Stream A's renderer classes — imported defensively. If a sibling module is
-# missing during a partial install or merge, the name binds to ``None`` so
-# downstream introspection sees a clear "not yet wired" signal.
+# Renderer classes — imported defensively. If a sibling module is missing
+# during a partial install, the name binds to ``None`` so downstream
+# introspection sees a clear "not yet wired" signal.
 try:  # pragma: no cover - exercised by integration tests, not unit tests
     from .renderer import Dossier  # type: ignore[attr-defined]
 except ImportError:
@@ -68,7 +67,7 @@ except ImportError:
 
 
 __all__ = (
-    # Renderer surface (Stream A).
+    # Renderer surface.
     "Dossier",
     "IdCard",
     "FullPageCert",
@@ -76,7 +75,7 @@ __all__ = (
     "FeeReceipt",
     "FilledForm",
     "Placeholder",
-    # Codegen surface (Stream B).
+    # Codegen surface.
     "DossierConfig",
     "ITEMS_BEGIN",
     "ITEMS_END",

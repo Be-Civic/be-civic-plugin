@@ -1,6 +1,6 @@
 """be_civic_dossier.layouts.id_card — residence permit / eID / driving licence layout.
 
-Per design doc §3 and operator clarification 2026-05-19:
+Layout rules:
 
 * Each card occupies **one half-page-height row** (height of half A4 less
   margins).
@@ -13,13 +13,11 @@ Per design doc §3 and operator clarification 2026-05-19:
   and the right half is left blank with a "back not provided" note.
 
 We accept PDF input only — no image formats. fpdf2 needs Pillow to embed
-images and Pillow is explicitly out of scope (design doc §7). The agent
-re-prompts the user to convert phone photos to PDF before upload.
+images and Pillow is explicitly out of scope. The agent re-prompts the user
+to convert phone photos to PDF before upload.
 
-**No Be Civic branding overlaid** on the card pages themselves (design
-doc §3). The packing into rows is layout work, not branding.
-
-Stream A — owned by the W25.1a dossier-rebuild work.
+No Be Civic branding overlaid on the card pages themselves. The packing into
+rows is layout work, not branding.
 """
 
 from __future__ import annotations

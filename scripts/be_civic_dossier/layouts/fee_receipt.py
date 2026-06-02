@@ -5,12 +5,10 @@ Layout: fit-to-page, pass through as-is. Identical handling to
 checklist can label the row meaningfully ("Federal fee receipt — €150,
 2026-04-20") and the agent can record the payment_date separately.
 
-**No Be Civic branding overlaid** (design doc §3).
+No Be Civic branding overlaid.
 
 Used for: MyMinfin Preuve de paiement, federal fee receipts, communal
 fee receipts, payment confirmations from bank apps that the user prints.
-
-Stream A — owned by the W25.1a dossier-rebuild work.
 """
 
 from __future__ import annotations

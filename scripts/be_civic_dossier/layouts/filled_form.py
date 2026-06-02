@@ -1,19 +1,17 @@
 """be_civic_dossier.layouts.filled_form — Be-Civic-rendered filled form.
 
 Layout: Be Civic-rendered HTML with filled fields and signature lines.
-**"SIGN BEFORE FILING" watermark** on every page in the user's
-conversation language. The form template lives under
+"SIGN BEFORE FILING" watermark on every page in the user's conversation
+language. The form template lives under
 ``skills/bc-dossier-compilation/templates/filled-form-<template-id>.html``;
-the codegen module resolves it and we render via fpdf2's HTML support.
+the codegen module resolves it and renders via fpdf2's HTML support.
 
-This is a page we generate, so it carries Be Civic branding (cover-style)
-plus the sign-before-filing watermark as a usability nudge.
+This is a page we generate, so it carries Be Civic branding plus the
+sign-before-filing watermark as a usability nudge.
 
 Used for: Annexe 1 declaration of nationality, other Belgian admin
 forms where the agent fills the fields and the user signs before
 walking into the commune.
-
-Stream A — owned by the W25.1a dossier-rebuild work.
 """
 
 from __future__ import annotations

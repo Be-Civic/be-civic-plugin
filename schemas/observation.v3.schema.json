@@ -13,8 +13,8 @@
     "submitting_agent",
     "submission_contract_version",
     "declared_capabilities",
-    "skill_id",
-    "skill_version",
+    "process_id",
+    "process_version",
     "context",
     "event_type",
     "content"
@@ -82,24 +82,24 @@
       "description": "Capability tokens the agent self-declares. Worker enforces tier per spec §6.7."
     },
 
-    "skill_id": {
+    "process_id": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
       "maxLength": 100,
-      "description": "Kebab-case skill ID. Flat namespace, no slashes."
+      "description": "Kebab-case process ID. Flat namespace, no slashes."
     },
 
-    "skill_version": {
+    "process_version": {
       "type": "string",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$",
-      "description": "Semver of the skill at the time the agent loaded it."
+      "description": "Semver of the process at the time the agent loaded it."
     },
 
     "target_type": {
       "type": "string",
-      "enum": ["skill", "path"],
-      "default": "skill",
-      "description": "Resolution domain for this observation. `skill` (default) targets a skill canonical; `path` (round-7.3) targets a Path Directory entry. When `path`, `skill_id` carries the path id."
+      "enum": ["process", "path"],
+      "default": "process",
+      "description": "Resolution domain for this observation. `process` (default) targets a process canonical; `path` (round-7.3) targets a Path Directory entry. When `path`, `process_id` carries the path id."
     },
 
     "context": {
@@ -143,10 +143,10 @@
     "event_type": {
       "type": "string",
       "enum": [
-        "document_skill_omitted",
-        "document_skill_overstated",
-        "step_skill_omitted",
-        "step_skill_overstated",
+        "document_process_omitted",
+        "document_process_overstated",
+        "step_process_omitted",
+        "step_process_overstated",
         "volatile_value",
         "accuracy_concern",
         "session_outcome",
@@ -242,7 +242,7 @@
 
   "allOf": [
     {
-      "if": { "properties": { "event_type": { "const": "document_skill_omitted" } }, "required": ["event_type"] },
+      "if": { "properties": { "event_type": { "const": "document_process_omitted" } }, "required": ["event_type"] },
       "then": {
         "properties": {
           "content": {
@@ -258,7 +258,7 @@
       }
     },
     {
-      "if": { "properties": { "event_type": { "const": "document_skill_overstated" } }, "required": ["event_type"] },
+      "if": { "properties": { "event_type": { "const": "document_process_overstated" } }, "required": ["event_type"] },
       "then": {
         "properties": {
           "content": {
@@ -273,7 +273,7 @@
       }
     },
     {
-      "if": { "properties": { "event_type": { "enum": ["step_skill_omitted", "step_skill_overstated"] } }, "required": ["event_type"] },
+      "if": { "properties": { "event_type": { "enum": ["step_process_omitted", "step_process_overstated"] } }, "required": ["event_type"] },
       "then": {
         "properties": {
           "content": {

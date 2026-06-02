@@ -2,10 +2,8 @@
 """scrub-layer1.py — Layer-1 scrub for content destined for submission.
 
 Regex pass against a scrub-rules.json file (same shape served at
-becivic.be/scrub-rules.json — see bc-docs/schemas/regex-rules.schema.json).
-LLM contextual pass is the caller's responsibility (see CLAUDE.md §6 +
-becivic-observation-buffer skill); this script does the deterministic
-regex layer only.
+becivic.be/scrub-rules.json). The LLM contextual pass is the caller's
+responsibility; this script does the deterministic regex layer only.
 
 Invocation:
   scrub-layer1.py [--rules PATH] [--text STRING | --stdin]

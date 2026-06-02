@@ -4,14 +4,14 @@
   Rendered through fpdf2's HTML-to-PDF path (or piped through pypdf as needed).
   Bundled fonts at vendor/fonts/ (Inter for display, Source Sans Pro for body).
 
-  Jinja2-style placeholders, filled by be_civic_dossier.codegen:
-    {{ applicant_name }}        — user's preferred-form name (profile.json preferred_name)
+  Jinja2-style placeholders:
+    {{ applicant_name }}        — user's preferred-form name
     {{ procedure_title }}       — e.g. "Belgian nationality declaration (art. 12bis §1, 2°)"
     {{ procedure_id }}          — e.g. "nationality-application"
     {{ filing_date }}           — ISO date string the dossier is intended for
     {{ filing_authority }}      — e.g. "Commune d'Ixelles — Service Population, Nationalités"
-    {{ skill_version }}         — parent skill version (optional)
-    {{ skill_status }}          — alpha|beta|stable (optional)
+    {{ process_version }}         — parent process version (optional)
+    {{ process_status }}          — alpha|beta|stable (optional)
     {{ generated_date }}        — date the PDF was rendered
 
   Page format: A4 portrait, 1.5cm margins. Layout is print-only; no interactive elements.
@@ -248,7 +248,7 @@
     </tr>
     <tr>
       <td class="bc-meta-label">Skill version</td>
-      <td class="bc-meta-value">{{ skill_version|default("—") }} ({{ skill_status|default("stable") }})</td>
+      <td class="bc-meta-value">{{ process_version|default("—") }} ({{ process_status|default("stable") }})</td>
     </tr>
     <tr>
       <td class="bc-meta-label">Generated</td>

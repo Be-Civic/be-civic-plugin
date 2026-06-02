@@ -372,7 +372,7 @@
       },
       "uniqueItems": true,
       "default": [],
-      "description": "Kebab-case skill IDs for all ongoing procedures. Cross-references into memory/procedure_progress_*.md files."
+      "description": "Kebab-case process IDs for all ongoing procedures. Cross-references into memory/procedure_progress_*.md files."
     },
 
     "transitions_in_progress": {

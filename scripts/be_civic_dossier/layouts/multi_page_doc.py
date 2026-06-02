@@ -1,13 +1,11 @@
 """be_civic_dossier.layouts.multi_page_doc — multi-page user document.
 
-Layout: preserve all original pages exactly as-is, in order. **No Be Civic
-header or footer overlaid** (design doc §3 branding discipline).
+Layout: preserve all original pages exactly as-is, in order. No Be Civic
+header or footer overlaid.
 
 Used for: Sigedis compte individuel (commonly 6+ pages), multi-page
 certificates, judgement extracts, anything where the user uploads a single
 multi-page PDF and the receiving officer reads it pages 1-to-N.
-
-Stream A — owned by the W25.1a dossier-rebuild work.
 """
 
 from __future__ import annotations

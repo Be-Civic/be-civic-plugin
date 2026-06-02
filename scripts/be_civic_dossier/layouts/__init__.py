@@ -1,6 +1,6 @@
 """be_civic_dossier.layouts — item-class layout transformers.
 
-Six classes per design doc §3:
+Six classes:
 
 * :class:`IdCard` — residence permit / eID / driving licence
 * :class:`FullPageCert` — single-page issued certificate
@@ -12,8 +12,6 @@ Six classes per design doc §3:
 The transformer for each class accepts an input file path (PDF) plus
 metadata and yields a normalised standardised PDF page sequence that
 the dossier renderer concatenates in order.
-
-Stream A — owned by the W25.1a dossier-rebuild work.
 """
 
 from __future__ import annotations

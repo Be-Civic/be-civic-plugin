@@ -4,7 +4,7 @@ description: Use at the end of a Be Civic application procedure, after eligibili
 ---
 
 <Tip>
-Stable skill — agent-tooling sub-skill. Produces an artefact rather than running a Belgian admin process; no consumer-side validation submission applies. The parent skill files validation against its own proposal.
+Stable skill — agent-tooling sub-skill. Produces a filing dossier artefact rather than running a Belgian admin process. It does not submit anything over the wire.
 </Tip>
 
 Invoked from a `kind: main` application skill at session end, after eligibility has passed, intent is confirmed, and the checklist of required documents has been gathered. Produces a Be Civic-styled application dossier — an index page listing every document the user must file, the "bring originals" callout, the checklist table, and the filled official forms — that the user prints and submits to the filing authority.
@@ -15,12 +15,12 @@ The dossier is the artefact the user files. Be Civic does not stage or store it;
 
 Invoke this sub-skill only when:
 
-- The parent skill's intro paragraph declared the artefact class as `application dossier` (per `meta-draft-l1-skill` step 9).
-- The parent skill listed `dossier-compilation` in its `requires`.
+- The parent process's intro paragraph declared the artefact class as `application dossier`.
+- The parent process listed `dossier-compilation` in its `requires`.
 - The session has reached the point where every checklist item is gathered or accounted for (the user knows where each document comes from, which form is required, and whether it must be brought in original).
 - The user has confirmed they are ready to file.
 
-If any of these are unmet, do not render the dossier. Continue gathering with the user under the parent skill's guidance.
+If any of these are unmet, do not render the dossier. Continue gathering with the user under the parent process's guidance.
 
 ## Step 2 — capability gate and graceful degradation
 
@@ -36,11 +36,10 @@ Tell the user once, briefly, which path you are taking. Do not over-explain — 
 
 ## Step 3 — fill the index-page template
 
-The index page is the cover of the dossier. Render the template below, filling each `{placeholder}` from the parent skill's inputs and the user's gathered context.
+The index page is the cover of the dossier. Render the template below, filling each `{placeholder}` from the parent process's inputs and the user's gathered context.
 
 ````markdown
 <!-- Be Civic Application Index — generated {generated_date} -->
-<!-- Skill: {parent_skill_id} v{parent_skill_version} ({version_status}); last verified {parent_skill_last_verified} -->
 
 ![Be Civic](https://becivic.be/logo/light-inline.png){ width=120px }
 
@@ -49,7 +48,7 @@ The index page is the cover of the dossier. Render the template below, filling e
 **Prepared for:**     {user_name_or_self_reference}
 **Date prepared:**    {generated_date}
 **Filing authority:** {filing_authority}
-**Skill:**            `{parent_skill_id}` v{parent_skill_version} ({version_status})
+**Process:**          `{parent_process_id}` v{parent_process_version} ({version_status})
 
 ---
 
@@ -86,7 +85,7 @@ Columns:
 
 - **§** — index number (1, 2, 3, ...)
 - **Document** — the official name of the document, in the language used by the issuing authority
-- **Form** — one of `Original`, `Certified copy`, `Apostilled`, `Sworn translation`, `Printout acceptable`. Pull from the parent skill's `## Required documents` section, where each row carries a form-required marker per `meta-draft-l1-skill` step 10.
+- **Form** — one of `Original`, `Certified copy`, `Apostilled`, `Sworn translation`, `Printout acceptable`. Pull from the parent process's `## Required documents` section, where each row carries a form-required marker.
 - **Source** — where the user obtained it (commune, origin sub-skill name, payment receipt, etc.)
 
 The "Form" column drives Step 5.
@@ -103,11 +102,11 @@ Before closing the dossier handoff (Step 8), say this out loud to the user:
 
 > *"You'll need to bring these documents in original form — the dossier I'm preparing is for your reference, not a substitute for the originals. Specifically: {list}."*
 
-If the parent skill's `## Bring in original` section is empty (rare for application skills, but possible — e.g., a fully digital filing), omit both the callout and the verbal reminder.
+If the parent process's `## Bring in original` section is empty (rare for application skills, but possible — e.g., a fully digital filing), omit both the callout and the verbal reminder.
 
 ## Step 6 — append the official forms
 
-After the index page and checklist, append every official form the user must file. These are pulled from the parent skill body (Annexes, declarations, fee receipts, attestations, etc.). For each form:
+After the index page and checklist, append every official form the user must file. These are pulled from the parent process body (Annexes, declarations, fee receipts, attestations, etc.). For each form:
 
 - Reproduce the form's title and reference number exactly as the issuing authority publishes it.
 - If the agent has filled fields based on user answers, mark filled values clearly (some authorities require handwritten signatures on printed forms, so the user must verify and sign physically).
@@ -130,18 +129,13 @@ If the renderer does not support a particular instruction (e.g., browser print-t
 
 ## Step 8 — output handoff
 
-Save the dossier locally with the user's permission. Default filename: `{parent_skill_id}-dossier-{YYYY-MM-DD}.{md,pdf}`.
+Save the dossier to the visible surface with the user's permission. Default path: `${SUBSTRATE_DATA}/<procedure-slug>/documents/dossier/{parent_process_id}-dossier-{YYYY-MM-DD}.{md,pdf}`.
 
 Repeat the originals reminder from Step 5. Confirm the user understands the dossier is a reference, not a substitute for the originals.
 
-This sub-skill does not file a validation submission at session end. Validation is filed by the parent skill (against the parent's `proposal_id`, per `agents/submit/validation`). The dossier is rendered; the parent's lifecycle continues.
+This sub-skill does not submit anything at session end. The dossier is rendered locally; the parent process's own lifecycle continues independently.
 
 ---
 
 *Verify with the relevant authority before filing — procedures vary and change.*
 
-## References
-
-- `[meta-draft-l1-skill]` — `skills/meta-draft-l1-skill/canonical.md` — drafting protocol; step 9 sets the dossier artefact class; step 10 sets the form-required markers on the checklist
-- `[agents-protocol]` — `agents.mdx`
-- `[agents-submit-validation]` — `agents/submit/validation.mdx`

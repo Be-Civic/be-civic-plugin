@@ -1,12 +1,12 @@
 ---
 id: bc-onboarding
 name: bc-onboarding
-description: First-contact onboarding for Be Civic. Classifies opener intent, runs the confirmation gate, fetches the server-rendered branded onboarding form via MCP, renders it in Cowork, handles the post-submit folder mount + profile.json write, then hands off to bc-path-traversal. Owns first-contact only — returning and multi-active modes are owned by the harness.
-version: 2.0.0
+description: First-contact onboarding for Be Civic. Runs the six-step verified flow — taste before any email ask, email capture via a Cowork widget, magic-link email verification (start-verification → paste-back → verify), then state-shape activation across the hidden and visible substrate surfaces — and hands off to bc-path-traversal. Falls back to anonymous read-only mode if the user declines verification. Owns first-contact only; returning and multi-active modes are owned by the harness.
+version: 3.0.0
 requires_capabilities:
   - cowork_directory_tool: mcp__cowork__request_cowork_directory
   - cowork_widget_tool: mcp__visualize__show_widget
-  - becivic_mcp: mcp__becivic__read_skill, mcp__becivic__get_onboarding_form, mcp__becivic__find_skill
+  - web_fetch: WebFetch
 peer_skills:
   - be-civic                   # gate skill — classifies opener, decides whether to invoke this skill
   - bc-path-traversal          # next step after onboarding exits
@@ -18,490 +18,276 @@ peer_skills:
 
 ## Preamble
 
-Be Civic is a tool for the user's agent, not an agent itself. The user already has an agent (you, running inside Cowork); Be Civic gives that agent a verified library of Belgian administrative procedures. This skill is the brand-impression beat where the user first sees Be Civic do something — a branded form, a project folder, and a clear handoff to their first procedure.
+Be Civic is a tool for the user's agent, not an agent itself. The user already has an agent (you, running inside Cowork); Be Civic gives that agent a verified library of Belgian administrative procedures. This skill is the brand-impression beat where the user first sees Be Civic do something useful — *before* it asks for anything in return.
 
-This skill owns **first-contact only**. It runs once per Be Civic project: classify the opener, confirm with the user, fetch and render the branded onboarding form, mount the folder after the user submits, write `profile.json` + `case.json` + the shared-root `CLAUDE.md` + `.be-civic/marker`, hand off to `bc-path-traversal`. Returning sessions (project already exists) and mid-session pivots to a second procedure are handled by the harness `CLAUDE.md`, not here.
+This skill owns **first-contact only**. It runs once per Be Civic substrate: show the user product taste, capture and verify their email, mint their pseudonymous identity, write the two-surface state shape, hand off to `bc-path-traversal`. Returning sessions (marker already exists) and mid-session pivots to a second procedure are handled by the harness `CLAUDE.md`, not here.
 
----
+The crux is **taste before gate**. The first thing the user sees is what Be Civic does, never an email field. Onboarding that opens with an email ask is non-compliant.
 
-## Step 1. Confirmation gate + shared-root CLAUDE.md + .be-civic/marker
+### Two substrate surfaces
 
-This skill is invoked by the `be-civic` gate skill when no Be Civic project folder exists (no `.be-civic/marker` was found walking up from the cwd). Before this skill runs, the gate has already done two things:
+Everything this skill writes lands on one of two surfaces. Read their paths from the preamble's session-state lines — never hardcode.
 
-- Detected the opener shape (procedure intent, meta, off-topic, or no-intent). Only **procedure intent** (clear or vague) routes here. Other shapes are handled by `be-civic` directly and never invoke this skill.
-- Run the AskUserQuestion confirmation in the `be-civic` skill body: *"Yes, set up a Be Civic project"* / *"Just answer this one question"* / *"Not interested."* Only option A invokes this skill.
-
-The artefacts this skill writes on submit (after the form, in step 8):
-
-- **Shared root** = `<picked-parent>/BeCivic/`. One folder per user; every procedure the user runs is a subfolder beneath it.
-- **Shared `CLAUDE.md` at the BeCivic root** (`<picked-parent>/BeCivic/CLAUDE.md`) from `${CLAUDE_PLUGIN_ROOT}/skills/bc-onboarding/references/harness-CLAUDE.md`. Cowork's CLAUDE.md auto-load walks ancestors and picks this up when the user opens any procedure subfolder. **Do NOT write a CLAUDE.md inside per-procedure subfolders** (D52).
-- **Hidden marker** at `<picked-parent>/BeCivic/.be-civic/marker`. System-only files (marker, sessions, observation buffers, pending submissions) live under `.be-civic/` at the BeCivic root and stay hidden from the user's sidebar.
-- **Shared profile + memory** at the BeCivic root: `profile.json` (from form values), `MEMORY.md` (empty narrative store, populated turn-by-turn by the harness), and `privacy-attachment.md` (copied from `${CLAUDE_PLUGIN_ROOT}/data/privacy-attachment.md` per D49).
-- **Per-procedure subfolder** for the procedure the user is about to start — e.g. `<picked-parent>/BeCivic/nationality-application/`. Contains `case.json` (Section 2 form values) plus, as the procedure runs, `procedure_progress.md`, `documents/`, `memory/research-notes-*.md`. **No CLAUDE.md, no profile, no marker in here.**
-
-**Do not create empty placeholder subfolders.** No `documents/`, `sessions/`, `memory/` upfront — they get created lazily by the relevant skills when there's actual content.
-
-The whole write happens in step 8 after the user submits the form, not before. Steps 2–7 below describe everything that happens before the folder exists on disk.
-
----
-
-## Step 2. Intent classification (4 shapes)
-
-The `be-civic` gate skill already classified before invoking you. Confirm the shape; if it isn't one of the two listed below, refuse the invocation and route back to the gate.
-
-| Shape | Example opener | Handling here |
+| Surface | Var | What it holds |
 |---|---|---|
-| **procedure-intent (clear)** | "Help me apply for Belgian nationality" / "I need to apostille a US birth certificate" | Step 3 onwards. Skill-match confidence = high; confirmation copy names the procedure. |
-| **procedure-intent (vague)** | "I think I need to do something at the commune?" / "My husband told me I should become Belgian." | Step 3 onwards. Skill-match confidence = medium or low; confirmation copy hedges. |
-| **meta question** ("what data do you keep?") | n/a — gate skill handled in chat | **Do not enter this skill.** Gate skill answers from `${CLAUDE_PLUGIN_ROOT}/data/privacy-snippet.md` verbatim. No folder created. |
-| **off-topic** / **no-intent** / **just exploring** | n/a — gate skill handled in chat | **Do not enter this skill.** Gate skill answers in chat with a 2–3 line tour or polite redirect. No folder created. |
+| Hidden, agent-managed | `${SUBSTRATE_STATE}` (= `${CLAUDE_PLUGIN_DATA}`) | `.env` (harness_key only), `user-id`, `profile.json`, `preferences.json`, `procedures.json`, `version.json`, `sessions/`, `.be-civic/marker` (pointer → visible path), `.pending-verification` (transient) |
+| Visible, user-picked | `${SUBSTRATE_DATA}` (= `<picked-parent>/BeCivic/`) | `CLAUDE.md`, `MEMORY.md`, `.be-civic/marker` (version stamp), `documents/`, `<procedure-slug>/` |
+| Read-only install | `${SUBSTRATE_ROOT}` (= `${CLAUDE_PLUGIN_ROOT}`) | the shipped plugin (templates, schemas, data, scripts) |
 
-For procedure-intent (clear or vague), the gate skill already asked the AskUserQuestion confirmation prompt and the user picked "Yes, set up a Be Civic project." Proceed.
-
----
-
-## Step 3. Pre-form loading message (D19)
-
-Composing the form takes a moment — skill-match + canonical fetch + form composition + pre-population. To prevent a silent pause, say the loading line **in the user's conversation language** before firing the MCP call:
-
-> "Okay, I'm going to pull together an onboarding form for you. Just give me a moment while I analyse your case."
-
-Translate verbatim per detected language:
-- FR: *"D'accord, je vous prépare un formulaire d'accueil. Donnez-moi un instant pour analyser votre situation."*
-- NL: *"Goed — ik stel even een intakeformulier voor u op. Eén moment terwijl ik uw situatie bekijk."*
-- DE: *"In Ordnung — ich stelle Ihnen ein Aufnahmeformular zusammen. Einen Moment, während ich Ihre Situation prüfe."*
-- AR: *"حسنًا، سأُحضّر لك نموذج البداية. لحظة واحدة بينما أحلّل وضعك."*
-- UK: *"Гаразд, я зараз підготую для вас форму. Хвилинку, поки я ознайомлюся з вашою ситуацією."*
-
-Fire the MCP call (step 4) immediately after sending the line — the call runs in parallel with the user reading.
+**Identity rule.** The harness key in `.env` is NEVER committed, echoed to chat, or logged. It is excluded from git structurally — it is simply absent from the hidden-surface `.gitignore` allowlist. Do not print it back to the user, ever.
 
 ---
 
-## Step 4. MCP fetch — canonical + form (D30, D33, D34, D42)
+## Step 1. Taste first — product context before any email ask
 
-**Two separate MCP calls**, each within tool-output budget on its own. The 2026-05-20 form-rendering refactor split the W24 single-round-trip (D43) shape into two surfaces because the combined payload (~135K wire) blew the host agent's tool-output budget. Now: one call for the canonical, one for the form HTML.
+The gate (`be-civic`) invoked you on confirmed procedure intent + absent marker. It passed you the classified intent shape (`procedure_intent_clear` or `procedure_intent_vague`), a candidate Process id if it matched one, the conversation language, and the opener text.
 
-### 4.1. With a candidate procedure (most cases)
+**Before you ask for anything, show the user what Be Civic does.** At this point the harness has only the anonymous-read tier (`corpus:read:public`) — no Bearer, no local state. You have two surfaces for the taste beat; pick whichever fits the opener, in the user's conversation language:
 
-**(a) Fetch the canonical** via `mcp__becivic__read_skill`:
+- **Branded framing via `mcp__visualize__show_widget`** — a short branded panel that says what Be Civic is (a verified library of Belgian procedures, run by the user's own agent, kept on the user's own machine) and what's about to happen. Use the brand palette documented in `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding.<locale>.html` (gold `#fae042`, red `#ed2939`, cream `#f5f4ee`, ink `#1a1a18`; remember Cowork's `all: unset` rule for bare form elements).
+- **Chat walkthrough of a real Process** — if the gate matched a candidate Process, fetch its `public: true` body and walk the user through a slice of it so they see real, concrete content. This is the strongest taste: the user sees the actual procedure they came for.
 
-```json
-{ "skill_id": "<gate-skill's match>" }
-```
+To fetch a `public: true` Process body anonymously, use the **`WebFetch`** tool against the manifest then the process endpoint (no `Authorization` header — anonymous-read tier):
 
-Cache the `body` field (markdown canonical) in your context — Section 2 validation (step 6.1) and post-submit sentinel-payload validation (step 7.2) both read the procedure's `inputs:` block from it. Do not re-fetch within this session.
+1. `GET https://becivic.be/api/manifest` → `{ status, data }`; the entity graph is in `.data`. Search the entries client-side by `title` / `summary` / `applies_to` against the user's intent.
+2. `GET https://becivic.be/api/processes/<id>` → `{ status, data }`; the rendered body is in `.data.body` (MDX, inline slots resolved). Surface a readable slice — do not dump the whole thing.
 
-**(b) Fetch the form HTML** via `mcp__becivic__get_onboarding_form` with the same `skill_id` so the server fetches the canonical, extracts its `inputs:` block, and renders Section 1 + Section 2 + consent.
+Only `public: true` entities are visible without a Bearer. If nothing public matches, fall back to the branded-framing surface and describe what Be Civic covers in plain language.
 
-Request shape:
+Keep this beat short. The goal is one clear "oh, that's what this is" moment, then the email ask — not a full procedure walkthrough before the user has opted in.
 
-```json
-{
-  "skill_id": "<gate-skill's match, e.g. 'nationality-application' or 'apostille-foreign-document-hague'>",
-  "app": "cowork",
-  "locale": "<detected, one of: en | fr | nl | de | ar | uk>",
-  "mode": "first-contact",
-  "pre_selected": {
-    "region": "<one of: brussels | flanders | wallonia | german-speaking | not_yet_arrived>",
-    "commune": "<free text, only if confidently extractable>",
-    "civil_status": "<single | married | legal_cohabitation | divorced | widowed>",
-    "nationality_situation": "<eu_citizen | non_eu_with_card | non_eu_no_card | not_sure>",
-    "conversation_language": "<free text, language the user opened in>",
-    "<procedure-specific-field>": "<value, if confidently extractable>"
-  }
-}
-```
+### 1.1. Anonymous-read fallback (user declines verification)
 
-Response shape:
+If at any point the user declines to verify by email — "I don't want to give my email", "can I just look around?", "not yet" — **do not push.** Skip steps 2–6 entirely and operate read-only:
 
-```json
-{
-  "skill_id": "nationality-application",
-  "form_html": "<branded HTML — pass directly to show_widget>",
-  "locale_actual": "en",
-  "locale_fallback_reason": null,
-  "version": "<sha256-first-12>"
-}
-```
-
-- **`mode: first-contact` is the only value this skill ever sends.** Returning and multi-active modes are owned by the harness, not by this skill (D34).
-- **`pre_selected` derivation (D33):** scan the opener (and any preceding chat context) for the fields above. Extract conservatively — categorical fields only, never names / NN/NISS / addresses / document numbers. If unsure about a value, omit the key (the form will leave it blank). Procedure-specific fields go in `pre_selected` too if the opener volunteered them — e.g. `years_legal_residence_bucket: "5_to_10"` when the user said "I've been here 6 years."
-- **`locale`** = the language the user opened in. Detect from the opener text. Mapping: EN → `en`, FR → `fr`, NL → `nl`, DE → `de`, Arabic → `ar`, Ukrainian → `uk`. Anything else → `en` (server returns `locale_fallback_reason` so you can surface the fallback note to the user — see step 6.4).
-- **Cache the `version` field** — it lands in the form's hidden inputs and must match on submit (§5 of phase-2-contracts).
-- **Parallelise the two calls** if your tool runtime supports concurrent MCP invocations — they're independent reads. If not, do them sequentially in (a) then (b) order; (a) returns markdown the agent must hold, (b) returns HTML the agent passes straight to show_widget.
-
-### 4.2. Without a candidate procedure (low-confidence intent, "let's figure it out")
-
-When the gate skill's intent classification was procedure-intent-vague AND no skill matched (zero hits on `find_skill`), call `get_onboarding_form` **without** `skill_id`:
-
-```json
-{
-  "app": "cowork",
-  "locale": "<detected>",
-  "pre_selected": { "region": "<...>", "civil_status": "<...>" }
-}
-```
-
-Returns Section-1-only HTML (`form_html`). After submit, the agent runs procedure-routing in chat via AskUserQuestion or a Tier-2 elicitation form once enough is known to pick a procedure.
-
-### 4.3. Failure handling
-
-If the MCP call fails (timeout, connection error, HTTP 5xx, malformed response), drop straight to the fallback path in §11. Do not retry more than once; one retry max, then fallback.
+- Reads run against `corpus:read:public` with **no Bearer** (the `WebFetch` calls above, public entities only).
+- **No submissions are possible** — Issues, Validations, Feedback, Ratings all require the pseudonymous tier. No folder is mounted; no `${SUBSTRATE_STATE}` state is written; no marker.
+- Frame the limit kindly, in conversation language: *"No problem — I can show you what's in the library and walk you through procedures right now, without an email. The thing email unlocks is saving your progress to a folder on your machine and contributing anonymous notes back so the next person has it easier. Say the word whenever you'd like to set that up."*
+- The mode persists for the session. The user can opt in later by re-stating intent — pick back up at step 2.
 
 ---
 
-## Step 5. Render the form via `mcp__visualize__show_widget`
+## Step 2. Email capture — single-field widget
 
-Call `mcp__visualize__show_widget` with the `form_html` returned in step 4 as the `widget_code` parameter. The widget surface in Cowork displays the branded form; the user fills it; the in-form `<button type="submit">` triggers Cowork's `sendPrompt` round-trip back to you (step 6).
+When the user signals they want to proceed (after the taste beat, or after a "yes, set me up"), present an **email-capture widget** via `mcp__visualize__show_widget`. You build the widget client-side.
 
-Do not modify the `form_html`. The server pre-applied locale, pre-population, RTL direction (for Arabic), and version stamping. The HTML is a self-contained `<div>` with inline styles; the `bc-*` class names are advisory for your post-submit read-back.
+The widget is deliberately minimal:
 
-After firing `show_widget`, **wait silently for the submit**. Do not chat-fill while the form is open. The form contains:
+- **One field: email.** A single text input, type `email`, labelled in the conversation language.
+- **A submit button** (`Continue →`, translated).
+- **A privacy link below the field** — `[Privacy](https://becivic.be/privacy)` (markdown-link style in any chat copy; an `<a href>` inside the widget).
+- **No separate consent checkbox.** Form-fill IS consent for using the email to verify. Do not add an opt-in box; submitting the email is the consent act.
 
-- Hero panel: Belgian flag stripe, Be Civic wordmark, tagline, inline trust callout (D2 — always visible)
-- Section 1 (always-on, 9 fields per phase-2-contracts §5):
-  1. `region` (pills, single)
-  2. `commune` (free text — hidden when region = `not_yet_arrived`, per D29)
-  3. `civil_status` (pills, single)
-  4. `nationality_situation` (pills, single — note: D29 adds `not_yet_arrived` residency variant)
-  5. `conversation_language` (free text input, pre-filled with detected language per D27)
-  6. `admin_language` (pills, single, region-filtered per D26)
-  7. `preferred_name` (free text, optional)
-  8. `has_id_card` (yes/no/not_sure — simplified per D23, no eID disambiguation here)
-  9. `browser_driving_preference` (pills, single)
-- Section 2 (dynamic) — procedure-routing questions from the matched skill's `inputs:` block joined against the inputs catalogue. **Omitted when `get_onboarding_form` was used.**
-- Consent statement (D28) — required statement, not opt-in checkbox. Hidden input sends `alpha_consent_bundle: "yes"` automatically. **`get_onboarding_form` may omit this when called from non-onboarding contexts; for this skill, it is always present** because mode is always `first-contact`.
-- Submit button (`Continue →`)
+Build it as a self-contained branded `<div>` following the styling rules in the header comment of `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding.<locale>.html` (bare `<input>` / `<button>` need inline `style="all: unset; …"` or Cowork's CSS washes them out; brand palette as above; `dir="rtl"` for Arabic). Keep the hero light: Be Civic wordmark, one-line tagline, the email field, the privacy link.
+
+On submit, Cowork's `sendPrompt` returns `{ "email": "<value>" }` to you as a chat message. **Validate the email shape locally** with a basic RFC-5322 regex before going to the wire. If it fails, re-render the widget with an inline error ("That doesn't look like an email address — mind checking it?"). 
+
+If the user **closes the widget without submitting**, do not re-pop it. Treat it as a decline and fall to the anonymous-read fallback (§1.1).
 
 ---
 
-## Step 6. Handle the `sendPrompt` round-trip (D11)
+## Step 3. Start verification — `POST /api/auth/start-verification`
 
-When the user clicks Continue, Cowork's `sendPrompt` returns a flat JSON `{ field: value }` payload back as a chat message. Receive it; do not respond conversationally yet. Run the following sequence.
+With a locally-valid email, call the verification-start endpoint via the **`WebFetch`** tool. **No auth header** — the user has no key yet.
 
-### 6.1. Validate the payload
+```
+POST https://becivic.be/api/auth/start-verification
+Content-Type: application/json
 
-Validate against:
-- Section 1 fields against `${CLAUDE_PLUGIN_ROOT}/schemas/profile.schema.json` (region enum, civil_status enum, nationality_situation enum, has_id_card enum, browser_driving_preference enum, alpha_consent_bundle exists and equals `yes`, hidden `version` matches what step 4 returned).
-- Section 2 fields against the procedure's `inputs:` block (already in the canonical you cached). Each value should be one of the input's declared enum values or a free-text string (per the input's `type`).
+{ "email": "<validated address>", "locale": "<conversation language: en|fr|nl|de|ar|uk>" }
+```
 
-If a value fails validation, **do not abort**. Cache the invalid value, note it for post-submit probing (step 7), and continue — the form may have a stale catalogue version or the user typed something unexpected in a free-text field. The agent treats the form as the opening salvo, not the final word (D21).
+**Response is UNWRAPPED** (auth endpoints carry the payload directly, not a `{status,data}` envelope). On HTTP `202`:
 
-If `alpha_consent_bundle` is absent (the user never submitted — they read the consent statement and closed the form), follow the **decline path** in §6.5 below.
+```json
+{ "verification_id": "<id>", "expires_at": "<RFC3339>" }
+```
 
-### 6.2. Request the directory
+Branch on the **HTTP status code first** (auth envelopes are not wrapped):
 
-Call `mcp__cowork__request_cowork_directory`. The user picks a **parent folder** (Desktop, home, Documents, wherever).
+- **`202`** — proceed to step 4.
+- **Network failure / timeout** — retry with exponential backoff (250 ms → 500 ms → 1 s → 2 s). On persistent failure, tell the user plainly the verification service is unreachable and fall to anonymous-read mode (§1.1) for this session; offer to retry later.
+- **Email delivery / address rejected** — surface plainly: *"I couldn't send the email — want to try a different address?"* Re-open the email widget (§2) on confirm.
 
-If the user cancels the picker, do not silently abort. Say: *"I need a folder to save your project. Want to try the picker again, or save without a folder for now and come back to it?"* — the latter degrades to advice-only mode (no folder, no profile.json, no marker; the agent continues in-chat).
+**Write the transient pending flag.** Before handing the user off to their inbox, write `${SUBSTRATE_STATE}/.pending-verification` with the `verification_id` and `expires_at` (one line, e.g. `verification_id=<id> expires_at=<ts>`). This is transient and never committed (absent from the hidden-surface allowlist). The preamble's pending-verification scan surfaces it on next session start so a half-finished ceremony can be resumed rather than restarted.
 
-### 6.3. Create the BeCivic folder structure
+Tell the user, in conversation language: *"Check your email — I've sent a magic link to confirm it's you. Open it, then paste the link (or the token in it) back here and I'll finish setting you up."*
 
-Inside the picked parent, create `BeCivic/<procedure-slug>/` where `<procedure-slug>` is derived from the matched skill_id (e.g. `nationality-application` → `nationality-application`; for `get_onboarding_form` cases where no procedure was matched, use `intake` as a placeholder).
+---
 
-Write the following files (in this order):
+## Step 4. Magic-link paste-back
 
-1. **`<parent>/BeCivic/.be-civic/marker`** — small text file with the project version. Use the template at `${CLAUDE_PLUGIN_ROOT}/skills/bc-onboarding/references/project-init/.be-civic/marker`.
-2. **`<parent>/BeCivic/CLAUDE.md`** — only if it doesn't already exist (D52 — single shared CLAUDE.md). Copy from `${CLAUDE_PLUGIN_ROOT}/skills/bc-onboarding/references/harness-CLAUDE.md`.
-3. **`<parent>/BeCivic/profile.json`** — Section 1 values + consent block:
+The server emails a magic link of the shape `https://becivic.be/api/auth/verify?token=<token>`.
+
+**`verify` is POST-only.** There is no GET handler, no confirm page, and no status-poll endpoint. Completion is therefore **paste-back**, not a click-through: the user opens the email and pastes the link (or the bare token) back into chat, and you extract the token and POST it yourself.
+
+- Instruct the user (conversation language): *"Open the email from Be Civic and paste the whole link here — or just the long token from it. I'll take it from there."*
+- When the user pastes, **extract the `token`**: if they pasted the full URL, parse the `token` query parameter; if they pasted a bare string, use it as the token.
+- **If the token expired** (the user says it's been a while, or the verify call returns an expired error in step 5) — offer to re-send: re-issue `start-verification` (step 3) for the same email, rewrite `.pending-verification`, and ask for the new link.
+
+Do not poll. Do not wait for a click signal. The paste is the trigger.
+
+---
+
+## Step 5. Verify the token — `POST /api/auth/verify`
+
+Redeem the token via the **`WebFetch`** tool. **No auth header** — the key is what this call mints.
+
+```
+POST https://becivic.be/api/auth/verify
+Content-Type: application/json
+
+{ "token": "<extracted token>" }
+```
+
+**Response is UNWRAPPED.** On HTTP `200`:
+
+```json
+{ "user_id": "<id>", "harness_key": "<secret>", "tier": "pseudonymous" }
+```
+
+Branch on HTTP status first:
+
+- **`200`** — capture `user_id`, `harness_key`, `tier`; proceed to step 6 (state activation).
+- **Token expired / invalid** — go back to step 4's re-send branch; offer a fresh link. Do not loop silently.
+- **Network failure** — retry with the same backoff as step 3; on persistent failure, keep `.pending-verification` in place (so next session resumes) and tell the user to come back and paste again.
+
+**Never echo `harness_key` to chat.** From here it lives only in `.env`.
+
+---
+
+## Step 6. State-shape activation
+
+A confirmed verification with absent marker triggers the full two-surface write. The folder picker fires here if it has not already.
+
+### 6.1. Pick the visible parent
+
+Call `mcp__cowork__request_cowork_directory`. The user picks a **parent folder**; the visible surface is `<picked-parent>/BeCivic/` (this becomes `${SUBSTRATE_DATA}`).
+
+If the user **cancels the picker**, do not silently abort. The hidden surface (`${SUBSTRATE_STATE}`) is already allocated by Cowork without a picker, so the identity is mintable — but without a visible folder there is nowhere user-facing to save progress. Say: *"I need a folder to save your project in. Want to try the picker again, or carry on in chat for now and set the folder up later?"* The latter degrades to advice-only: write the hidden-surface identity (6.2) so submissions work, skip the visible-surface writes (6.4), and tell the user their progress isn't being saved to disk yet.
+
+### 6.2. Write the hidden-surface identity (`${SUBSTRATE_STATE}`)
+
+In this order:
+
+1. **`git init`** the hidden surface if it is not already a repo. **Write `${SUBSTRATE_STATE}/.gitignore` FIRST**, copied verbatim from `${SUBSTRATE_ROOT}/data/gitignore-hidden.txt`. The allowlist is what keeps `.env`, `sessions/`, and `.pending-verification` out of every commit — it must exist before any other file is written or the monitor's first `git add -A` could stage the key.
+2. **`${SUBSTRATE_STATE}/.env`** — the harness key only: `BECIVIC_HARNESS_KEY=<harness_key>`. Nothing else in this file. It is structurally excluded from git by the allowlist. Never echo it.
+3. **`${SUBSTRATE_STATE}/user-id`** — the raw `user_id` string, no wrapper.
+4. **`${SUBSTRATE_STATE}/profile.json`** — copy the template from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/profile.json`, then populate `last_updated_at` and any categorical routing fields you can derive conservatively from the opener (region, civic/residency status, languages — categorical only; never names, NN/NISS, addresses, document numbers). Leave the rest at their `null` / `[]` defaults for the situation-assessment beat to fill.
+5. **`${SUBSTRATE_STATE}/preferences.json`** — a minimal preferences object (e.g. `{ "conversation_language": "<locale>" }`); start with the conversation language so the harness speaks it from turn one.
+6. **`${SUBSTRATE_STATE}/procedures.json`** — the procedure registry, validated against `${SUBSTRATE_ROOT}/schemas/procedures.registry.schema.json`. Seed one entry for the procedure the user is about to start:
    ```json
    {
-     "region": "<value>",
-     "commune": "<value or empty>",
-     "civil_status": "<value>",
-     "nationality_situation": "<value>",
-     "conversation_language": "<value>",
-     "admin_language": "<value>",
-     "preferred_name": "<value or empty>",
-     "has_id_card": "<value>",
-     "browser_driving_preference": "<value>",
-     "consent": {
-       "alpha_bundle": true,
-       "signed_at": "<ISO 8601 UTC timestamp>",
-       "version": "<form's version hash from hidden input>"
-     }
+     "schema_version": 1,
+     "procedures": [
+       {
+         "slug": "<procedure-slug>",
+         "process_id": "<matched process id, or the slug if discovery-bound>",
+         "process_version": "<version from the manifest entry, or '0' if unknown>",
+         "status": "active",
+         "started_at": "<RFC3339 UTC>",
+         "updated_at": "<RFC3339 UTC>"
+       }
+     ]
    }
    ```
-4. **`<parent>/BeCivic/MEMORY.md`** — empty narrative store from `${CLAUDE_PLUGIN_ROOT}/skills/bc-onboarding/references/project-init/MEMORY.md`.
-5. **`<parent>/BeCivic/privacy-attachment.md`** — copy of `${CLAUDE_PLUGIN_ROOT}/data/privacy-attachment.md` (D49 — visible to the user in their file manager).
-6. **`<parent>/BeCivic/<procedure-slug>/case.json`** — Section 2 values plus any procedure-routing extras you captured pre-form. Shape is per-procedure; minimum:
-   ```json
-   {
-     "skill_id": "<matched skill_id>",
-     "<input-name>": "<value>",
-     ...
-   }
-   ```
+   If the gate matched no Process (`procedure_intent_vague`, zero manifest hits), use `intake` as the slug and `process_id`, and let `bc-discovery` rename it after routing.
 
-Do **not** pre-create empty subdirectories (`documents/`, `sessions/`, `memory/`). They get created lazily by the relevant skills when there's content.
+`.pending-verification` is now redundant — delete it (verification is complete).
 
-### 6.4. Acknowledge with the locale + path
+### 6.3. Write the hidden→visible pointer marker
 
-Confirm to the user, in their conversation language:
+Write **`${SUBSTRATE_STATE}/.be-civic/marker`** containing the absolute path to the visible surface (`${SUBSTRATE_DATA}`), one line. This is the pointer the auto-commit monitor and `preamble.py` read to locate the user-picked folder (`_resolve_substrate_data` in `preamble.py` reads exactly this file). Without it, the monitor watches the hidden surface only.
 
-> "Saved locally at `<absolute path to BeCivic/<procedure-slug>/>`. Only the categorical fields you ticked travel — your name, address, identifiers stay in this folder."
+### 6.4. Write the visible surface (`${SUBSTRATE_DATA}`)
 
-The second sentence is **JIT trust clause 1** (anonymity — see §7 below); it fires naturally at folder-mount time.
+In this order:
 
-If `locale_fallback_reason` from step 4 was non-null (server didn't have the requested locale), surface the fallback notice now:
+1. Create `${SUBSTRATE_DATA}` (= `<picked-parent>/BeCivic/`).
+2. **`git init`** it if not already a repo, and **write `${SUBSTRATE_DATA}/.gitignore` FIRST**, copied verbatim from `${SUBSTRATE_ROOT}/data/gitignore-visible.txt`.
+3. **`${SUBSTRATE_DATA}/.be-civic/marker`** — the version-stamp marker, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/.be-civic/marker`. (This is the visible-surface marker the gate walks the cwd to find; distinct from the hidden pointer in 6.3.)
+4. **`${SUBSTRATE_DATA}/CLAUDE.md`** — the harness ambient-instruction template, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/harness-CLAUDE.md`. Cowork's ancestor-walk auto-loads this when the user opens any procedure subfolder. **Do NOT write a CLAUDE.md inside per-procedure subfolders.**
+5. **`${SUBSTRATE_DATA}/MEMORY.md`** — the empty narrative store, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/MEMORY.md`.
 
-> "I showed you the form in English — your preferred locale isn't shipped yet. Everything else works the same; we'll talk in <conversation_language> from here."
+**Do not pre-create empty subdirectories.** No `documents/`, no `sessions/`, no per-procedure folder upfront — they are created lazily by the relevant skills when there is real content.
 
-### 6.5. Decline path (D28, D51, Scenario 11)
+### 6.5. Acknowledge with the path (JIT trust clause)
 
-If the user reads the consent statement and **does not submit** — typically they ask in chat *"can I turn off the telemetry?"* or *"I don't want to participate in the alpha"* — the path is:
+Confirm to the user, in conversation language:
 
-1. Acknowledge: *"Be Civic is opt-in during alpha — telemetry and observations are part of the deal during pre-launch. Granular controls come post-alpha. If you'd rather wait until those ship, that's fine — come back when we've shipped granular controls. No project is created until you submit the form."*
-2. **Do not call `request_cowork_directory`.** Do not write profile.json. Do not write the marker.
-3. Exit the skill cleanly. No folder. No state. The user leaves the same surface they arrived at.
+> "You're set up — saved locally at `<absolute path to BeCivic/>`. Everything you tell me stays in this folder on your machine. The only thing that ever leaves is the anonymous notes you approve at the end of a session, and you see every one before it's sent."
 
-Form-submit-as-consent (D28) is structural: not submitting *is* the way to decline. There is no separate "decline" button; do not invent one.
+This is the anonymity trust clause; it fires naturally at folder-mount time. Keep it to one beat.
 
 ---
 
-## Step 7. JIT trust contract delivery (D2, D46 dropped)
+## Step 7. Hand off to `bc-path-traversal`
 
-Four trust clauses fire at their natural triggers. **Do not track clause-seen-state** (D46 was dropped). If a clause's teach fires again because the user re-encountered the trigger after seeing it in chat, that is fine.
+Once the two-surface state is written and the identity is live, hand control to `bc-path-traversal`. This is the clean, explicit handoff — onboarding does not walk the procedure itself.
 
-| Clause | First trigger | Copy (translate to conversation language) |
-|---|---|---|
-| **1. Anonymity** | Step 6.4 — after folder mounts | *"Saved locally at `<path>`. Only the categorical fields you ticked travel — your name, address, identifiers stay in this folder."* |
-| **2. Document discipline** | First document upload (in `bc-document-handler`, after this skill exits) | *"Got it — filed under `documents/<procedure-slug>/`. I'll read this to pull out the facts I need (dates, statuses, issuing authority), then work from those. The document itself stays in your folder."* |
-| **3. Forward-only state** | First disambiguator fires (post-submit probing — see step 7.1) | *"Hold on — earlier you said single, now this reads as married. I don't silently overwrite earlier answers, so let me check which one's right before I change anything."* |
-| **4. Review-before-submit** | First non-validation observation buffers (in harness §8, after this skill exits) | *"I'm noting that as a concern about the skill — I'll show you everything I've buffered at the end of the session so you can review item-by-item before any of it goes to becivic.be."* |
+- **Matched Process** (`procedure_intent_clear`, or `procedure_intent_vague` with a manifest hit): invoke `bc-path-traversal` with the matched `process_id`. It fetches the canonical via `GET /api/processes/<id>` (with the Bearer, now that the key is provisioned) and walks the required documents.
+- **No matched Process** (`procedure_intent_vague`, zero manifest hits): invoke `bc-discovery` in `process` mode instead, to route the user to the right procedure before traversal.
 
-Inline trust callout in the form hero (D2) fires automatically — it's in the `form_html`, you don't need to add anything.
+Hand-off line (conversation language):
 
-### 7.1. Post-submit probing (D21, D22)
+> "Setup's done. Let me walk you through what you'll need for the <procedure name>."
 
-Onboarding doesn't end at submit — the form is the **start** of high-confidence capture. Probe the cached payload from step 6.1 for these patterns:
-
-- **"I'm not sure" answers** — ask the user about it in chat. Example: *"You marked 'Not sure' for years of legal residence — the rule is straightforward: continuous registered residence in Belgium, no interruptions. Walk me through your card history?"* If the answer turns on a document the user might have, offer the evidence path: *"Or, send me a photo of your card and I can read the type off it."*
-- **Contradictions with the opener** — if a form value contradicts something the user said in chat earlier, fire trust clause 3 and ask which is right. Do not silently overwrite.
-- **Load-bearing-for-procedure fields** — anything the procedure body depends on (residence dates, exact card type, exact employment status) that the form captured at low confidence. These often need a document, not just a self-report. Note for `bc-path-traversal` to follow up.
-
-This is the "lawyer onboarding a client" pass. Spend the exchanges it takes to get the picture right before handing off to the procedure.
-
-### 7.2. row_list hydration for sentinel payloads (W25.13)
-
-Some form-input types (currently only `row_list` — see `specs/schemas.md` "Form-input types" and `specs/protocol.md` §23.2 sentinel-payload paragraph) support deferred-capture modes. When the user picked Mode 2 (folder drop) or Mode 3 (chat) on a `row_list` field, the submit payload carries a sentinel object instead of the structured rows:
-
-```json
-{ "<field_name>": { "__mode": "folder_drop"|"chat", "__status": "pending" } }
-```
-
-After 6.1 validation but **before** writing case.json / profile.json in step 6.3, scan every field in the submit payload for the sentinel shape and run the matching hydration. The structured value the hydration produces replaces the sentinel before the write.
-
-#### 7.2.1. Sentinel rejection (defense layer 2 — closes B3)
-
-Before routing to hydration, validate that the sentinel only appears on input types that declared capture modes. The procedure canonical's `inputs:` block (cached in step 4) tells you each field's `type`; the inputs catalogue declares which types support sentinels. Today that allowlist is: **`row_list` only**. If a sentinel appears on `single_choice`, `text`, `yes_no`, or any other input type:
-
-1. **Reject.** Do not route to hydration. The server-side renderer should never have produced this shape; receiving it means either a stale client or a tampered submit.
-2. **Log it** to the observation buffer as a `harness_anomaly` observation with category `sentinel_on_non_row_list` and the field name + input type recorded. The buffer goes through the normal review-before-submit flow at session close.
-3. **Treat the field as missing.** Re-prompt the user for that field in chat using the input's normal copy (single AskUserQuestion or short Tier-2 elicitation), as if the form had returned `null` for it. Do not fabricate a value.
-
-This is defense layer 2 — the server-side rejection in `specs/protocol.md` §23.2 is layer 1; this is the harness-side safety net.
-
-#### 7.2.2. Mode 2 — folder_drop hydration
-
-The user dropped image files into `<procedure-root>/inputs/<field_name>/` while the form was open (or is about to — the instruction panel in the form told them so). Folder polling waits for the user signal before reading; the user may not have started yet.
-
-**Wait for the user signal.** Send a chat line in the conversation language:
-
-> *"When you've dropped your card photos in the folder and are back here, just say 'done with cards' or anything that tells me you're back — I'll read them and walk you through what I found."*
-
-Hold position. The next chat message from the user is the trigger — any message that reads as "I'm back" / "done" / "go ahead" / "ready" / a sigh / a single dot / etc. The agent uses judgment; the user is not required to say a magic word.
-
-When the trigger lands, list the folder. For each image file:
-
-1. **Run the agent's vision capability** with the prompt at `${CLAUDE_PLUGIN_ROOT}/skills/bc-document-handler/references/card-vision-prompt.md` (loaded verbatim). One vision call per image, OR one call per paired front+back set (see the prompt's pairing heuristics).
-2. **Parse the JSON output.** The prompt instructs the model to return strict JSON; if parsing fails, that's fail #1 (see retry policy below).
-3. **Score the read** per the prompt's pass/fail rules: valid JSON with a non-null `card_type` and at least one non-null date = pass. Anything else = fail.
-
-**Two-fail retry policy (per design doc R5).** On the *second* consecutive failure for the same image (or paired set), stop retrying that image and surface to the user in chat:
-
-> *"I couldn't read `<filename>` clearly — want to upload a clearer photo, or just type that row in manually? Other cards I read fine, so this is per-card, not the whole set."*
-
-Three branches:
-
-- **Re-upload.** User drops a new image; restart the two-attempt cycle on the new file. Discard the old image from the read-set (it stays archived per harness §7 but doesn't contribute a row).
-- **Type manually.** The card hydrates as an empty/partial row pre-populated in the widget for that card — `card_type: null`, dates null, notes blank. Other readable cards still hydrate normally with their extracted values. The user fills the manual row in the re-confirmation widget (7.2.4).
-- **Skip.** No row is added for that image. Other readable cards still hydrate.
-
-Once the read-set is fully resolved (every image is a pass, a manual-entry placeholder, or a skip), assemble the structured rows array — one row per pass or manual placeholder, in chronological order by `start_month` (nulls sort last). Hand off to the re-confirmation widget (7.2.4).
-
-**Archive note.** The dropped images stay in `documents/<procedure-id>/inputs/<field_name>/` per harness §7 archive rule. The hydration does NOT move them, rename them, or delete them — the user owns the archive.
-
-#### 7.2.3. Mode 3 — chat hydration
-
-Elicit conversationally. In the conversation language, send:
-
-> *"Walk me through your card history, oldest first. For each card, tell me the type (A, F+, single permit, etc.) and the rough dates you held it. Don't worry about exact day — month and year is enough."*
-
-The user replies in prose. Parse their reply into the structured-row shape — one row per card mentioned, in chronological order:
-
-```json
-{
-  "card_type": "<one of the catalogue enum values>",
-  "start_month": "<YYYY-MM>",
-  "end_month": "<YYYY-MM or 'current'>",
-  "notes": "<short free text, optional>"
-}
-```
-
-**Parsing rules:**
-
-- Map user-language card descriptions to the catalogue enum. The catalogue's full enum + labels lives in `bc-docs/mcp/forms/inputs/<field_name>.yml`; for `belgian_residence_card_history` the values are `orange | A | B | C | F | F_plus | K | L | H | single_permit | M | N | visa_d | visa_c | EU_citizen | other`. "F+" → `F_plus`, "Blue Card" / "Carte bleue" → `H`, "single permit" / "permis unique" / "gecombineerde vergunning" → `single_permit`, etc. Use judgment.
-- Bucket dates to YYYY-MM. "Spring 2018" → ask the user to pick a month. "Around 2018" → `2018-01` if they don't refine, with a `notes` entry recording the approximation. Current card → `end_month: "current"`.
-- Empty cards (`card_type: "EU_citizen"`) get null dates per the design doc D7 — EU citizens don't have residence-card dates in the same sense.
-- Cap `notes` at 200 chars per the catalogue.
-
-If the user's reply is ambiguous on a row (can't pick a card_type, or dates are vague), do NOT silently guess — ask a clarifying follow-up in chat, then update that row. Iterate until every row is parseable.
-
-Once the rows array is assembled, hand off to the re-confirmation widget (7.2.4).
-
-#### 7.2.4. Re-confirmation widget (Mode 2 + Mode 3)
-
-Regardless of mode, present the parsed rows back to the user in the same `row_list` widget for in-place confirm/edit. Render via `mcp__visualize__show_widget` with the same widget HTML the server returned in step 4, but pre-populated with the rows array you assembled. (The widget supports pre-population because it's the same surface Mode 1 uses; pre-fill semantics are described in the design doc §3 Mode 2 step 3.)
-
-Frame in chat (conversation language):
-
-> *"Here's what I got — give it a quick look. Edit anything that's off, add rows I missed, and hit Continue. If a row's totally wrong, just clear it."*
-
-Wait for the second submit. Validate the returned rows array against the catalogue's column types (`card_type` is one of the enum, `start_month` is `^[0-9]{4}-[0-9]{2}$` or null-for-EU-row, `end_month` matches `^([0-9]{4}-[0-9]{2}|current)$` or null-for-EU-row, `notes` ≤ 200 chars). On validation failure, re-render with an inline error per row.
-
-On approve (clean validation), proceed to the scrub + write (7.2.5).
-
-#### 7.2.5. Notes Layer-1 scrub (closes R3) + write
-
-Before writing the final array to its target store, run `scripts/scrub-layer1.py` against the `notes` field of each row:
-
-```bash
-scripts/scrub-layer1.py --stdin --field notes
-```
-
-For each row whose notes field returns `status: "rejected"` (high-severity hit — identity, biometric, document_number):
-
-1. **Do not write the array yet.** Surface to the user in chat, citing the row by index + the redaction category:
-
-   > *"The note on row <N> tripped the scrub check — something in there reads as identity-shaped (<category>). Want to rewrite it more abstractly, or just clear that note?"*
-
-2. **User picks via AskUserQuestion:** rewrite, or clear. On rewrite, capture the new value, re-scrub, loop until clean or cleared.
-3. **Do not silently redact and proceed.** The scrub is load-bearing for the privacy contract; every hit goes through the user.
-
-Rows with `status: "redacted"` (medium severity, regex made a safe substitution) write the redacted version without prompting — same policy as `bc-document-handler`'s scrub-failure abort.
-
-Once every row's notes field is clean, write the array to its target store:
-
-- `render: profile` (the design's default for `belgian_residence_card_history`) → write to `<BeCivic-root>/profile.json` under the field name.
-- `render: case` (other future row_list inputs may declare this) → write to `<BeCivic-root>/<procedure-slug>/case.json` under the field name.
-
-Read the input's `render:` directive from the procedure canonical's `inputs:` block (cached in step 4) — do not hardcode by field name.
-
-#### 7.2.6. Hydration completes — step 7.1 probing continues
-
-After the row_list field hydrates, return to step 7.1 probing for any remaining "I'm not sure" / contradiction / low-confidence-load-bearing patterns in the rest of the payload. The row_list hydration may itself surface new probes (e.g. card history reveals a residence gap the procedure body cares about); flag those for `bc-path-traversal` to follow up post-handoff.
-
----
-
-## Step 8. Hand off to `bc-path-traversal`
-
-Once the folder is mounted, profile.json is written, and post-submit probing has cleaned up uncertain answers, hand control to `bc-path-traversal`. That skill takes the cached canonical from step 4 plus the case.json from step 6.3 and walks the procedure's required documents.
-
-Hand-off line (in conversation language):
-
-> "Setup is done. Let me walk you through what you'll need for the <procedure name>."
-
-If this skill is running in `new-project` mode where the user is in a transient setup conversation (the legacy mode), close with:
-
-> "Setup is done. From here, open this folder in Cowork to continue — the next conversation you open from this folder will have the Be Civic harness loaded automatically."
-
-In the post-`request_cowork_directory` Cowork pattern (the V1 default for first-contact), the folder is already mounted in the current conversation and the harness CLAUDE.md is being loaded by Cowork's ancestor-walk. Proceed directly into `bc-path-traversal` in the same conversation.
-
-Exit this skill cleanly. Do not loop. Subsequent procedure work (path traversal, document handling, observation buffering, session close) runs against the harness, not this skill.
-
----
-
-## Fallback path — MCP unreachable (D44, §11 of phase-2-contracts)
-
-The Step 4 two-call pattern is the primary path. Each call has its own fallback chain. On any failure in any leg, try the next rung; if all rungs fail for the form fetch, drop to local-locale-HTML + chat-driven Section-2 capture.
-
-**Canonical fetch fallback chain** (Step 4 (a)):
-
-1. **MCP**: `mcp__becivic__read_skill { skill_id }`.
-2. **HTTP parity**: `GET https://becivic.be/api/skills/<skill_id>` via WebFetch. Returns the canonical markdown directly.
-3. **Direct canonical**: `WebFetch https://becivic.be/skills/<skill_id>/canonical.md`. Last-resort if the api Worker is down too.
-
-If all three fail: continue without the cached canonical. Section 2 validation degrades to a server-side-only check (the form composer already validated the inputs); post-submit sentinel-payload validation reads `data-rowlist="*"` attributes off the rendered form_html to identify which fields support sentinels.
-
-**Form fetch fallback chain** (Step 4 (b)):
-
-1. **MCP**: `mcp__becivic__get_onboarding_form { skill_id, ... }`.
-2. **HTTP parity**: `GET https://becivic.be/api/onboarding-form?skill_id=<id>&app=cowork&locale=<locale>&mode=first-contact` via WebFetch. Same response shape as MCP. Use `POST` to ride `pre_selected` and `profile_snapshot` if they're too large for query strings.
-3. **Local locale fallback HTML**: read `${CLAUDE_PLUGIN_ROOT}/skills/bc-onboarding/references/onboarding.<locale>.html` directly from disk. Pass to `mcp__visualize__show_widget`. **Section 1 only — no Section 2** (D45). After submit, run procedure-routing via AskUserQuestion (≤4 simple categorical prompts) or a Tier-2 elicitation form.
-
-**Surface the fallback notice to the user** (G24, Sc 20). In conversation language:
-
-> "My full Be Civic library isn't reachable right now — there's a network blip on the server side. I can still set you up with the core profile form locally and ask the procedure-specific questions in chat. Want to keep going, or wait and come back?"
-
-If the local locale file is also missing or unreadable (last-resort degradation), collect Section 1 in chat via AskUserQuestion only — region, civil status, nationality_situation, has_id_card, conversation language, admin language, browser_driving_preference, preferred name. Still write profile.json. Still write the marker. The folder mount + harness handoff still happens. Tell the user honestly: *"All my normal surfaces are down today — I'm asking you these in chat. Same data, less polish."*
+The folder is already mounted in this conversation and the harness `CLAUDE.md` is being picked up by Cowork's ancestor-walk, so proceed directly into the next skill in the same conversation. **Exit this skill cleanly. Do not loop.** Subsequent procedure work (path traversal, document handling, observation buffering, session close) runs against the harness, not this skill.
 
 ---
 
 ## Returning-user mode (short-circuit)
 
-`bc-onboarding` **does not handle returning users**. The harness CLAUDE.md owns the returning flow (per harness §3 step 1 and §13).
+`bc-onboarding` **does not handle returning users.** The gate (`be-civic`) detects the marker and routes to `bc-path-traversal` (continuing) or surfaces the inline framing (returning / multi_active) itself.
 
-If you are somehow invoked when a `.be-civic/marker` already exists (shouldn't happen — gate skill checks this first), refuse and route back:
+If you are somehow invoked when a `.be-civic/marker` already exists (shouldn't happen — the gate checks first), refuse and route back:
 
-> "You already have a Be Civic project at <path>. The harness will pick up automatically — close this conversation and open the project folder."
+> "You already have a Be Civic project at `<path>`. The harness picks up automatically — carry on in this conversation, or open the project folder."
 
-Do not re-run onboarding. Do not overwrite profile.json. Do not re-write CLAUDE.md.
-
----
-
-## Multi-active mode (short-circuit)
-
-`bc-onboarding` **does not handle multi-active pivots**. When a returning user with existing active projects opens a new procedure mid-session, the harness CLAUDE.md handles it (per harness §9, §13). The harness calls `get_onboarding_form` with the new `skill_id`, `mode: multi-active`, and `profile_snapshot: <existing profile.json>`, gets back Section-2-only HTML, renders it, creates a new procedure subfolder under the existing BeCivic root. No Section 1, no consent, no new CLAUDE.md. (Canonical for the new procedure is fetched via `read_skill` in parallel, same two-call pattern as first-contact.)
-
-If you are invoked when active projects exist (again, shouldn't happen — gate skill checks first), refuse and route back to the harness:
-
-> "You're already in a Be Civic project. The harness handles new procedures — pass control back."
+Do not re-run onboarding. Do not overwrite `profile.json`. Do not re-mint identity or re-write `.env`.
 
 ---
 
-## Meta-question handling (D31, D47)
+## Imported-state branch (returning user, new machine)
 
-`bc-onboarding` **does not handle meta questions**. The `be-civic` gate skill answers meta questions in chat from `${CLAUDE_PLUGIN_ROOT}/data/privacy-snippet.md` **verbatim** (D47 — canonical privacy answer).
+A returning user may arrive with a `bc-import` bundle from another machine. When the gate flags an import bundle in scope, it routes here to the imported-state branch instead of first-contact:
 
-If the user asks a meta question mid-onboarding (between step 3 and step 5, before they submit the form), pause the form flow, answer from `privacy-snippet.md` verbatim, then offer:
-
-> "Want me to continue with the onboarding form, or keep talking about the data side first?"
-
-If they want to keep talking about the data side, hold the form open in the background. If they decide not to proceed, follow the decline path (§6.5). **Never paraphrase the privacy snippet** — load it from the file and quote it.
+1. **Validate the bundle** — confirm the visible/hidden split is preserved and the bundle's `state_version` is not newer than this plugin (if it is, tell the user to upgrade the receiving plugin first; do not activate).
+2. **Activate both surfaces** — write the hidden side (including its `.env` key slot) into the current `${SUBSTRATE_STATE}`, and the visible side into a newly-picked parent as `${SUBSTRATE_DATA}`. Write/update both markers (hidden pointer + visible version-stamp) to cross-reference them.
+3. **Frame as a returning user**, not a new one — no taste beat, no email gate, no re-mint. Hand off to `bc-path-traversal` (or the inline framing) as if the user were returning natively.
 
 ---
 
-## Belgium-not-yet-arrived path (D29)
+## Anonymous-read mode (recap)
 
-When the user has not yet moved to Belgium, the form's `region` field includes a `not_yet_arrived` option (5th pill in the region row). When that's selected:
+If the user never verifies (declined at §1.1, closed the email widget at §2, or the verification service was unreachable), the session runs read-only on `corpus:read:public`:
 
-- The `commune` field **hides entirely** (the user doesn't know yet).
-- The `nationality_situation` pills include `non_eu_no_card` and the form's friendly variant *"Third-country, applying from abroad."*
-- The `admin_language` pills stay present; the hint adapts: *"Pick the language for the region you're considering: Brussels — French or Dutch; Wallonia — French; Flanders — Dutch; German-speaking community — German. If you really don't know, pick French or Dutch for now — you can change this later."*
+- `WebFetch` reads of `public: true` Processes and the manifest, **no Bearer**.
+- No submissions. No folder. No `${SUBSTRATE_STATE}` writes. No marker.
+- The mode resets each session — the next session starts anonymous again until the user opts in.
 
-No special branching in this skill. The pre-move user goes through normal skill-matching, normal Section 2 routing (if a procedure was matched), normal post-submit probing, normal folder mount. The form just doesn't trap them at "what commune?" and doesn't force a region choice that doesn't apply yet.
+Frame the limit as a choice the user can reverse any time, never as a failure.
 
-In `profile.json` the saved values are `region: "not_yet_arrived"`, `commune: ""` (empty string, not null). The harness reads these and adapts downstream.
+---
+
+## Meta-question handling
+
+`bc-onboarding` **does not own meta questions.** The `be-civic` gate answers them in chat from `${SUBSTRATE_ROOT}/data/privacy-snippet.md` **verbatim**.
+
+If the user asks a meta question mid-onboarding (between the taste beat and the email submit), pause the flow, quote `privacy-snippet.md` verbatim (load it from the file — **never paraphrase**), then offer:
+
+> "Want me to carry on setting you up, or keep talking about the data side first?"
+
+If they want to keep talking about data, hold position. If they decide not to proceed, fall to the anonymous-read fallback (§1.1).
 
 ---
 
 ## What this skill does NOT own
 
-- The harness rules (Iron Law, situation assessment, observation handling, document handling, session close). Those live in the project's `CLAUDE.md` after this skill writes it.
-- Procedure walking, document extraction, path traversal. Those are peer skills (`bc-path-traversal`, `bc-document-handler`) invoked by the harness.
-- Returning sessions, multi-active pivots. The harness handles those (§13 / §9).
-- Meta-question answering. The `be-civic` gate skill handles those from `privacy-snippet.md`.
-- Off-topic redirect or no-intent tour. The `be-civic` gate skill handles those.
+- The harness rules (Iron Law, situation assessment, observation handling, document handling, session close). Those live in `${SUBSTRATE_DATA}/CLAUDE.md` after this skill writes it.
+- Procedure walking, document extraction, path traversal. Peer skills (`bc-path-traversal`, `bc-document-handler`) invoked by the harness.
+- Returning sessions, multi-active pivots. The gate + harness handle those.
+- Meta-question answering, off-topic redirect, no-intent tour. The `be-civic` gate handles those.
+- The auto-commit monitor (`hooks/auto-commit-monitor.js`) and the recovery sweep (`preamble.py`). This skill writes the markers and `.gitignore` files they depend on, then gets out of the way.
 
-This skill exists for one thing: take a user who said yes at the gate's confirmation prompt → produce a mounted Be Civic project with a clean profile.json, a shared root CLAUDE.md, a per-procedure subfolder with case.json, and a clean handoff to `bc-path-traversal`.
+This skill exists for one thing: take a user who said yes at the gate → show them what Be Civic does → verify their email → mint their pseudonymous identity → write the two-surface state shape → hand off cleanly to `bc-path-traversal`.
