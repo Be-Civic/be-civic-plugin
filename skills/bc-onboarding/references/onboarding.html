@@ -4,6 +4,11 @@
   Delivered via `mcp__visualize__show_widget` with this entire file as `widget_code`.
   This is the Pattern B (branded HTML) path from cowork-form-mechanism.md.
 
+  AGENT: shipped, fully-branded, self-contained HTML. Do NOT call
+  `mcp__visualize__read_me` before rendering — pass this file verbatim as
+  `widget_code`. (Primary path: the harness fetches the SERVER-rendered form
+  from GET /api/onboarding-form; this static file is the offline fallback.)
+
   COWORK STYLING RULE
     Bare form elements (<button>, <input>, <textarea>) MUST use inline `style="all: unset; ..."`.
     Cowork's own form CSS out-competes <style>-block rules targeting bare form tags — pills
@@ -168,7 +173,10 @@
 
   /* Procedure section (agent uncomments) */
   .bc-procedure {
-    background: var(--brand-cream);
+    /* white card + soft border so procedure-question pills (cream #f5f4ee) are
+       visible — the old cream-on-cream made them invisible (operator-reported). */
+    background: #ffffff;
+    border: 1px solid var(--brand-cream-soft);
     border-radius: 10px;
     padding: 16px 18px;
     margin-bottom: 4px;

@@ -5,6 +5,11 @@
   Bereitgestellt über `mcp__visualize__show_widget` mit der gesamten Datei als `widget_code`.
   Dies ist der Pattern-B-Pfad (Branded HTML) aus cowork-form-mechanism.md.
 
+  AGENT: shipped, fully-branded, self-contained HTML. Do NOT call
+  `mcp__visualize__read_me` before rendering — pass this file verbatim as
+  `widget_code`. (Primary path: the harness fetches the SERVER-rendered form
+  from GET /api/onboarding-form; this static file is the offline fallback.)
+
   COWORK-STILREGEL
     Bare Formularelemente (<button>, <input>, <textarea>) MÜSSEN inline `style="all: unset; ..."` verwenden.
     Coworks eigenes Formular-CSS übertrifft <style>-Block-Regeln für bare Formular-Tags.
@@ -152,7 +157,10 @@
 
   /* Verfahrensabschnitt (Agent kommentiert ein) */
   .bc-procedure {
-    background: var(--brand-cream);
+    /* white card + soft border so procedure-question pills (cream #f5f4ee) are
+       visible — the old cream-on-cream made them invisible (operator-reported). */
+    background: #ffffff;
+    border: 1px solid var(--brand-cream-soft);
     border-radius: 10px;
     padding: 16px 18px;
     margin-bottom: 4px;

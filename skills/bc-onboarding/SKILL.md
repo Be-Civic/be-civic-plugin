@@ -2,7 +2,7 @@
 id: bc-onboarding
 name: bc-onboarding
 description: First-contact onboarding for Be Civic. Runs the verified flow — an email→code access widget (start-verification emails a 6-digit code → verify with the code), then state-shape activation inside the user-picked project folder (one folder, one git repo, with agent-managed state in a hidden .be-civic/state subdir) — and ends with a clean handoff into a fresh chat opened inside the project folder, where the working session begins. Falls back to anonymous read-only mode if the user declines verification. Owns first-contact only; returning and multi-active modes are owned by the harness.
-version: 3.3.0
+version: 3.4.0
 requires_capabilities:
   - cowork_directory_tool: mcp__cowork__request_cowork_directory
   - cowork_widget_tool: mcp__visualize__show_widget
@@ -68,7 +68,9 @@ If at any point the user declines to verify by email — "I don't want to give m
 
 ## Step 2. Email + code — the access widget
 
-After the Step 1 framing (or on a direct "yes, set me up"), render the **shipped access widget** via `mcp__visualize__show_widget`, passing the contents of `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding-access.<locale>.html` as `widget_code`. (EN ships today; for a locale not yet authored, fall back to the EN file.)
+After the Step 1 framing (or on a direct "yes, set me up"), render the **shipped access widget** via `mcp__visualize__show_widget`, passing the contents of `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding-access.<locale>.html` as `widget_code`. (EN ships today; for a locale not yet authored, fall back to the EN file.) Read the file via `bash` (`cat`) — it is a plugin-install asset, reachable only on the bash side, not the host `Read` tool.
+
+**This is shipped, fully-branded HTML — do NOT call `mcp__visualize__read_me` first.** `read_me` returns widget-*authoring* design guidance (palette, icons, spacing) for building a widget from scratch; this widget is already built and self-contained. Pass its contents verbatim as `widget_code` and render. Calling `read_me` here is wasted work (one run loaded the wrong module and burned ~7k tokens for output that is ignored). The same rule holds for every shipped Be Civic widget (this access widget and the Chat-2 about-you form).
 
 This is **one widget, two steps** — you do not render a second widget:
 
@@ -91,7 +93,11 @@ If the user **closes the widget without submitting**, treat it as a decline and 
 
 ## Step 3. Start verification — `POST /api/auth/start-verification`
 
-On the `[Be Civic access] email: <addr>` message, validate the address shape locally (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`), then call the start endpoint via **`WebFetch`**. **No auth header** — the user has no key yet.
+On the `[Be Civic access] email: <addr>` message, validate the address shape locally (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`).
+
+**Envelope-mismatch check (do this once, before verifying).** If you can see the user's account email — e.g. the Cowork session envelope exposes one — and it differs from the `<addr>` they typed, ask once, in conversation language, before calling the endpoint: *"You're signed in as `<envelope-email>`, but you typed `<typed-email>`. Verification mints your identity against whichever address gets the code — which do you want to use?"* This is cheap and prevents a whole class of typos that mint an identity against an inbox the user can't actually read (so they can never receive the code, or recover the key later). If you have no envelope email to compare against, skip this and proceed.
+
+Then call the start endpoint via **`WebFetch`**. **No auth header** — the user has no key yet.
 
 ```
 POST https://becivic.be/api/auth/start-verification
@@ -163,80 +169,66 @@ Call `mcp__cowork__request_cowork_directory`. The user picks a **parent folder**
 
 If the user **cancels the picker**, do not write anything. There is no separate surface that exists without a picked folder — the whole project (key included) lives inside `${SUBSTRATE_DATA}`, so with no folder there is nowhere durable to write. Say: *"I need a folder to save your project in. Want to try the picker again, or carry on in chat for now and set the folder up later?"* The latter degrades to **advice-only with ZERO durable writes** — no key, no identity, no files at all. The minted `harness_key` from Step 5 is held in working memory only this session; nothing is written. Tell the user nothing is being saved to disk yet, and that picking a folder later will save everything.
 
-### 6.2. Initialise the one repo and write the single `.gitignore` (FIRST)
+### 6.2. Write the whole project in one call — `setup_project.py`
 
-There is **one git repo at the project-folder root** — no separate hidden repo. Before any other file is written:
+The entire project write — the one git repo, the single `.gitignore`, all of `.be-civic/state/`, the marker, `CLAUDE.md` (+ carry-over), `MEMORY.md`, and the first commit — is performed by **one deterministic script call**, not a sequence of hand-written files. Writing it by hand previously hardlinked the read-only `CLAUDE.md` template (so the carry-over append failed) and risked transcription drift; the script writes fresh bytes and is the single source of truth.
 
-1. **Nested-repo guard.** Before `git init`, check whether the picked location is already inside an enclosing git repo: run `git -C "<picked-parent>" rev-parse --is-inside-work-tree` (and, if the BeCivic folder already exists, `git -C "${SUBSTRATE_DATA}" rev-parse --is-inside-work-tree`). If you are inside an existing work tree, do **not** silently `git init` an embedded repo — warn the user plainly: *"The folder you picked sits inside another git project. I'd normally make your Be Civic folder its own little repository so your progress is saved cleanly. Want me to do that here anyway, or pick a different folder outside the other project?"* Only proceed to `git init` on confirmation, or after the user repicks a clean location.
-2. Create `${SUBSTRATE_DATA}` (= `<picked-parent>/BeCivic/`) if it does not exist.
-3. **`git init`** `${SUBSTRATE_DATA}` if it is not already a repo (subject to the guard above).
-4. **Write `${SUBSTRATE_DATA}/.gitignore` FIRST**, copied verbatim from `${SUBSTRATE_ROOT}/data/gitignore.txt` — the single merged allowlist. This must exist before any other file is written, or the monitor's first `git add -A` could stage the key (`.be-civic/state/.env`). It is the allowlist that keeps `.env`, `sessions/`, `.pending-verification`, and `documents/` out of every commit.
+Run it once, **piping the harness key on stdin** — never on the command line (the process table and shell history would expose it):
 
-### 6.3. Write the agent-managed state (`${SUBSTRATE_STATE}` = `${SUBSTRATE_DATA}/.be-civic/state`)
+```bash
+printf '%s' "<harness_key>" | python3 "${SUBSTRATE_ROOT}/scripts/setup_project.py" \
+  --data-root      "<picked-parent>" \
+  --substrate-root "${SUBSTRATE_ROOT}" \
+  --user-id        "<user_id>" \
+  --locale         "<locale>" \
+  --language-name  "<language display name, e.g. French>" \
+  --process-id     "<matched process id, or 'intake'>" \
+  --process-slug   "<procedure slug, or 'intake'>" \
+  --process-title  "<procedure title, or 'to be routed'>" \
+  --process-version "<version from the manifest entry, or '0'>" \
+  --plugin-version "<this plugin's version>" \
+  --key-stdin
+```
 
-The `.gitignore` from 6.2 is already in place, so these writes are safe. Write, in this order:
+`<picked-parent>` is the folder the user picked in 6.1; the script creates `<picked-parent>/BeCivic/` as `${SUBSTRATE_DATA}`. (`${SUBSTRATE_ROOT}` is a plugin-install path — pass it through; the script reads its own templates from there. Run this via `bash`, since the install dir is only reachable on the bash side, not the host `Read` tool.)
 
-1. **`${SUBSTRATE_STATE}/.env`** — the harness key only: `BECIVIC_HARNESS_KEY=<harness_key>`. Nothing else in this file. It is structurally excluded from git by the single `.gitignore` allowlist (and a belt-and-braces `.env` deny line). Never echo it.
-2. **`${SUBSTRATE_STATE}/user-id`** — the raw `user_id` string, no wrapper.
-3. **`${SUBSTRATE_STATE}/profile.json`** — copy the template from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/profile.json` **verbatim, unchanged**. Do **not** populate `last_updated_at` and do **not** pre-fill any routing fields here, even ones you could guess from the opener. The profile must stay at its template defaults (`last_updated_at: null`, every routing field `null` / `[]`) so the next chat can use "profile still at defaults" as the reliable signal that the about-you form has not run yet (the next chat's harness keys the about-you-form decision on exactly this). The about-you form in the working session is the **first** writer of routing fields and `last_updated_at`; leave that to it.
-4. **`${SUBSTRATE_STATE}/preferences.json`** — a minimal preferences object (e.g. `{ "conversation_language": "<locale>" }`); start with the conversation language so the harness speaks it from turn one.
-5. **`${SUBSTRATE_STATE}/procedures.json`** — the procedure registry, validated against `${SUBSTRATE_ROOT}/schemas/procedures.registry.schema.json`. Seed one entry for the procedure the user is about to start:
-   ```json
-   {
-     "schema_version": 1,
-     "procedures": [
-       {
-         "slug": "<procedure-slug>",
-         "process_id": "<matched process id, or the slug if discovery-bound>",
-         "process_version": "<version from the manifest entry, or '0' if unknown>",
-         "status": "active",
-         "started_at": "<RFC3339 UTC>",
-         "updated_at": "<RFC3339 UTC>"
-       }
-     ]
-   }
-   ```
-   If the gate matched no Process (`procedure_intent_vague`, zero manifest hits), use `intake` as the slug and `process_id`, and let `bc-discovery` rename it after routing.
+**Nested-repo guard.** If the script exits non-zero with `SETUP_ERROR: nested_repo_needs_confirmation`, the picked parent sits inside another git project and nothing was written. Warn the user plainly: *"The folder you picked sits inside another git project. I'd normally make your Be Civic folder its own little repository so your progress is saved cleanly. Want me to do that here anyway, or pick a different folder outside the other project?"* On confirmation, re-run the **same** command with `--allow-nested`; if they repick, re-run with the new `--data-root`.
 
-`.pending-verification` is now redundant — delete it (verification is complete).
+**Verify before handing off.** Read the script's `KEY: VALUE` stdout. Proceed to §6.5 only when you see `SETUP_RESULT: ok` **and** a real `COMMIT_SHA`. On `partial` / `failed`, surface the `SETUP_ERROR` / `OPERATOR_ALERT` line and do **not** hand off — re-run, or fall back to the manual write in the reference below. You do **not** need to Read any of the written files back: the output lines (`ENV_WRITTEN`, `PROCEDURES_WRITTEN`, `CLAUDE_MD_WRITTEN`, `COMMIT_SHA`, …) report each step. The script never echoes the key (`HARNESS_KEY: present`, value-only).
 
-### 6.4. Write the rest of the project folder (`${SUBSTRATE_DATA}`)
+The script also deletes the now-redundant `.pending-verification` and runs the `.env` git-safety guard (refuses to commit if `.env` would be tracked) — the same guard `preamble.py` uses.
 
-In this order:
+#### What `setup_project.py` writes (reference — the script is authoritative)
 
-1. **`${SUBSTRATE_DATA}/.be-civic/marker`** — the detection marker, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/.be-civic/marker`, then fill its placeholder fields: `user_id=<user_id>`, `plugin_version=<this plugin's version>`, `created_at=<RFC3339 UTC>`. This is the marker the gate walks the cwd to find and `preamble.py` uses to resolve `${SUBSTRATE_DATA}`. It is detection-only — there is no separate hidden→visible pointer to write, because state is a known child of this folder. Do not put any private information in it.
-2. **`${SUBSTRATE_DATA}/CLAUDE.md`** — the harness ambient-instruction template, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/harness-CLAUDE.md`. Cowork's ancestor-walk auto-loads this when the user opens any procedure subfolder. **Do NOT write a CLAUDE.md inside per-procedure subfolders.** Then **append the carry-over block** described in 6.4a to the end of this file before you finish.
-3. **`${SUBSTRATE_DATA}/MEMORY.md`** — the empty narrative store, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/MEMORY.md`.
+The script reproduces §6.2–§6.4a exactly. This is the ground-truth shape, kept for review and for the manual fallback; you do not perform these steps by hand on the happy path.
 
-**Do not pre-create empty subdirectories.** No `documents/`, no `sessions/`, no per-procedure folder upfront — they are created lazily by the relevant skills when there is real content.
+- **`.gitignore` first** (verbatim from `${SUBSTRATE_ROOT}/data/gitignore.txt`) — the merged allowlist, written before `git init` so the key is never staged. Then `git init`.
+- **`.be-civic/state/`** (in order): **`.env`** = `BECIVIC_HARNESS_KEY=<harness_key>` and nothing else (gitignored; never echoed); **`user-id`** = the raw id; **`profile.json`** = the template **verbatim** (`last_updated_at` stays `null`, every routing field default — this "profile still at defaults" state is the signal the next chat keys the about-you form on; do not pre-fill); **`preferences.json`** = `{ "conversation_language": "<locale>" }`; **`procedures.json`** = the seeded registry:
+  ```json
+  {
+    "schema_version": 1,
+    "procedures": [
+      { "slug": "<procedure-slug>", "process_id": "<matched id, or slug if discovery-bound>",
+        "process_version": "<version, or '0'>", "status": "active",
+        "started_at": "<RFC3339 UTC>", "updated_at": "<RFC3339 UTC>" }
+    ]
+  }
+  ```
+  (If the gate matched no Process — `procedure_intent_vague`, zero hits — pass `intake` for id/slug/title; `bc-discovery` renames it after routing.)
+- **`.be-civic/marker`** (template with `user_id` / `plugin_version` / `created_at` filled) — detection-only.
+- **`CLAUDE.md`** = the harness template (`harness-CLAUDE.md`) **plus the carry-over block appended as one fresh file**:
+  ```markdown
+  ## Carry-over (written at setup — read on first load, do not re-ask)
 
-### 6.4a. Carry-over — pass the chosen procedure + language into the next chat
+  - Chosen procedure: <procedure title> (`<process_id>`, slug `<procedure-slug>`)
+  - Conversation language: <language name> (`<locale>`)
 
-The next chat (the working session) loads only the project `CLAUDE.md` and the preamble's state lines. It has none of *this* conversation's context — it does not know which procedure the user came for or what language you've been speaking. You must hand both forward in concrete files so the next chat reads them and does **not** re-ask.
-
-Two places, both required:
-
-1. **Structured state (already written above):**
-   - The conversation language is in `${SUBSTRATE_STATE}/preferences.json` as `conversation_language` (written in 6.3 step 4).
-   - The chosen procedure is in `${SUBSTRATE_STATE}/procedures.json` as the single active entry's `slug` + `process_id` (written in 6.3 step 5).
-   - Confirm both are present before handing off. These are the authoritative carry-over.
-
-2. **A human-readable carry-over block appended to `${SUBSTRATE_DATA}/CLAUDE.md`.** After copying the template (6.4 step 2), append a short fenced block at the very end of the file so the carry-over is visible in the always-loaded ambient instructions, not only in hidden state:
-
-   ```markdown
-   ## Carry-over (written at setup — read on first load, do not re-ask)
-
-   - Chosen procedure: <procedure title> (`<process_id>`, slug `<procedure-slug>`)
-   - Conversation language: <language name> (`<locale>`)
-
-   The working session greets the user about this procedure in this language on its
-   first message, then captures the about-you form. It does not re-ask which procedure
-   or which language.
-   ```
-
-   Fill `<procedure title>`, `<process_id>`, `<procedure-slug>`, `<language name>`, and `<locale>` from what you matched in Step 1 and the registry entry you just wrote. If the gate matched no Process (`intake` slug), write `Chosen procedure: to be routed (slug `intake`)` and the next chat will route it before the form.
-
-The next chat's first job is to read this carry-over and the preferences/registry, greet the user about their procedure in their language, then surface the about-you form. If either value is missing when the next chat loads, it asks the user rather than guessing — so writing both, correctly, here is what keeps the next chat from defaulting to the wrong procedure or the wrong language.
+  The working session greets the user about this procedure in this language on its
+  first message, then captures the about-you form. It does not re-ask which procedure
+  or which language.
+  ```
+  (For the `intake` case the script writes `Chosen procedure: to be routed (slug `intake`)`.) The carry-over is the human-readable mirror of `preferences.json` + `procedures.json` — the next chat reads it on load and does **not** re-ask the procedure or language.
+- **`MEMORY.md`** (verbatim template). No empty subdirectories (`documents/`, `sessions/`, per-procedure folders) are pre-created — they are made lazily.
 
 ### 6.5. Acknowledge with the path (JIT trust clause)
 
@@ -276,7 +268,9 @@ The recovery sentence is mandatory, not optional. It is the only safety net if t
 
 ### 7.2. Make the link clickable
 
-Render the open-project action as a **markdown link**, never a bare path or a code block. The link must point at the **BeCivic root** (`${SUBSTRATE_DATA}`), not a per-procedure subfolder — you did not create a `<procedure-slug>/` folder during setup (§6.4 leaves it for the relevant skill to create lazily), and Cowork's ancestor-walk loads the harness `CLAUDE.md` from the BeCivic root, so the root is the correct target. On Cowork, prefer a `claude://` deeplink that opens a new chat in `${SUBSTRATE_DATA}` if you can construct one; otherwise give the user the plain instruction "open a new chat inside the folder at `<absolute path to BeCivic/>`" as a fallback, still phrased so the path is easy to copy.
+Render the open-project action as a **markdown link**, never a bare path or a code block. The link must point at the **BeCivic root** (`${SUBSTRATE_DATA}`), not a per-procedure subfolder — you did not create a `<procedure-slug>/` folder during setup (§6.4 leaves it for the relevant skill to create lazily), and Cowork's ancestor-walk loads the harness `CLAUDE.md` from the BeCivic root, so the root is the correct target.
+
+On Cowork, prefer a `claude://` deeplink that opens a new chat in `${SUBSTRATE_DATA}` if you can construct one (try the `claude://cowork/new?folder=<url-encoded-absolute-path>` form). **If no deeplink form works, still render a clickable link, not prose** — link the absolute folder path itself (e.g. `[Open your BeCivic folder](file://<absolute path to BeCivic/>)`) so the user has one thing to click, with the copy-paste path alongside as backup. The verdict's "handoff fell back to prose" failure mode is exactly what to avoid: never hand the user a bare path in a sentence when a link will do.
 
 ### 7.3. End this conversation
 

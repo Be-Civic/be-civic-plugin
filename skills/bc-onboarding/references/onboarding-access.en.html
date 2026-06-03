@@ -5,6 +5,11 @@
     Delivered via `mcp__visualize__show_widget` with this entire file as `widget_code`.
     This is Pattern B (branded HTML) from cowork-form-mechanism.md.
 
+  AGENT: this is shipped, fully-branded, self-contained HTML. Do NOT call
+    `mcp__visualize__read_me` before rendering it — there is no design-system
+    context to load; read_me is for *building* widgets, not replaying shipped
+    ones. Pass this file verbatim as `widget_code`.
+
   TWO-STEP MECHANIC
     Step 1 — Email: user types their email address. Live regex validates it
     (/^[^\s@]+@[^\s@]+\.[^\s@]+$/). The Continue button is disabled until valid.
