@@ -7,29 +7,31 @@
  * background process for the lifetime of the session. Every line this script
  * prints to stdout is delivered to Claude as a notification.
  *
- * Behaviour (contract §5):
- *   - Two watch roots:
- *       hidden  = ${CLAUDE_PLUGIN_DATA}                       (always present)
- *       visible = path read from ${CLAUDE_PLUGIN_DATA}/.be-civic/marker
- *                 (written by onboarding; if absent, watch hidden only and
- *                  re-resolve the marker on the next change / next session).
- *   - Watch each root recursively with the Node built-in fs.watch (NOT
+ * Behaviour (single-surface contract §5):
+ *   - ONE watch root: the project folder (${SUBSTRATE_DATA}), resolved from the
+ *     preamble→monitor handoff pointer ${CLAUDE_PLUGIN_DATA}/.session-data-root
+ *     (line 1 = absolute path to the folder). This is the SOLE resolver. If the
+ *     pointer is absent at start (preamble hasn't run yet this session), watch
+ *     nothing and re-poll the pointer until it appears. The old
+ *     ${CLAUDE_PLUGIN_DATA} committer attach is removed entirely — that surface
+ *     is ephemeral and holds nothing durable.
+ *   - Watch the root recursively with the Node built-in fs.watch (NOT
  *     chokidar — the workstation forbids `npm install`, and vendoring chokidar
  *     fails the marketplace size check). The watcher is isolated behind
  *     `watchTree()` so it can be swapped without touching the commit logic.
- *   - Debounce 1500ms per repo: a burst of file events collapses into one
- *     commit.
- *   - On fire: `git -C <root> add -A` (the repo's own .gitignore allowlist
- *     governs what is staged; .env is never in the allowlist), then commit as
- *     author "Be Civic <noreply@becivic.be>" with message
+ *   - Debounce 1500ms: a burst of file events collapses into one commit.
+ *   - On fire: `git -C <root> add -A` (the folder's own .gitignore allowlist
+ *     governs what is staged; .be-civic/state/.env is never in the allowlist),
+ *     then commit as author "Be Civic <noreply@becivic.be>" with message
  *     "auto: <N> file(s) modified". Skip if nothing is staged.
  *   - git index.lock contention: exponential backoff 250→500→1000→2000ms,
  *     then give up this cycle (the next event retries).
  *   - Corrupt repo / missing git binary / not-a-repo: one line to stderr,
  *     continue — never crash.
- *   - Defensive: never explicitly `git add` .env (we only ever run `add -A`,
- *     which respects .gitignore; we additionally hard-refuse any path arg that
- *     resolves to a .env file).
+ *   - Defensive: never explicitly `git add` the harness-key .env (we only ever
+ *     run `add -A`, which respects .gitignore; we additionally hard-refuse any
+ *     path arg that resolves to a .env file, and refuse the whole commit if
+ *     .be-civic/state/.env is present-but-unignored or already tracked).
  *
  * Pure Node built-ins only (no third-party deps).
  */
@@ -52,8 +54,12 @@ const LOCK_BACKOFFS_MS = parseBackoffs(
 const GIT_BIN = process.env.BC_MONITOR_GIT_BIN || "git";
 const COMMIT_AUTHOR_NAME = "Be Civic";
 const COMMIT_AUTHOR_EMAIL = "noreply@becivic.be";
-// Re-resolve the visible marker on this cadence when it was absent at start.
+// Re-resolve the .session-data-root pointer on this cadence when it was absent
+// at start (preamble writes it at session-start; the monitor may boot first).
 const MARKER_REPOLL_MS = numEnv("BC_MONITOR_MARKER_REPOLL_MS", 5000);
+// The harness key lives at this exact nested path inside the single user-owned
+// repo. Both guards (check-ignore + ls-files) test THIS path, not root `.env`.
+const ENV_REL_PATH = path.join(".be-civic", "state", ".env");
 
 function numEnv(name, fallback) {
   const v = process.env[name];
@@ -139,8 +145,10 @@ function countStaged(porcelain) {
 
 /**
  * Hard guard: refuse to ever pass a path that resolves to a `.env` file to
- * `git add`. We only ever call `add -A` (no explicit paths), so this is purely
- * defensive belt-and-braces against future edits.
+ * `git add` — including the nested harness-key path `.be-civic/state/.env`. We
+ * only ever call `add -A` (no explicit paths), so this is purely defensive
+ * belt-and-braces against future edits. Any arg whose basename is `.env`
+ * (regardless of its parent dir) is refused.
  */
 function refusesEnvPaths(args) {
   for (const a of args) {
@@ -187,17 +195,26 @@ async function commitOnce(repoRoot, messageFor) {
     return "skipped:not-a-repo";
   }
 
-  // Identity guard (contract §5 / 40-substrate §6.1): `add -A` relies on the
-  // .gitignore allowlist to exclude the Identity slot. If `.env` exists but is
-  // NOT gitignored (e.g. the allowlist was not written yet), committing would
-  // leak the harness key. Refuse this cycle. `check-ignore -q` exits 0 iff
-  // `.env` is ignored; any non-zero (not-ignored OR error) → refuse (fail-safe).
-  if (fs.existsSync(path.join(repoRoot, ".env"))) {
-    const chk = await git(repoRoot, ["check-ignore", "-q", ".env"]);
+  // Identity guard (single-surface contract §"`.env` guard"): `add -A` relies
+  // on the .gitignore allowlist to exclude the Identity slot. The harness key
+  // now lives at the EXACT nested path `.be-civic/state/.env` inside this single
+  // user-owned repo. Guard that exact path, not root `.env`:
+  //   - If it exists but is NOT gitignored (allowlist not written yet),
+  //     committing would leak the key → refuse. `check-ignore -q -- <path>`
+  //     exits 0 iff ignored; any non-zero (not-ignored OR error) → refuse.
+  //   - If `ls-files -- <path>` returns anything it is already tracked (a prior
+  //     leak) → refuse regardless of check-ignore.
+  if (fs.existsSync(path.join(repoRoot, ENV_REL_PATH))) {
+    const chk = await git(repoRoot, ["check-ignore", "-q", "--", ENV_REL_PATH]);
     if (chk.spawnError || chk.code !== 0) {
-      logErr(`.env present but not gitignored in ${repoRoot}; refusing commit to protect Identity (40 §6.1)`);
+      logErr(`${ENV_REL_PATH} present but not gitignored in ${repoRoot}; refusing commit to protect Identity`);
       return "skipped:env-not-ignored";
     }
+  }
+  const tracked = await git(repoRoot, ["ls-files", "--", ENV_REL_PATH]);
+  if (!tracked.spawnError && tracked.code === 0 && tracked.stdout.trim()) {
+    logErr(`${ENV_REL_PATH} is tracked by git in ${repoRoot}; refusing commit to protect Identity`);
+    return "skipped:env-tracked";
   }
 
   // Lock-aware: if the index is locked, back off then give up this cycle.
@@ -340,25 +357,32 @@ function makeDebouncedCommitter(repoRoot, { debounceMs = DEBOUNCE_MS } = {}) {
 }
 
 // ----------------------------------------------------------------------------
-// Marker resolution: find the visible surface path.
+// Data-root resolution: find the ONE project folder to watch.
+//
+// The sole resolver is the preamble→monitor handoff pointer at
+// ${CLAUDE_PLUGIN_DATA}/.session-data-root. Line 1 is the absolute path to the
+// project folder (${SUBSTRATE_DATA}); a `session=<id>` line follows but the
+// monitor only needs the path. Both processes share ${CLAUDE_PLUGIN_DATA}
+// within one conversation, which is sound (the persistence bug is
+// cross-conversation only).
 // ----------------------------------------------------------------------------
 
-function readVisibleMarker(hiddenRoot) {
-  const markerPath = path.join(hiddenRoot, ".be-civic", "marker");
+function readSessionDataRoot(pluginDataRoot) {
+  const pointerPath = path.join(pluginDataRoot, ".session-data-root");
   let raw;
   try {
-    raw = fs.readFileSync(markerPath, "utf8");
+    raw = fs.readFileSync(pointerPath, "utf8");
   } catch (_) {
-    return null; // absent → watch hidden only.
+    return null; // absent → preamble hasn't run yet; re-poll.
   }
-  const visiblePath = raw.trim();
-  if (!visiblePath) return null;
+  const firstLine = raw.split("\n")[0].trim();
+  if (!firstLine) return null;
   try {
-    if (!fs.statSync(visiblePath).isDirectory()) return null;
+    if (!fs.statSync(firstLine).isDirectory()) return null;
   } catch (_) {
-    return null; // marker points somewhere that doesn't exist (yet).
+    return null; // pointer points somewhere that doesn't exist (yet).
   }
-  return visiblePath;
+  return firstLine;
 }
 
 // ----------------------------------------------------------------------------
@@ -366,11 +390,14 @@ function readVisibleMarker(hiddenRoot) {
 // ----------------------------------------------------------------------------
 
 /**
- * Start watching the given roots. Exposed (not just under main) so the test
- * harness can drive it against temp dirs. Returns a handle with `.stop()` and
- * the internal committers for inspection.
+ * Start watching the ONE project repo. `dataRoot` is the project folder
+ * (${SUBSTRATE_DATA}); `pluginDataRoot` is ${CLAUDE_PLUGIN_DATA}, used only to
+ * re-poll the .session-data-root pointer when `dataRoot` is absent at start.
+ * Exposed (not just under main) so the test harness can drive it against temp
+ * dirs. Returns a handle with `.stop()` and the internal committers for
+ * inspection.
  */
-function startMonitor({ hiddenRoot, visibleRoot, debounceMs = DEBOUNCE_MS }) {
+function startMonitor({ dataRoot, pluginDataRoot, debounceMs = DEBOUNCE_MS }) {
   const watchers = [];
   const committers = {};
 
@@ -385,19 +412,20 @@ function startMonitor({ hiddenRoot, visibleRoot, debounceMs = DEBOUNCE_MS }) {
     const committer = makeDebouncedCommitter(root, { debounceMs });
     committers[label] = committer;
     watchers.push(watchTree(root, committer));
-    logInfo(`watching ${label} surface: ${root}`);
+    logInfo(`watching project folder: ${root}`);
   }
 
-  attach(hiddenRoot, "hidden");
-  attach(visibleRoot, "visible");
+  attach(dataRoot, "project");
 
-  // If the visible marker was absent, poll for it and attach late.
+  // If the data root wasn't resolved yet (preamble hadn't written the
+  // .session-data-root pointer when the monitor booted), poll for it and attach
+  // late. Re-poll reads the pointer, NOT the old marker.
   let repoll = null;
-  if (hiddenRoot && !visibleRoot) {
+  if (pluginDataRoot && !committers.project) {
     repoll = setInterval(() => {
-      const v = readVisibleMarker(hiddenRoot);
-      if (v && !committers.visible) {
-        attach(v, "visible");
+      const v = readSessionDataRoot(pluginDataRoot);
+      if (v && !committers.project) {
+        attach(v, "project");
       }
     }, MARKER_REPOLL_MS);
     if (repoll.unref) repoll.unref();
@@ -414,20 +442,23 @@ function startMonitor({ hiddenRoot, visibleRoot, debounceMs = DEBOUNCE_MS }) {
 }
 
 function resolveRootsFromEnv() {
-  const hiddenRoot = process.env.CLAUDE_PLUGIN_DATA || null;
-  if (!hiddenRoot) {
-    logErr("CLAUDE_PLUGIN_DATA is not set; nothing to watch. Exiting cleanly.");
+  const pluginDataRoot = process.env.CLAUDE_PLUGIN_DATA || null;
+  if (!pluginDataRoot) {
+    logErr(
+      "CLAUDE_PLUGIN_DATA is not set; cannot resolve the .session-data-root " +
+        "pointer. Nothing to watch. Exiting cleanly."
+    );
     return null;
   }
-  const visibleRoot = readVisibleMarker(hiddenRoot);
-  return { hiddenRoot, visibleRoot };
+  const dataRoot = readSessionDataRoot(pluginDataRoot);
+  return { dataRoot, pluginDataRoot };
 }
 
 function main() {
   const roots = resolveRootsFromEnv();
   if (!roots) {
-    // No hidden root → nothing to do. Exit 0 so the monitor framework doesn't
-    // treat this as a crash-loop.
+    // No plugin-data root → cannot find the pointer. Exit 0 so the monitor
+    // framework doesn't treat this as a crash-loop.
     return;
   }
   startMonitor(roots);
@@ -455,11 +486,12 @@ module.exports = {
   startMonitor,
   commitOnce,
   makeDebouncedCommitter,
-  readVisibleMarker,
+  readSessionDataRoot,
   countStaged,
   refusesEnvPaths,
   monitorMessage,
   recoveryMessage,
+  ENV_REL_PATH,
   COMMIT_AUTHOR_NAME,
   COMMIT_AUTHOR_EMAIL,
 };

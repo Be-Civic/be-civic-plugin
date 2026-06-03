@@ -22,15 +22,22 @@ This file is deliberately split into two clearly-bandered halves:
   └───────────────────────────────────────────────────────────────────────────┘
 
 Surfaces:
-  SUBSTRATE_STATE = ${CLAUDE_PLUGIN_DATA}   — hidden, agent-managed.
-  SUBSTRATE_DATA  = visible path via marker  — user-picked folder.
+  SUBSTRATE_DATA  = the ONE durable surface — the user-picked BeCivic folder,
+                    resolved via `--data-root` or an ancestor-walk for
+                    `.be-civic/marker`. Absent pre-onboarding / in the dev loop.
+  SUBSTRATE_STATE = ${SUBSTRATE_DATA}/.be-civic/state — a pure child of the
+                    folder (NOT ${CLAUDE_PLUGIN_DATA}; that surface is
+                    structurally non-persistent on Cowork — bug #51398).
   SUBSTRATE_ROOT  = ${CLAUDE_PLUGIN_ROOT}    — read-only install.
 
-Failure semantics: hard-fail on read-only hidden surface (install error). On
-any sub-script error, emit a `<NAME>: probe_failed` marker and continue. The
-schema-migration runner restores the hidden surface from git history on failure
-and emits a single silent operator-alert line. If the orchestrator itself
-crashes, emit JIT_FALLBACK so CLAUDE.md discovers capabilities just-in-time.
+Failure semantics: when SUBSTRATE_DATA is absent (pre-onboarding / dev loop),
+emit absent surfaces, skip every disk sweep, and exit 0 — no hard-fail. When it
+is present but the state dir is not writable, emit `SUBSTRATE_WRITABLE: no` and
+continue (non-fatal). On any sub-script error, emit a `<NAME>: probe_failed`
+marker and continue. The schema-migration runner restores the state subtree from
+git history on failure and emits a single silent operator-alert line. If the
+orchestrator itself crashes, emit JIT_FALLBACK so CLAUDE.md discovers
+capabilities just-in-time.
 
 Runtime: Python 3 stdlib only. No third-party dependencies.
 Cross-platform: macOS, Windows (native, not WSL), Linux.
@@ -39,6 +46,7 @@ Total time budget: <500ms (all local; no network).
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -63,9 +71,12 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 CURRENT_SCHEMA_VERSION = 1
 
 # Plugin version string for provenance in version.json (matches plugin.json).
-PLUGIN_VERSION_STRING = "0.3.0"
+PLUGIN_VERSION_STRING = "0.6.0"
 
-# Hidden-surface files the recovery sweep / monitor commit. Identity files
+# How far up the directory tree the ancestor-walk looks for `.be-civic/marker`.
+MARKER_WALK_CAP = 12
+
+# State-surface files the recovery sweep / monitor commit. Identity files
 # (.env, user-id is allowlisted but harness_key in .env is not) are governed by
 # the on-disk .gitignore allowlist, not this list — we only ever `git add -A`.
 
@@ -79,46 +90,68 @@ def _resolve_substrate_root() -> Path:
     return Path(os.environ.get("CLAUDE_PLUGIN_ROOT", str(SCRIPTS_DIR.parent)))
 
 
-def _resolve_substrate_state(substrate_root: Path) -> Path:
-    """SUBSTRATE_STATE = hidden, agent-managed surface (${CLAUDE_PLUGIN_DATA}).
+def _resolve_substrate_data(data_root: str | None) -> Path | None:
+    """SUBSTRATE_DATA = the ONE durable, user-picked BeCivic folder.
 
-    Survives plugin updates. Falls back to the install root when the env var is
-    absent (degraded single-folder model).
+    Resolution order:
+      1. `--data-root <dir>` (the directory of the loaded CLAUDE.md) when passed.
+      2. Ancestor-walk from cwd looking for `.be-civic/marker` (cap
+         MARKER_WALK_CAP levels), gating on the detection-only marker.
+    Returns None when neither resolves (pre-onboarding / dev loop) — the caller
+    skips every disk sweep and exits 0.
     """
-    return Path(os.environ.get("CLAUDE_PLUGIN_DATA", str(substrate_root)))
-
-
-def _resolve_substrate_data(substrate_state: Path) -> Path | None:
-    """SUBSTRATE_DATA = visible, user-picked surface.
-
-    Located via the pointer marker the onboarding flow writes at
-    ${SUBSTRATE_STATE}/.be-civic/marker. Returns None when the marker is absent
-    (onboarding has not run / anonymous-read mode) or points nowhere valid.
-    """
-    marker = substrate_state / ".be-civic" / "marker"
-    try:
-        raw = marker.read_text(encoding="utf-8").strip()
-    except OSError:
-        return None
-    if not raw:
-        return None
-    candidate = Path(raw)
-    try:
-        if not candidate.is_dir():
+    if data_root:
+        candidate = Path(data_root)
+        try:
+            if candidate.is_dir():
+                return candidate.resolve()
+        except OSError:
             return None
+        return None
+
+    try:
+        here = Path.cwd().resolve()
     except OSError:
         return None
-    return candidate
+    current = here
+    for _ in range(MARKER_WALK_CAP + 1):
+        marker = current / ".be-civic" / "marker"
+        try:
+            if marker.is_file():
+                return current
+        except OSError:
+            pass
+        if current.parent == current:
+            break
+        current = current.parent
+    return None
 
 
+def _resolve_substrate_state(substrate_data: Path | None) -> Path | None:
+    """SUBSTRATE_STATE = ${SUBSTRATE_DATA}/.be-civic/state — a pure child.
+
+    NEVER read from an env var for durable state (the old
+    ${CLAUDE_PLUGIN_DATA}-backed surface is non-persistent on Cowork). Returns
+    None whenever SUBSTRATE_DATA is absent.
+    """
+    if substrate_data is None:
+        return None
+    return substrate_data / ".be-civic" / "state"
+
+
+# SUBSTRATE_ROOT is env-only (no --data-root dependency) so it is safe to
+# resolve at import. SUBSTRATE_DATA / SUBSTRATE_STATE are resolved in main()
+# (after arg-parse) and bound into these module globals there.
 SUBSTRATE_ROOT = _resolve_substrate_root()
-SUBSTRATE_STATE = _resolve_substrate_state(SUBSTRATE_ROOT)
-SUBSTRATE_DATA = _resolve_substrate_data(SUBSTRATE_STATE)
+SUBSTRATE_DATA: Path | None = None
+SUBSTRATE_STATE: Path | None = None
 
-# Back-compat aliases for any reader still importing the old names.
+# Back-compat aliases for any reader still importing the old names. PLUGIN_ROOT
+# / BUNDLE_ROOT are stable; USER_DATA_DIR now tracks SUBSTRATE_STATE and is
+# re-bound alongside it in main().
 PLUGIN_ROOT = SUBSTRATE_ROOT
-USER_DATA_DIR = SUBSTRATE_STATE
 BUNDLE_ROOT = SUBSTRATE_ROOT
+USER_DATA_DIR: Path | None = None
 
 
 JIT_FALLBACK = """\
@@ -128,7 +161,10 @@ PREAMBLE_JIT_GUIDANCE: |
   state. Proceed with safe defaults AND discover capabilities just-in-time:
 
   - SESSION_ID: generate a UUIDv7 yourself for this session.
-  - SUBSTRATE_STATE: assume the hidden plugin-data folder.
+  - SUBSTRATE_DATA: the user-picked BeCivic folder (the one durable surface).
+    Resolve it from the loaded CLAUDE.md's directory, or by walking up from cwd
+    for a `.be-civic/marker`. If you cannot find it, onboarding has not run yet.
+  - SUBSTRATE_STATE: ${SUBSTRATE_DATA}/.be-civic/state (a child of the folder).
   - PENDING_STATE: assume none. If you find unsubmitted observation files
     or research-notes files older than this session start, treat as pending.
   - BECIVIC_WIRE: library reads + submissions go over HTTPS via the WebFetch
@@ -147,21 +183,14 @@ PREAMBLE_JIT_GUIDANCE: |
   flag matters.
 """
 
-WRITE_FAILURE = """\
-PREAMBLE: fatal
-PREAMBLE_ERROR: bundle_root_read_only
-PREAMBLE_DETAIL: |
-  The hidden substrate surface is not writable. Be Civic needs a writable
-  state directory to save customer state, observation buffers, and research
-  notes.
-
-  If you installed this as a Cowork plugin pointing at a folder you own, this
-  is an install error — check folder permissions. If you opened the bundle
-  from a read-only location (a zip, a system folder, a network share without
-  write access), copy it to a writable location and reopen.
-
-  The harness cannot proceed.
-"""
+def _bind_surfaces(substrate_data: Path | None) -> None:
+    """Bind the resolved durable surface into the module globals the rest of the
+    file reads. Called from main() after arg-parse so `--data-root` is honoured.
+    """
+    global SUBSTRATE_DATA, SUBSTRATE_STATE, USER_DATA_DIR
+    SUBSTRATE_DATA = substrate_data
+    SUBSTRATE_STATE = _resolve_substrate_state(substrate_data)
+    USER_DATA_DIR = SUBSTRATE_STATE
 
 
 # ╔══════════════════════════════════════════════════════════════════════════╗
@@ -171,11 +200,16 @@ PREAMBLE_DETAIL: |
 
 
 # ----------------------------------------------------------------------------
-# §M1 — Writable hard-check (fail fast on a read-only hidden surface)
+# §M1 — Writable probe (non-fatal — emits SUBSTRATE_WRITABLE: yes|no)
 # ----------------------------------------------------------------------------
 
 def verify_writable() -> bool:
-    """Quick write test against the hidden surface. True if writable."""
+    """Quick write test against ${SUBSTRATE_DATA}/.be-civic/state. True if
+    writable. Non-fatal: a `no` result downgrades the session (emit
+    SUBSTRATE_WRITABLE: no) but never hard-fails. Only called when
+    SUBSTRATE_STATE is resolved."""
+    if SUBSTRATE_STATE is None:
+        return False
     try:
         SUBSTRATE_STATE.mkdir(parents=True, exist_ok=True)
     except OSError:
@@ -235,19 +269,32 @@ def _commit_all(repo: Path, message_template: str) -> int:
     if not _is_git_repo(repo):
         return 0
     # Identity guard: `git add -A` relies on the .gitignore allowlist to
-    # exclude the Identity slot. If `.env` exists but is NOT yet gitignored
-    # (e.g. onboarding wrote the key before the allowlist), committing would
-    # leak the harness key into history. Refuse + alert rather than risk it.
-    # `check-ignore -q` exits 0 iff `.env` is ignored.
-    if (repo / ".env").exists():
-        chk = _git(repo, ["check-ignore", "-q", ".env"])
+    # exclude the Identity slot. The harness key lives at the EXACT nested path
+    # `.be-civic/state/.env` inside the single user-owned repo. If it exists but
+    # is NOT yet gitignored (e.g. onboarding wrote the key before the allowlist)
+    # OR is already tracked, committing would leak the harness key into history.
+    # Refuse + alert rather than risk it.
+    #   - `check-ignore -q -- .be-civic/state/.env` exits 0 iff it is ignored.
+    #   - `ls-files -- .be-civic/state/.env` returning anything means it is
+    #     already tracked (a prior leak) — refuse regardless of check-ignore.
+    env_rel = ".be-civic/state/.env"
+    if (repo / ".be-civic" / "state" / ".env").exists():
+        chk = _git(repo, ["check-ignore", "-q", "--", env_rel])
         if not chk or chk.returncode != 0:
             print(
-                f"OPERATOR_ALERT: .env present but not gitignored in {repo}; "
+                f"OPERATOR_ALERT: {env_rel} present but not gitignored in {repo}; "
                 "refusing auto-commit to protect Identity. "
                 "Write the .gitignore allowlist before committing."
             )
             return 0
+    tracked = _git(repo, ["ls-files", "--", env_rel])
+    if tracked and tracked.returncode == 0 and tracked.stdout.strip():
+        print(
+            f"OPERATOR_ALERT: {env_rel} is tracked by git in {repo}; "
+            "refusing auto-commit to protect Identity. "
+            "Untrack it and rewrite history before committing."
+        )
+        return 0
     add = _git(repo, ["add", "-A"])
     if not add or add.returncode != 0:
         return 0
@@ -278,16 +325,44 @@ def _commit_all(repo: Path, message_template: str) -> int:
 # ----------------------------------------------------------------------------
 
 def emit_surfaces() -> None:
-    """Emit the three substrate surface paths for the harness."""
+    """Emit the three substrate surface paths for the harness.
+
+    SUBSTRATE_ROOT is always present (env / install dir). SUBSTRATE_DATA and its
+    child SUBSTRATE_STATE are `absent` pre-onboarding / in the dev loop.
+    """
     print(f"SUBSTRATE_ROOT: {SUBSTRATE_ROOT}")
-    print(f"SUBSTRATE_STATE: {SUBSTRATE_STATE}")
     if SUBSTRATE_DATA is not None:
         print(f"SUBSTRATE_DATA: {SUBSTRATE_DATA}")
+        print(f"SUBSTRATE_STATE: {SUBSTRATE_STATE}")
     else:
         print("SUBSTRATE_DATA: absent")
+        print("SUBSTRATE_STATE: absent")
     # Back-compat aliases consumed by the current CLAUDE.md guidance.
     print(f"PLUGIN_ROOT: {SUBSTRATE_ROOT}")
-    print(f"USER_DATA_DIR: {SUBSTRATE_STATE}")
+    print(f"USER_DATA_DIR: {SUBSTRATE_STATE if SUBSTRATE_STATE is not None else 'absent'}")
+
+
+def write_session_data_root(session_id: str) -> None:
+    """Write the preamble→monitor handoff pointer at
+    ${CLAUDE_PLUGIN_DATA}/.session-data-root.
+
+    Line 1 = absolute path to ${SUBSTRATE_DATA} (the one durable surface, the
+    repo the monitor watches). Line 2 = `session=<id>` so a stale read is
+    detectable. Best-effort: only when CLAUDE_PLUGIN_DATA is set AND
+    SUBSTRATE_DATA resolved. Monitor + preamble share ${CLAUDE_PLUGIN_DATA}
+    within one conversation, which is sound (the persistence bug is
+    cross-conversation only). Never raises."""
+    plugin_data = os.environ.get("CLAUDE_PLUGIN_DATA")
+    if not plugin_data or SUBSTRATE_DATA is None:
+        return
+    pointer = Path(plugin_data) / ".session-data-root"
+    try:
+        pointer.parent.mkdir(parents=True, exist_ok=True)
+        pointer.write_text(
+            f"{SUBSTRATE_DATA}\nsession={session_id}\n", encoding="utf-8"
+        )
+    except OSError:
+        pass
 
 
 # ----------------------------------------------------------------------------
@@ -340,7 +415,7 @@ MIGRATION_STEPS: list[tuple[int, "callable"]] = []
 
 def run_schema_migration() -> None:
     """Compare on-disk state_version to CURRENT_SCHEMA_VERSION; run ordered
-    steps between them. On failure, restore the hidden surface from its git
+    steps between them. On failure, restore the state subtree from its git
     history and emit a single silent operator-alert line.
 
     Never raises; never blocks the user."""
@@ -369,7 +444,7 @@ def run_schema_migration() -> None:
         write_version_stamp(CURRENT_SCHEMA_VERSION)
         print(f"SCHEMA_MIGRATION: applied {on_disk}->{CURRENT_SCHEMA_VERSION}")
     except Exception:
-        # Auto-restore the hidden surface from git, keep state_version at
+        # Auto-restore the state subtree from git, keep state_version at
         # the pre-migration value, and page the operator out-of-band. The user
         # gets a non-blocking degraded-mode session.
         _restore_hidden_from_git()
@@ -384,14 +459,24 @@ def run_schema_migration() -> None:
 
 
 def _restore_hidden_from_git() -> None:
-    """Restore the hidden surface working tree from its committed git history
-    (operational rollback). Best-effort; never raises."""
-    if not _is_git_repo(SUBSTRATE_STATE):
+    """Restore the state subtree from its committed git history (operational
+    rollback). There is ONE repo at ${SUBSTRATE_DATA}; we must NOT
+    `git reset --hard HEAD` it — that would clobber the user's uncommitted
+    visible prose (CLAUDE.md, MEMORY.md, procedure notes) in the same tree.
+    Scope the restore to `.be-civic/state/` only. Best-effort; never raises."""
+    if SUBSTRATE_DATA is None or not _is_git_repo(SUBSTRATE_DATA):
         return
-    # Discard working-tree + index changes back to the last commit. The
-    # allowlist means only governed state is touched; .env is untracked and
-    # therefore untouched.
-    _git(SUBSTRATE_STATE, ["reset", "--hard", "HEAD"])
+    # Path-scoped restore: clears a half-staged migration AND reverts the
+    # working tree for the state subtree, leaving everything else (including the
+    # user's uncommitted prose) untouched. .env / sessions/ are untracked and so
+    # are unaffected.
+    res = _git(
+        SUBSTRATE_DATA,
+        ["restore", "--staged", "--worktree", "--", ".be-civic/state/"],
+    )
+    if res is None or res.returncode != 0:
+        # Older git without `restore`: fall back to a path-scoped checkout.
+        _git(SUBSTRATE_DATA, ["checkout", "HEAD", "--", ".be-civic/state/"])
 
 
 # ----------------------------------------------------------------------------
@@ -399,25 +484,24 @@ def _restore_hidden_from_git() -> None:
 # ----------------------------------------------------------------------------
 
 def run_recovery_sweep() -> None:
-    """For each surface repo, commit uncommitted allowlisted changes ONCE as
+    """Commit uncommitted allowlisted changes in the single project repo ONCE as
     `auto: recovery — <N> file(s) modified outside monitor coverage`.
 
-    Catches writes that landed while no monitor was running. Emits a count
-    marker. Never raises."""
-    total = 0
-    repos = [SUBSTRATE_STATE]
-    if SUBSTRATE_DATA is not None:
-        repos.append(SUBSTRATE_DATA)
-    for repo in repos:
-        try:
-            # `{n}` is filled with the staged count by _commit_all.
-            staged = _commit_all(
-                repo,
-                "auto: recovery — {n} file(s) modified outside monitor coverage",
-            )
-        except Exception:
-            staged = 0
-        total += staged
+    There is now ONE git repo at the project-folder root (${SUBSTRATE_DATA});
+    state lives at the `.be-civic/state/` subtree under it. Catches writes that
+    landed while no monitor was running. Emits a count marker. Never raises.
+    Only called when SUBSTRATE_DATA is resolved."""
+    if SUBSTRATE_DATA is None:
+        print("RECOVERY_SWEEP_COMMITTED: 0")
+        return
+    try:
+        # `{n}` is filled with the staged count by _commit_all.
+        total = _commit_all(
+            SUBSTRATE_DATA,
+            "auto: recovery — {n} file(s) modified outside monitor coverage",
+        )
+    except Exception:
+        total = 0
     print(f"RECOVERY_SWEEP_COMMITTED: {total}")
 
 
@@ -430,20 +514,20 @@ def migrate_procedures_registry() -> None:
     case.json machinery state if the registry is absent but legacy state
     exists.
 
-    Legacy layout: each procedure kept a case.json under the visible surface
+    Legacy layout: each procedure kept a case.json under the project folder
     (e.g. ${SUBSTRATE_DATA}/<slug>/case.json) carrying its own machinery state.
-    The current layout uses a single registry on the hidden surface so the
-    preamble can read every in-flight procedure without walking the visible
-    tree. Idempotent: no-op when procedures.json already exists. Never raises.
+    The current layout uses a single registry at ${SUBSTRATE_STATE}/procedures.json
+    so the preamble can read every in-flight procedure without walking the whole
+    folder. Idempotent: no-op when procedures.json already exists. Harmless
+    no-op for greenfield. Never raises.
     """
+    if SUBSTRATE_STATE is None or SUBSTRATE_DATA is None:
+        # No durable surface yet (pre-onboarding / dev loop) — nothing to do.
+        print("PROCEDURES_REGISTRY: absent")
+        return
     registry_path = SUBSTRATE_STATE / "procedures.json"
     if registry_path.exists():
         print("PROCEDURES_REGISTRY: present")
-        return
-    if SUBSTRATE_DATA is None:
-        # Nothing to migrate from; do not create an empty registry (onboarding
-        # writes it on first procedure intent — contract §6).
-        print("PROCEDURES_REGISTRY: absent")
         return
 
     entries: list[dict] = []
@@ -514,10 +598,18 @@ def new_session_id() -> str:
 # ----------------------------------------------------------------------------
 
 def run_script(name: str) -> tuple[bool, str]:
-    """Run a sibling script and capture its stdout."""
+    """Run a sibling script and capture its stdout.
+
+    The already-resolved SUBSTRATE_STATE is passed down via the
+    BC_SUBSTRATE_STATE env var so sub-scripts use the preamble's resolution
+    (the `.be-civic/state` child) rather than re-resolving CLAUDE_PLUGIN_DATA.
+    """
     script_path = SCRIPTS_DIR / name
     if not script_path.exists():
         return False, f"{name.upper().replace('-', '_').replace('.PY', '')}: missing"
+    child_env = dict(os.environ)
+    if SUBSTRATE_STATE is not None:
+        child_env["BC_SUBSTRATE_STATE"] = str(SUBSTRATE_STATE)
     try:
         result = subprocess.run(
             [sys.executable, str(script_path)],
@@ -525,6 +617,7 @@ def run_script(name: str) -> tuple[bool, str]:
             text=True,
             timeout=5,
             check=False,
+            env=child_env,
         )
     except (subprocess.TimeoutExpired, OSError):
         return False, ""
@@ -553,6 +646,9 @@ def surface_pending_verification() -> None:
     a verification ceremony was begun but not completed; the harness should resume
     it (re-prompt for the magic link) rather than starting onboarding fresh.
     Transient — not committed (absent from the allowlist)."""
+    if SUBSTRATE_STATE is None:
+        print("PENDING_VERIFICATION: none")
+        return
     flag = SUBSTRATE_STATE / ".pending-verification"
     if not flag.exists():
         print("PENDING_VERIFICATION: none")
@@ -581,6 +677,9 @@ def surface_harness_key() -> None:
     the True/False result. The secret substring is never assigned to a variable.
     Identity stays substrate-side; this probe treats the value as untouchable.
     """
+    if SUBSTRATE_STATE is None:
+        print("HARNESS_KEY: absent")
+        return
     env_path = SUBSTRATE_STATE / ".env"
     present = False
     try:
@@ -614,10 +713,10 @@ def emit_profile_json() -> None:
     (template shipped with the plugin) on first-contact when no customer state
     exists yet.
     """
-    candidates = [
-        SUBSTRATE_STATE / "profile.json",
-        SUBSTRATE_ROOT / "profile.json",
-    ]
+    candidates = []
+    if SUBSTRATE_STATE is not None:
+        candidates.append(SUBSTRATE_STATE / "profile.json")
+    candidates.append(SUBSTRATE_ROOT / "profile.json")
     for profile_path in candidates:
         if profile_path.exists():
             try:
@@ -659,10 +758,12 @@ def emit_submit_observations() -> None:
     """Emit SUBMIT_OBSERVATIONS_THIS_SESSION: yes | no.
 
     The Layer-1 PII scrub floor is a regex pass against a scrub-rules file. The
-    plugin ships a baseline at ${SUBSTRATE_ROOT}/data/scrub-rules.json; the
-    harness may refresh it substrate-side at ${SUBSTRATE_STATE}/scrub-rules.json.
-    The preamble does NO network (it stays local + fast), so the freshness check
-    it can honestly make is: does a usable scrub-rules file exist at all?
+    plugin ships a baseline at ${SUBSTRATE_ROOT}/data/scrub-rules.json (the
+    floor); the harness may refresh it into the ephemeral plugin-data cache at
+    ${CLAUDE_PLUGIN_DATA}/scrub-rules.json. Scrub-rules are NOT durable state —
+    they never live in the project folder. The preamble does NO network (it
+    stays local + fast), so the freshness check it can honestly make is: does a
+    usable scrub-rules file exist at all?
 
       - A usable rules file is present (cached refresh OR shipped baseline) ->
         the regex scrub floor can run -> `yes`. The agent still re-checks its
@@ -673,10 +774,10 @@ def emit_submit_observations() -> None:
         error) -> the scrub floor cannot run -> `no`. Fail closed: never submit
         without a scrub floor in place.
     """
-    candidates = [
-        SUBSTRATE_STATE / "scrub-rules.json",
-        SUBSTRATE_ROOT / "data" / "scrub-rules.json",
-    ]
+    candidates = [SUBSTRATE_ROOT / "data" / "scrub-rules.json"]
+    plugin_data = os.environ.get("CLAUDE_PLUGIN_DATA")
+    if plugin_data:
+        candidates.insert(0, Path(plugin_data) / "scrub-rules.json")
     for rules_path in candidates:
         try:
             if rules_path.is_file() and rules_path.stat().st_size > 0:
@@ -691,31 +792,92 @@ def emit_submit_observations() -> None:
 # Orchestration
 # ============================================================================
 
-def main() -> int:
+def _parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="preamble.py — Be Civic session-start orchestrator",
+        add_help=True,
+    )
+    parser.add_argument(
+        "--data-root",
+        dest="data_root",
+        default=None,
+        metavar="DIR",
+        help=(
+            "absolute path to the BeCivic folder (the directory of the loaded "
+            "CLAUDE.md). When omitted, the preamble ancestor-walks from cwd for "
+            "a `.be-civic/marker`."
+        ),
+    )
+    # Tolerate unknown args so the harness can pass extras without breaking us.
+    args, _unknown = parser.parse_known_args(argv)
+    return args
+
+
+def main(argv: list[str] | None = None) -> int:
+    # --- RESOLUTION (after arg-parse so --data-root is honoured) ---------------
+    args = _parse_args(argv)
+    _bind_surfaces(_resolve_substrate_data(args.data_root))
+
     # --- SUBSTRATE MECHANISM --------------------------------------------------
-    # 1. Writable hard check. Fail fast if the hidden surface is read-only.
-    if not verify_writable():
-        print(WRITE_FAILURE)
-        return 1
+    # 1. Pre-onboarding / dev loop: no durable folder resolved. Emit absent
+    #    surfaces, SKIP every disk sweep, and exit 0 (no hard-fail).
+    if SUBSTRATE_DATA is None:
+        emit_surfaces()
+        session_id = new_session_id()
+        print(f"SESSION_ID: {session_id}")
+        print("SESSION_STATE_DIR: absent")
+        print("SCHEMA_MIGRATION: skipped_no_data_root")
+        print("PROCEDURES_REGISTRY: absent")
+        print("RECOVERY_SWEEP_COMMITTED: 0")
+        # Still surface the read-only capability probes + profile template so the
+        # harness can run onboarding.
+        surface_pending_verification()
+        surface_harness_key()
+        ok, browser_output = run_script("detect-browser-capability.py")
+        if ok and browser_output:
+            print(browser_output)
+        elif not ok:
+            print("OS_PLATFORM: unknown")
+            print("CHROME_INSTALLED: unknown")
+            print("BROWSER_TOOL_AVAILABLE: unknown")
+            print("VISION_AVAILABLE: unknown")
+        emit_mcp_capability()
+        emit_submit_observations()
+        emit_profile_json()
+        return 0
 
     # 2. Emit the three substrate surfaces.
     emit_surfaces()
 
+    # 2a. Writable probe (NON-FATAL). When the state dir is not writable, emit a
+    #     downgrade marker instead of a hard-fail and continue with the read
+    #     surfaces still useful for the harness.
+    writable = verify_writable()
+    print(f"SUBSTRATE_WRITABLE: {'yes' if writable else 'no'}")
+
     # 3. Schema-migration runner (compare on-disk state_version to current;
     #    apply ordered steps; restore-on-failure + operator alert).
-    run_schema_migration()
-
-    # 4. procedures.json registry migration (legacy case.json → registry).
-    migrate_procedures_registry()
-
-    # 5. Recovery sweep (commit uncommitted allowlisted changes once per repo).
-    run_recovery_sweep()
+    if writable:
+        run_schema_migration()
+        # 4. procedures.json registry migration (legacy case.json → registry;
+        #    harmless no-op for greenfield).
+        migrate_procedures_registry()
+        # 5. Recovery sweep (commit uncommitted allowlisted changes once in the
+        #    single project repo).
+        run_recovery_sweep()
+    else:
+        print("SCHEMA_MIGRATION: skipped_not_writable")
+        print("PROCEDURES_REGISTRY: skipped_not_writable")
+        print("RECOVERY_SWEEP_COMMITTED: 0")
 
     # --- HARNESS BEHAVIOUR ----------------------------------------------------
     # 6. Session id.
     session_id = new_session_id()
     print(f"SESSION_ID: {session_id}")
     print(f"SESSION_STATE_DIR: {SUBSTRATE_STATE}/sessions/{session_id}/state/")
+
+    # 6a. Write the preamble→monitor handoff pointer (best-effort).
+    write_session_data_root(session_id)
 
     # 7. Orphan-buffers scan.
     surface_scan("scan-orphan-buffers.py", "ORPHAN_SESSIONS_CLEANED: probe_failed")

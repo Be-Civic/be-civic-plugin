@@ -1,38 +1,38 @@
 #!/usr/bin/env python3
 """bc_export.py — Be Civic portable-archive exporter.
 
-Bundles both substrate surfaces (visible SUBSTRATE_DATA + hidden SUBSTRATE_STATE)
-into a single tarball that can be restored on another machine via bc_import.py.
+Bundles the ONE durable project repo (${SUBSTRATE_DATA}) into a single tarball
+that can be restored on another machine via bc_import.py. State lives at the
+`.be-civic/state/` subtree inside that repo, so a single `git bundle --all`
+carries everything committed (visible prose + state).
 
 Bundle format
 ─────────────
   bc-export-<timestamp>.tar.gz
-  ├── manifest.json          # version markers + path metadata
-  ├── surfaces/
-  │   ├── data.bundle        # git bundle of the visible surface (SUBSTRATE_DATA)
-  │   └── state.bundle       # git bundle of the hidden surface (SUBSTRATE_STATE)
+  ├── manifest.json          # version markers + bundle_present flag
+  └── surfaces/
+      └── becivic.bundle     # git bundle --all of the project repo
 
 IDENTITY HANDLING
 ─────────────────
-The hidden surface's .env file (harness_key = Identity) is gitignored by the
-hidden surface's .gitignore allowlist. It is NOT in the committed git history.
-A `git bundle` of committed history NATURALLY EXCLUDES .env — this script
-verifies that property before proceeding and prints an explicit warning.
-
-On the destination machine the user must re-verify via POST /api/auth/verify
-(or rotate an existing key via POST /api/auth/rotate-key) to get a working
-harness key. Identity is not portable; the bundle is safe to copy.
+The harness key lives at `.be-civic/state/.env` and is gitignored by the
+project folder's .gitignore allowlist — it is NOT in committed git history. A
+`git bundle` of committed history NATURALLY EXCLUDES it; this script verifies
+that property before proceeding. When a key is present it is carried as a loose
+`identity/env` file in the tarball (credential-bearing — warned below). On the
+destination the user may instead re-verify via POST /api/auth/verify (or rotate
+via POST /api/auth/rotate-key) to get a working key. The bundle is safe to copy.
 
 Usage
 ──────
   python3 bc_export.py --data <SUBSTRATE_DATA_PATH> \\
-                       --state <SUBSTRATE_STATE_PATH> \\
                        --out <destination_directory_or_path.tar.gz>
 
-  # With Cowork env vars:
+  # With Cowork env vars (resolves the folder via .session-data-root, else the
+  # ancestor-walk for .be-civic/marker):
   python3 bc_export.py --cowork --out ~/Desktop
 
-  # Dry-run (verify surfaces, no file written):
+  # Dry-run (verify the repo, no file written):
   python3 bc_export.py --cowork --dry-run
 
 Runtime: Python 3 stdlib only. No third-party deps.
@@ -53,31 +53,36 @@ from pathlib import Path
 
 # ── Identity-exclusion verification ─────────────────────────────────────────
 
-def _verify_env_excluded_from_git(surface_root: Path, label: str) -> None:
-    """Abort if .env is tracked by git — that would mean Identity is in history.
+ENV_REL_PATH = ".be-civic/state/.env"
+
+
+def _verify_env_excluded_from_git(repo_root: Path, label: str) -> None:
+    """Abort if the harness-key .env is tracked by git — that would mean Identity
+    is in history. The key lives at the EXACT nested path `.be-civic/state/.env`
+    inside the single project repo.
 
     This is a safety-net assertion, not a configuration choice. If it ever
-    fires it means the hidden surface's .gitignore allowlist was corrupted.
+    fires it means the folder's .gitignore allowlist was corrupted.
     """
-    git_dir = surface_root / ".git"
+    git_dir = repo_root / ".git"
     if not git_dir.exists():
         return  # no git repo; not a problem at verification stage
 
-    env_path = surface_root / ".env"
+    env_path = repo_root / ".be-civic" / "state" / ".env"
     if not env_path.exists():
         return  # no .env present at all
 
     result = subprocess.run(
-        ["git", "-C", str(surface_root), "ls-files", ".env"],
+        ["git", "-C", str(repo_root), "ls-files", "--", ENV_REL_PATH],
         capture_output=True,
         text=True,
     )
-    if result.returncode == 0 and ".env" in result.stdout:
+    if result.returncode == 0 and result.stdout.strip():
         print(
-            f"FATAL: .env is tracked by git in the {label} surface.\n"
+            f"FATAL: {ENV_REL_PATH} is tracked by git in the {label} repo.\n"
             "This means Identity (the harness key) is in version-control history\n"
             "and would be included in the git bundle. Aborting export.\n"
-            "Fix: add .env to the .gitignore allowlist and rewrite history.",
+            "Fix: add it to the .gitignore allowlist and rewrite history.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -132,9 +137,9 @@ def _create_git_bundle(surface_root: Path, bundle_path: Path, label: str) -> boo
 
 # ── Version info ─────────────────────────────────────────────────────────────
 
-def _read_version_json(state_root: Path) -> dict:
-    """Read version.json from the hidden surface."""
-    vpath = state_root / "version.json"
+def _read_version_json(repo_root: Path) -> dict:
+    """Read version.json from the state subtree (.be-civic/state/)."""
+    vpath = repo_root / ".be-civic" / "state" / "version.json"
     if vpath.exists():
         try:
             return json.loads(vpath.read_text())
@@ -145,28 +150,24 @@ def _read_version_json(state_root: Path) -> dict:
 
 # ── Main export logic ─────────────────────────────────────────────────────────
 
-def export(data_path: Path, state_path: Path, out: Path, dry_run: bool) -> None:
-    """Bundle both surfaces into a portable tarball."""
+def export(data_path: Path, out: Path, dry_run: bool) -> None:
+    """Bundle the single project repo into a portable tarball."""
 
     # ── 0. Sanity checks ─────────────────────────────────────────────────────
     if not data_path.exists():
         print(f"ERROR: SUBSTRATE_DATA path does not exist: {data_path}", file=sys.stderr)
         sys.exit(1)
-    if not state_path.exists():
-        print(f"ERROR: SUBSTRATE_STATE path does not exist: {state_path}", file=sys.stderr)
-        sys.exit(1)
 
     # ── 1. Verify Identity is excluded from git (safety assertion) ───────────
-    _verify_env_excluded_from_git(state_path, "hidden (SUBSTRATE_STATE)")
+    _verify_env_excluded_from_git(data_path, "project (SUBSTRATE_DATA)")
 
-    version_info = _read_version_json(state_path)
-    env_file = state_path / ".env"
+    version_info = _read_version_json(data_path)
+    env_file = data_path / ".be-civic" / "state" / ".env"
     env_present = env_file.exists()
 
     if dry_run:
         print("DRY RUN — no file will be written.")
         print(f"  SUBSTRATE_DATA  : {data_path}")
-        print(f"  SUBSTRATE_STATE : {state_path}")
         print(f"  version.json    : {version_info}")
         if env_present:
             print("  .env (identity) : present — WILL BE INCLUDED (bundle carries your key)")
@@ -188,13 +189,10 @@ def export(data_path: Path, state_path: Path, out: Path, dry_run: bool) -> None:
         surfaces_dir = tmp_path / "surfaces"
         surfaces_dir.mkdir()
 
-        data_bundle_path = surfaces_dir / "data.bundle"
-        state_bundle_path = surfaces_dir / "state.bundle"
+        bundle_path = surfaces_dir / "becivic.bundle"
+        bundle_present = _create_git_bundle(data_path, bundle_path, "project (SUBSTRATE_DATA)")
 
-        data_has_commits = _create_git_bundle(data_path, data_bundle_path, "visible (SUBSTRATE_DATA)")
-        state_has_commits = _create_git_bundle(state_path, state_bundle_path, "hidden (SUBSTRATE_STATE)")
-
-        # Identity: .env is gitignored, so it is NOT in the git bundles. Carry it
+        # Identity: .env is gitignored, so it is NOT in the git bundle. Carry it
         # as a loose file so the bundle works immediately on the destination
         # machine. The user is warned below that the bundle is credential-bearing
         # and is responsible for transferring + deleting it safely.
@@ -205,12 +203,11 @@ def export(data_path: Path, state_path: Path, out: Path, dry_run: bool) -> None:
 
         # ── 4. Write manifest ─────────────────────────────────────────────────
         manifest = {
-            "bc_export_version": "1",
+            "bc_export_version": "2",
             "exported_at": ts,
             "state_version": version_info.get("state_version", "unknown"),
             "plugin_version": version_info.get("plugin_version", "unknown"),
-            "data_bundle_present": data_has_commits,
-            "state_bundle_present": state_has_commits,
+            "bundle_present": bundle_present,
             "identity_excluded": not env_present,
             "note": (
                 "Identity (harness key) IS included as identity/env. Treat this "
@@ -225,10 +222,8 @@ def export(data_path: Path, state_path: Path, out: Path, dry_run: bool) -> None:
         # ── 5. Pack the tarball ────────────────────────────────────────────────
         with tarfile.open(archive_path, "w:gz") as tar:
             tar.add(tmp_path / "manifest.json", arcname="manifest.json")
-            for name in ["data.bundle", "state.bundle"]:
-                p = surfaces_dir / name
-                if p.exists():
-                    tar.add(p, arcname=f"surfaces/{name}")
+            if bundle_path.exists():
+                tar.add(bundle_path, arcname="surfaces/becivic.bundle")
             if env_present:
                 tar.add(identity_dir / "env", arcname="identity/env")
 
@@ -267,38 +262,45 @@ def export(data_path: Path, state_path: Path, out: Path, dry_run: bool) -> None:
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
 
-def _resolve_cowork_paths() -> tuple[Path, Path]:
-    """Read Cowork env vars and the .be-civic/marker to locate both surfaces."""
-    state_env = os.environ.get("CLAUDE_PLUGIN_DATA")
-    if not state_env:
-        print(
-            "ERROR: CLAUDE_PLUGIN_DATA not set. "
-            "Either pass --data/--state explicitly or run inside Cowork.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    state_path = Path(state_env)
+def _resolve_cowork_data_path() -> Path:
+    """Locate the single project folder (${SUBSTRATE_DATA}) under Cowork.
 
-    # Resolve visible surface from the marker pointer.
-    marker_path = state_path / ".be-civic" / "marker"
-    if not marker_path.exists():
-        print(
-            f"ERROR: Marker not found at {marker_path}.\n"
-            "The Be Civic project has not been onboarded yet. "
-            "Complete first-contact onboarding before exporting.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    Resolution order:
+      1. The preamble→monitor pointer ${CLAUDE_PLUGIN_DATA}/.session-data-root
+         (line 1 = absolute path to the folder).
+      2. Ancestor-walk from cwd for a `.be-civic/marker` (cap 12 levels).
+    """
+    plugin_data = os.environ.get("CLAUDE_PLUGIN_DATA")
+    if plugin_data:
+        pointer = Path(plugin_data) / ".session-data-root"
+        try:
+            first = pointer.read_text(encoding="utf-8").split("\n")[0].strip()
+        except OSError:
+            first = ""
+        if first and Path(first).is_dir():
+            return Path(first)
 
-    marker_content = marker_path.read_text().strip()
-    # Marker format: either a raw path or a JSON {"visible_path": "..."}
+    # Fallback: ancestor-walk from cwd for the detection marker.
     try:
-        meta = json.loads(marker_content)
-        data_path = Path(meta["visible_path"])
-    except (json.JSONDecodeError, KeyError):
-        data_path = Path(marker_content)
+        current = Path.cwd().resolve()
+    except OSError:
+        current = None
+    if current is not None:
+        for _ in range(13):
+            if (current / ".be-civic" / "marker").is_file():
+                return current
+            if current.parent == current:
+                break
+            current = current.parent
 
-    return data_path, state_path
+    print(
+        "ERROR: Could not locate the Be Civic project folder. No "
+        "${CLAUDE_PLUGIN_DATA}/.session-data-root pointer and no .be-civic/marker\n"
+        "found by walking up from the current directory. Pass --data explicitly, "
+        "or run inside an onboarded Be Civic session.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -309,19 +311,13 @@ def main(argv: list[str] | None = None) -> int:
     path_group.add_argument(
         "--cowork",
         action="store_true",
-        help="resolve paths from CLAUDE_PLUGIN_DATA env var (Cowork plugin runtime)",
+        help="resolve the project folder from .session-data-root / .be-civic/marker (Cowork runtime)",
     )
     path_group.add_argument(
         "--data",
         type=Path,
         metavar="SUBSTRATE_DATA",
-        help="path to the visible surface (user-picked BeCivic folder)",
-    )
-    parser.add_argument(
-        "--state",
-        type=Path,
-        metavar="SUBSTRATE_STATE",
-        help="path to the hidden surface (required with --data)",
+        help="path to the project folder (user-picked BeCivic folder)",
     )
     parser.add_argument(
         "--out",
@@ -332,19 +328,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="verify surfaces and print what would be exported; do not write the archive",
+        help="verify the repo and print what would be exported; do not write the archive",
     )
     args = parser.parse_args(argv)
 
     if args.cowork:
-        data_path, state_path = _resolve_cowork_paths()
+        data_path = _resolve_cowork_data_path()
     else:
-        if not args.state:
-            parser.error("--state is required when --data is given")
         data_path = args.data
-        state_path = args.state
 
-    export(data_path, state_path, args.out, dry_run=args.dry_run)
+    export(data_path, args.out, dry_run=args.dry_run)
     return 0
 
 

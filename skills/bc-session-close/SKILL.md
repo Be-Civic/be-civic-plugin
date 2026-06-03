@@ -128,13 +128,13 @@ If the customer asks "how do I back up my Be Civic data?" or "can I use this on 
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/bc_export.py --cowork --out ~/Desktop
 ```
 
-The script bundles both surfaces (visible + hidden) into a single `bc-export-<timestamp>.tar.gz` and prints the mandatory Identity warning. Identity (harness key) is NOT in the bundle — it is excluded by construction (gitignored, never committed). On the destination machine the user runs:
+The script bundles the project folder into a single `bc-export-<timestamp>.tar.gz` and prints the mandatory Identity warning. The harness key is gitignored (never in git history), but when a key is present the export carries it as a loose `identity/env` member — so the bundle is **credential-bearing** (treat it like a passport scan). On the destination machine the user runs:
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/bc_import.py <bundle.tar.gz> --cowork --data-parent <parent>
 ```
 
-then re-verifies via the onboarding flow. See `CAPABILITIES.md` at the plugin root for the full portability contract and bundle format, and `skills/be-civic/SKILL.md §5` for import detection in the gate skill.
+then continues as a returning user — re-verifying via the onboarding flow only if the bundle carried no key (identity-preserving: re-verifying the same email restores the same identity). See `skills/be-civic/SKILL.md §5` for import detection in the gate skill.
 
 ## What this skill does NOT own
 

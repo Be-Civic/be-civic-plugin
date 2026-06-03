@@ -1,7 +1,7 @@
 ---
 id: bc-onboarding
 name: bc-onboarding
-description: First-contact onboarding for Be Civic. Runs the verified flow — an email→code access widget (start-verification emails a 6-digit code → verify with the code), then state-shape activation across the hidden and visible substrate surfaces — and ends with a clean handoff into a fresh chat opened inside the project folder, where the working session begins. Falls back to anonymous read-only mode if the user declines verification. Owns first-contact only; returning and multi-active modes are owned by the harness.
+description: First-contact onboarding for Be Civic. Runs the verified flow — an email→code access widget (start-verification emails a 6-digit code → verify with the code), then state-shape activation inside the user-picked project folder (one folder, one git repo, with agent-managed state in a hidden .be-civic/state subdir) — and ends with a clean handoff into a fresh chat opened inside the project folder, where the working session begins. Falls back to anonymous read-only mode if the user declines verification. Owns first-contact only; returning and multi-active modes are owned by the harness.
 version: 3.3.0
 requires_capabilities:
   - cowork_directory_tool: mcp__cowork__request_cowork_directory
@@ -20,21 +20,23 @@ peer_skills:
 
 Be Civic is a tool for the user's agent, not an agent itself. The user already has an agent (you, running inside Cowork); Be Civic gives that agent a verified library of Belgian administrative procedures. This skill is the "get set up" beat: the user has already said yes, and your job is to get them set up quickly and cleanly.
 
-This skill owns **first-contact only** — the "get set up" conversation (Chat 1). It runs once per Be Civic substrate: capture and verify the user's email, mint their pseudonymous identity, write the two-surface state shape, then **end this conversation by moving the user into one fresh chat opened inside their project folder** where the work begins. Returning sessions (marker already exists) and mid-session pivots to a second procedure are handled by the harness `CLAUDE.md`, not here.
+This skill owns **first-contact only** — the "get set up" conversation (Chat 1). It runs once per Be Civic project: capture and verify the user's email, pick the project folder, mint their pseudonymous identity, write the project state shape (one folder, one git repo), then **end this conversation by moving the user into one fresh chat opened inside their project folder** where the work begins. Returning sessions (marker already exists) and mid-session pivots to a second procedure are handled by the harness `CLAUDE.md`, not here.
 
 This conversation is **setup only**: email, verification, and writing the project to disk. The procedure interview — the about-you form and the real walk-through — happens in the *next* chat, after the user opens their project folder and the harness loads. Do **not** ask the user about their situation here, and do **not** render the about-you onboarding form here. Setting up the project, then handing the user cleanly into it, is the whole job.
 
-### Two substrate surfaces
+### Substrate surfaces — one folder, one repo
 
-Everything this skill writes lands on one of two surfaces. Read their paths from the preamble's session-state lines — never hardcode.
+Everything this skill writes lands inside the user-picked project folder. There is one git repo at the folder root; the agent-managed state lives in a hidden subdirectory of that same folder. Read the resolved paths from the preamble's session-state lines — never hardcode.
 
 | Surface | Var | What it holds |
 |---|---|---|
-| Hidden, agent-managed | `${SUBSTRATE_STATE}` (= `${CLAUDE_PLUGIN_DATA}`) | `.env` (harness_key only), `user-id`, `profile.json`, `preferences.json`, `procedures.json`, `version.json`, `sessions/`, `.be-civic/marker` (pointer → visible path), `.pending-verification` (transient) |
-| Visible, user-picked | `${SUBSTRATE_DATA}` (= `<picked-parent>/BeCivic/`) | `CLAUDE.md`, `MEMORY.md`, `.be-civic/marker` (version stamp), `documents/`, `<procedure-slug>/` |
+| Project folder (user-picked) | `${SUBSTRATE_DATA}` (= `<picked-parent>/BeCivic/`) | `CLAUDE.md`, `MEMORY.md`, the single `.gitignore`, `.be-civic/marker` (detection), `documents/`, `<procedure-slug>/` |
+| Agent-managed state | `${SUBSTRATE_STATE}` (= `${SUBSTRATE_DATA}/.be-civic/state`) | `.env` (harness_key only — at `.be-civic/state/.env`), `user-id`, `profile.json`, `preferences.json`, `procedures.json`, `version.json`, `sessions/`, `.pending-verification` (transient) |
 | Read-only install | `${SUBSTRATE_ROOT}` (= `${CLAUDE_PLUGIN_ROOT}`) | the shipped plugin (templates, schemas, data, scripts) |
 
-**Identity rule.** The harness key in `.env` is NEVER committed, echoed to chat, or logged. It is excluded from git structurally — it is simply absent from the hidden-surface `.gitignore` allowlist. Do not print it back to the user, ever.
+`${SUBSTRATE_STATE}` is a pure child of `${SUBSTRATE_DATA}` — the hidden `.be-civic/state/` folder inside the user's project. The harness key file lives at `${SUBSTRATE_STATE}/.env` = `${SUBSTRATE_DATA}/.be-civic/state/.env`.
+
+**Identity rule.** The harness key in `${SUBSTRATE_STATE}/.env` is NEVER committed, echoed to chat, or logged. It is excluded from git structurally — the project's single `.gitignore` allowlist does not list `.be-civic/state/.env`, and a belt-and-braces `.env` deny line covers it too. Do not print it back to the user, ever.
 
 ---
 
@@ -106,7 +108,7 @@ Content-Type: application/json
 
 This emails the user a **6-digit code**. The widget is already showing the code field, so just hold the `verification_id` and wait for the `code:` message.
 
-- **`202`** — hold `verification_id`; write `${SUBSTRATE_STATE}/.pending-verification` with `verification_id`, `email`, and `expires_at` (one line) so a half-finished ceremony resumes on next session. Transient; never committed (absent from the hidden-surface `.gitignore` allowlist).
+- **`202`** — hold `verification_id`. **Do not write `.pending-verification` yet** — no durable write happens before the folder is picked (Step 6.1), and `${SUBSTRATE_STATE}` does not exist until then. Hold `verification_id`, `email`, and `expires_at` in working memory. Once the folder is picked and state exists, write `${SUBSTRATE_STATE}/.pending-verification` (one line) so a half-finished ceremony resumes on next session; it is transient and never committed (denied by the single `.gitignore` allowlist). (In **verification-only recovery mode** the folder already exists, so write it immediately.)
 - **Network failure / timeout** — retry with exponential backoff (250 ms → 500 ms → 1 s → 2 s). On persistent failure, tell the user the verification service is unreachable and fall to anonymous-read mode (§1.1); offer to retry later.
 - **Address rejected** — surface plainly: *"I couldn't send to that address — want to try another?"* and re-render the access widget.
 
@@ -153,24 +155,32 @@ Branch on the **HTTP status code first**:
 
 ## Step 6. State-shape activation
 
-A confirmed verification with absent marker triggers the full two-surface write. The folder picker fires here if it has not already.
+A confirmed verification with absent marker triggers the full project write. **The folder picker fires FIRST — strictly before any durable write.** No key, no `.env`, no identity, no profile, no marker, no file of any kind lands on disk until the user has picked the folder and `${SUBSTRATE_DATA}` exists. Pick the folder (6.1) → init the one repo and write the single `.gitignore` (6.2) → then write state and the rest (6.3–6.4).
 
-### 6.1. Pick the visible parent
+### 6.1. Pick the project folder (before any durable write)
 
-Call `mcp__cowork__request_cowork_directory`. The user picks a **parent folder**; the visible surface is `<picked-parent>/BeCivic/` (this becomes `${SUBSTRATE_DATA}`).
+Call `mcp__cowork__request_cowork_directory`. The user picks a **parent folder**; the project folder is `<picked-parent>/BeCivic/` (this becomes `${SUBSTRATE_DATA}`).
 
-If the user **cancels the picker**, do not silently abort. The hidden surface (`${SUBSTRATE_STATE}`) is already allocated by Cowork without a picker, so the identity is mintable — but without a visible folder there is nowhere user-facing to save progress. Say: *"I need a folder to save your project in. Want to try the picker again, or carry on in chat for now and set the folder up later?"* The latter degrades to advice-only: write the hidden-surface identity (6.2) so submissions work, skip the visible-surface writes (6.4), and tell the user their progress isn't being saved to disk yet.
+If the user **cancels the picker**, do not write anything. There is no separate surface that exists without a picked folder — the whole project (key included) lives inside `${SUBSTRATE_DATA}`, so with no folder there is nowhere durable to write. Say: *"I need a folder to save your project in. Want to try the picker again, or carry on in chat for now and set the folder up later?"* The latter degrades to **advice-only with ZERO durable writes** — no key, no identity, no files at all. The minted `harness_key` from Step 5 is held in working memory only this session; nothing is written. Tell the user nothing is being saved to disk yet, and that picking a folder later will save everything.
 
-### 6.2. Write the hidden-surface identity (`${SUBSTRATE_STATE}`)
+### 6.2. Initialise the one repo and write the single `.gitignore` (FIRST)
 
-In this order:
+There is **one git repo at the project-folder root** — no separate hidden repo. Before any other file is written:
 
-1. **`git init`** the hidden surface if it is not already a repo. **Write `${SUBSTRATE_STATE}/.gitignore` FIRST**, copied verbatim from `${SUBSTRATE_ROOT}/data/gitignore-hidden.txt`. The allowlist is what keeps `.env`, `sessions/`, and `.pending-verification` out of every commit — it must exist before any other file is written or the monitor's first `git add -A` could stage the key.
-2. **`${SUBSTRATE_STATE}/.env`** — the harness key only: `BECIVIC_HARNESS_KEY=<harness_key>`. Nothing else in this file. It is structurally excluded from git by the allowlist. Never echo it.
-3. **`${SUBSTRATE_STATE}/user-id`** — the raw `user_id` string, no wrapper.
-4. **`${SUBSTRATE_STATE}/profile.json`** — copy the template from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/profile.json` **verbatim, unchanged**. Do **not** populate `last_updated_at` and do **not** pre-fill any routing fields here, even ones you could guess from the opener. The profile must stay at its template defaults (`last_updated_at: null`, every routing field `null` / `[]`) so the next chat can use "profile still at defaults" as the reliable signal that the about-you form has not run yet (the next chat's harness keys the about-you-form decision on exactly this). The about-you form in the working session is the **first** writer of routing fields and `last_updated_at`; leave that to it.
-5. **`${SUBSTRATE_STATE}/preferences.json`** — a minimal preferences object (e.g. `{ "conversation_language": "<locale>" }`); start with the conversation language so the harness speaks it from turn one.
-6. **`${SUBSTRATE_STATE}/procedures.json`** — the procedure registry, validated against `${SUBSTRATE_ROOT}/schemas/procedures.registry.schema.json`. Seed one entry for the procedure the user is about to start:
+1. **Nested-repo guard.** Before `git init`, check whether the picked location is already inside an enclosing git repo: run `git -C "<picked-parent>" rev-parse --is-inside-work-tree` (and, if the BeCivic folder already exists, `git -C "${SUBSTRATE_DATA}" rev-parse --is-inside-work-tree`). If you are inside an existing work tree, do **not** silently `git init` an embedded repo — warn the user plainly: *"The folder you picked sits inside another git project. I'd normally make your Be Civic folder its own little repository so your progress is saved cleanly. Want me to do that here anyway, or pick a different folder outside the other project?"* Only proceed to `git init` on confirmation, or after the user repicks a clean location.
+2. Create `${SUBSTRATE_DATA}` (= `<picked-parent>/BeCivic/`) if it does not exist.
+3. **`git init`** `${SUBSTRATE_DATA}` if it is not already a repo (subject to the guard above).
+4. **Write `${SUBSTRATE_DATA}/.gitignore` FIRST**, copied verbatim from `${SUBSTRATE_ROOT}/data/gitignore.txt` — the single merged allowlist. This must exist before any other file is written, or the monitor's first `git add -A` could stage the key (`.be-civic/state/.env`). It is the allowlist that keeps `.env`, `sessions/`, `.pending-verification`, and `documents/` out of every commit.
+
+### 6.3. Write the agent-managed state (`${SUBSTRATE_STATE}` = `${SUBSTRATE_DATA}/.be-civic/state`)
+
+The `.gitignore` from 6.2 is already in place, so these writes are safe. Write, in this order:
+
+1. **`${SUBSTRATE_STATE}/.env`** — the harness key only: `BECIVIC_HARNESS_KEY=<harness_key>`. Nothing else in this file. It is structurally excluded from git by the single `.gitignore` allowlist (and a belt-and-braces `.env` deny line). Never echo it.
+2. **`${SUBSTRATE_STATE}/user-id`** — the raw `user_id` string, no wrapper.
+3. **`${SUBSTRATE_STATE}/profile.json`** — copy the template from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/profile.json` **verbatim, unchanged**. Do **not** populate `last_updated_at` and do **not** pre-fill any routing fields here, even ones you could guess from the opener. The profile must stay at its template defaults (`last_updated_at: null`, every routing field `null` / `[]`) so the next chat can use "profile still at defaults" as the reliable signal that the about-you form has not run yet (the next chat's harness keys the about-you-form decision on exactly this). The about-you form in the working session is the **first** writer of routing fields and `last_updated_at`; leave that to it.
+4. **`${SUBSTRATE_STATE}/preferences.json`** — a minimal preferences object (e.g. `{ "conversation_language": "<locale>" }`); start with the conversation language so the harness speaks it from turn one.
+5. **`${SUBSTRATE_STATE}/procedures.json`** — the procedure registry, validated against `${SUBSTRATE_ROOT}/schemas/procedures.registry.schema.json`. Seed one entry for the procedure the user is about to start:
    ```json
    {
      "schema_version": 1,
@@ -190,19 +200,13 @@ In this order:
 
 `.pending-verification` is now redundant — delete it (verification is complete).
 
-### 6.3. Write the hidden→visible pointer marker
-
-Write **`${SUBSTRATE_STATE}/.be-civic/marker`** containing the absolute path to the visible surface (`${SUBSTRATE_DATA}`), one line. This is the pointer the auto-commit monitor and `preamble.py` read to locate the user-picked folder (`_resolve_substrate_data` in `preamble.py` reads exactly this file). Without it, the monitor watches the hidden surface only.
-
-### 6.4. Write the visible surface (`${SUBSTRATE_DATA}`)
+### 6.4. Write the rest of the project folder (`${SUBSTRATE_DATA}`)
 
 In this order:
 
-1. Create `${SUBSTRATE_DATA}` (= `<picked-parent>/BeCivic/`).
-2. **`git init`** it if not already a repo, and **write `${SUBSTRATE_DATA}/.gitignore` FIRST**, copied verbatim from `${SUBSTRATE_ROOT}/data/gitignore-visible.txt`.
-3. **`${SUBSTRATE_DATA}/.be-civic/marker`** — the version-stamp marker, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/.be-civic/marker`. (This is the visible-surface marker the gate walks the cwd to find; distinct from the hidden pointer in 6.3.)
-4. **`${SUBSTRATE_DATA}/CLAUDE.md`** — the harness ambient-instruction template, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/harness-CLAUDE.md`. Cowork's ancestor-walk auto-loads this when the user opens any procedure subfolder. **Do NOT write a CLAUDE.md inside per-procedure subfolders.** Then **append the carry-over block** described in 6.4a to the end of this file before you finish.
-5. **`${SUBSTRATE_DATA}/MEMORY.md`** — the empty narrative store, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/MEMORY.md`.
+1. **`${SUBSTRATE_DATA}/.be-civic/marker`** — the detection marker, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/.be-civic/marker`, then fill its placeholder fields: `user_id=<user_id>`, `plugin_version=<this plugin's version>`, `created_at=<RFC3339 UTC>`. This is the marker the gate walks the cwd to find and `preamble.py` uses to resolve `${SUBSTRATE_DATA}`. It is detection-only — there is no separate hidden→visible pointer to write, because state is a known child of this folder. Do not put any private information in it.
+2. **`${SUBSTRATE_DATA}/CLAUDE.md`** — the harness ambient-instruction template, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/harness-CLAUDE.md`. Cowork's ancestor-walk auto-loads this when the user opens any procedure subfolder. **Do NOT write a CLAUDE.md inside per-procedure subfolders.** Then **append the carry-over block** described in 6.4a to the end of this file before you finish.
+3. **`${SUBSTRATE_DATA}/MEMORY.md`** — the empty narrative store, copied from `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/project-init/MEMORY.md`.
 
 **Do not pre-create empty subdirectories.** No `documents/`, no `sessions/`, no per-procedure folder upfront — they are created lazily by the relevant skills when there is real content.
 
@@ -213,11 +217,11 @@ The next chat (the working session) loads only the project `CLAUDE.md` and the p
 Two places, both required:
 
 1. **Structured state (already written above):**
-   - The conversation language is in `${SUBSTRATE_STATE}/preferences.json` as `conversation_language` (written in 6.2 step 5).
-   - The chosen procedure is in `${SUBSTRATE_STATE}/procedures.json` as the single active entry's `slug` + `process_id` (written in 6.2 step 6).
+   - The conversation language is in `${SUBSTRATE_STATE}/preferences.json` as `conversation_language` (written in 6.3 step 4).
+   - The chosen procedure is in `${SUBSTRATE_STATE}/procedures.json` as the single active entry's `slug` + `process_id` (written in 6.3 step 5).
    - Confirm both are present before handing off. These are the authoritative carry-over.
 
-2. **A human-readable carry-over block appended to `${SUBSTRATE_DATA}/CLAUDE.md`.** After copying the template (6.4 step 4), append a short fenced block at the very end of the file so the carry-over is visible in the always-loaded ambient instructions, not only in hidden state:
+2. **A human-readable carry-over block appended to `${SUBSTRATE_DATA}/CLAUDE.md`.** After copying the template (6.4 step 2), append a short fenced block at the very end of the file so the carry-over is visible in the always-loaded ambient instructions, not only in hidden state:
 
    ```markdown
    ## Carry-over (written at setup — read on first load, do not re-ask)
@@ -250,11 +254,11 @@ This is the one moment the user changes chats, and it is the only one. **Do NOT 
 
 So Chat 1 ends here. Hand the user a clickable link into their project, tell them exactly what they should see when the new chat opens, and then stop.
 
-### 7.0. Only hand off if a visible project folder exists
+### 7.0. Only hand off if a project folder exists
 
-The handoff below requires a real `${SUBSTRATE_DATA}` folder to open. If the user cancelled the folder picker (the advice-only branch in 6.1), there is **no** visible surface — `CLAUDE.md` was never written, so there is nothing for a fresh chat to auto-load, and a handoff link would point nowhere. In that case **do not run the handoff (7.1–7.3).** Instead, stay in this conversation in advice-only mode: the identity is minted and submissions work, but progress isn't saved to disk. Offer the user the choice again: *"I can keep helping you here, but nothing's being saved to a folder yet. Want to pick a folder now so I can save your project and pick it up cleanly next time?"* If they pick a folder, complete **the full visible-surface write — 6.3 (the hidden→visible pointer marker) AND 6.4 (the visible surface + carry-over)** — then run the handoff. The 6.3 pointer is not optional here: `preamble.py` resolves `SUBSTRATE_DATA` only from `${SUBSTRATE_STATE}/.be-civic/marker`, so without it the fresh chat sees `SUBSTRATE_DATA: absent` and treats the user as first contact even though the folder exists. If they decline, continue in advice-only — no context switch.
+The handoff below requires a real `${SUBSTRATE_DATA}` folder to open. If the user cancelled the folder picker (the advice-only branch in 6.1), **nothing was written to disk** — no folder, no `CLAUDE.md`, no state — so there is nothing for a fresh chat to auto-load, and a handoff link would point nowhere. In that case **do not run the handoff (7.1–7.3).** Instead, stay in this conversation in advice-only mode: nothing is saved to disk this session (the minted key was held in working memory only). Offer the user the choice again: *"I can keep helping you here, but nothing's being saved to a folder yet. Want to pick a folder now so I can save your project and pick it up cleanly next time?"* If they pick a folder, complete **the full project write — 6.2 (init repo + `.gitignore`), 6.3 (state), and 6.4 (the rest of the folder + carry-over)** — then run the handoff. If they decline, continue in advice-only — no context switch.
 
-Only when `${SUBSTRATE_DATA}` exists AND its hidden pointer is written (the picker succeeded and 6.3 + 6.4 ran: the `.be-civic/marker` pointer, `CLAUDE.md`, and the carry-over are all in place) do you run the handoff below.
+Only when `${SUBSTRATE_DATA}` exists (the picker succeeded and 6.2 + 6.3 + 6.4 ran: the `.gitignore`, state, `.be-civic/marker`, `CLAUDE.md`, and the carry-over are all in place) do you run the handoff below.
 
 ### 7.1. Tell the user what success looks like (before they switch)
 
@@ -288,7 +292,7 @@ Once you've delivered 7.1 + 7.2, **stop.** Do not invoke `bc-path-traversal`, do
 
 `bc-onboarding` **does not handle returning users with a complete setup.** The gate (`be-civic`) detects the marker and routes to `bc-path-traversal` (continuing) or surfaces the inline framing (returning / multi_active) itself.
 
-If you are invoked when a `.be-civic/marker` already exists **and the harness key is present** in `${SUBSTRATE_STATE}/.env` (check presence only — never read the value) **and the visible `${SUBSTRATE_DATA}/CLAUDE.md` exists**, this is a genuine, fully set-up returning user; refuse and route back:
+If you are invoked when a `.be-civic/marker` already exists **and the harness key is present** in `${SUBSTRATE_STATE}/.env` (check presence only — never read the value) **and `${SUBSTRATE_DATA}/CLAUDE.md` exists**, this is a genuine, fully set-up returning user; refuse and route back:
 
 > "You already have a Be Civic project at `<path>`. Open it in a fresh chat from inside the folder and I'll pick up where we left off — no need to set anything up again."
 
@@ -297,7 +301,7 @@ Do not re-run onboarding. Do not overwrite `profile.json`. Do not re-mint identi
 **Two carve-outs — a marker can exist over a half-written project.** A marker present does not always mean setup finished. Two crash windows leave a marker over an incomplete project, and in BOTH you ARE allowed to write the missing piece (the blanket "don't touch anything" refusal does not apply):
 
 - **Key absent** (`HARNESS_KEY: absent`, or no `BECIVIC_HARNESS_KEY=` line in `.env`) → the keyless half-state. Run the **verification-only mode** below to mint + write the key.
-- **Visible `${SUBSTRATE_DATA}/CLAUDE.md` absent** (setup crashed after the marker but before the harness file — recall 6.4 writes the marker in step 3, then `CLAUDE.md` in step 4) → the harness can never auto-load. Run the **harness-repair mode** below to write the missing harness file (and carry-over) from the state that already exists.
+- **`${SUBSTRATE_DATA}/CLAUDE.md` absent** (setup crashed after the marker but before the harness file — recall 6.4 writes the marker in step 1, then `CLAUDE.md` in step 2) → the harness can never auto-load. Run the **harness-repair mode** below to write the missing harness file (and carry-over) from the state that already exists.
 
 If both gaps are present, fix the key first (verification-only mode), then the harness file (harness-repair mode).
 
@@ -310,7 +314,7 @@ The harness routes here when a project folder exists (marker present) but verifi
 1. **Confirm the gap.** A marker exists (so the project is real) but the key is absent (presence check on `${SUBSTRATE_STATE}/.env` — never read the value). If a `${SUBSTRATE_STATE}/.pending-verification` file is present, read its `email` / `verification_id` / `expires_at` to resume mid-ceremony.
 2. **Re-open the access widget at the right step.** Render the shipped access widget (Step 2) so the user can complete verification. If `.pending-verification` is still valid, you can go straight to the code step (tell the user a code was already emailed; offer resend). If it is expired or absent, start fresh from the email step. Frame it plainly: *"Your project's here, but your access wasn't finished setting up — let's complete that now so I can pull your procedure."*
 3. **Run Steps 3 → 5** (start-verification → receive code → verify) exactly as in first-contact. On `verify` success you get `{ user_id, harness_key, tier }`.
-4. **Write the key (and only what's missing).** Write `harness_key` to `${SUBSTRATE_STATE}/.env` per Step 6.2 item 2 (ensure the hidden-surface `.gitignore` allowlist exists first, per 6.2 item 1, so the key is never staged). Write `user-id` if it is absent. **Do NOT overwrite an existing `profile.json`, `preferences.json`, `procedures.json`, the markers, or the visible surface** — those were already written when the folder was set up. Delete `.pending-verification` once `verify` succeeds.
+4. **Write the key (and only what's missing).** Write `harness_key` to `${SUBSTRATE_STATE}/.env` per Step 6.3 item 1 (the folder already exists, so the single `.gitignore` from 6.2 is already in place and the key is never staged — confirm `git check-ignore -q -- .be-civic/state/.env` passes if in doubt). Write `user-id` if it is absent. **Do NOT overwrite an existing `profile.json`, `preferences.json`, `procedures.json`, the marker, `CLAUDE.md`, or anything else in the folder** — those were already written when the folder was set up. Delete `.pending-verification` once `verify` succeeds.
 5. **Return control to the harness.** The key is now present; the harness self-check (its §3.0) passes and it proceeds with the carry-over it already has. Do not run the about-you form here — that is the harness's job in the working session.
 
 If the user declines verification again, fall to anonymous-read mode (§1.1): the project stays on disk, but wire-gated work (full Process bodies, submissions) stays unavailable until they verify.
@@ -319,12 +323,12 @@ If the user declines verification again, fall to anonymous-read mode (§1.1): th
 
 ## Harness-repair mode (missing CLAUDE.md recovery)
 
-The gate routes here when a project marker exists but the visible `${SUBSTRATE_DATA}/CLAUDE.md` does not — setup wrote the marker (6.4 step 3) then crashed before writing the harness file (6.4 step 4). Without `CLAUDE.md` the substrate's ancestor-walk has nothing to load, so no harness comes up and no canary fires. **Do NOT re-run the whole flow and do NOT re-mint identity.** Write only the missing harness file and the carry-over, reusing the state already on disk.
+The gate routes here when a project marker exists but `${SUBSTRATE_DATA}/CLAUDE.md` does not — setup wrote the marker (6.4 step 1) then crashed before writing the harness file (6.4 step 2). Without `CLAUDE.md` the substrate's ancestor-walk has nothing to load, so no harness comes up and no canary fires. **Do NOT re-run the whole flow and do NOT re-mint identity.** Write only the missing harness file and the carry-over, reusing the state already on disk.
 
-1. **Confirm the gap.** A `.be-civic/marker` exists (the project is real) but `${SUBSTRATE_DATA}/CLAUDE.md` is missing. Resolve `${SUBSTRATE_DATA}` from the hidden pointer `${SUBSTRATE_STATE}/.be-civic/marker` (the same file `preamble.py` reads). If the key is also absent, do the verification-only mode first, then return here.
-2. **Write the harness file.** Copy `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/harness-CLAUDE.md` to `${SUBSTRATE_DATA}/CLAUDE.md` (per 6.4 step 4). Do not write a CLAUDE.md inside any per-procedure subfolder.
-3. **Re-write the carry-over block** (6.4a) at the end of the new `CLAUDE.md`, reconstructed from the existing hidden state: the chosen procedure from the active entry in `${SUBSTRATE_STATE}/procedures.json`, and the language from `${SUBSTRATE_STATE}/preferences.json`. If `procedures.json` has exactly one active entry, use it; if it has more than one, write the carry-over for whichever the user names when they next pick (or omit the single-procedure line and let the harness's `multi_active` framing choose). If `procedures.json` is empty too (a deeper crash), this is effectively a fresh setup — re-run from Step 6.2.
-4. **Do not touch anything else.** Leave `profile.json`, `preferences.json`, `procedures.json`, `.env`, `user-id`, and both markers as they are. You are filling a single missing file, not rebuilding the project.
+1. **Confirm the gap.** A `.be-civic/marker` exists (the project is real) but `${SUBSTRATE_DATA}/CLAUDE.md` is missing. `${SUBSTRATE_DATA}` is the folder holding the marker (the same folder `preamble.py` resolves from the marker). If the key is also absent, do the verification-only mode first, then return here.
+2. **Write the harness file.** Copy `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/harness-CLAUDE.md` to `${SUBSTRATE_DATA}/CLAUDE.md` (per 6.4 step 2). Do not write a CLAUDE.md inside any per-procedure subfolder.
+3. **Re-write the carry-over block** (6.4a) at the end of the new `CLAUDE.md`, reconstructed from the existing state: the chosen procedure from the active entry in `${SUBSTRATE_STATE}/procedures.json`, and the language from `${SUBSTRATE_STATE}/preferences.json`. If `procedures.json` has exactly one active entry, use it; if it has more than one, write the carry-over for whichever the user names when they next pick (or omit the single-procedure line and let the harness's `multi_active` framing choose). If `procedures.json` is empty too (a deeper crash), this is effectively a fresh setup — re-run from Step 6.3.
+4. **Do not touch anything else.** Leave `profile.json`, `preferences.json`, `procedures.json`, `.env`, `user-id`, and the marker as they are. You are filling a single missing file, not rebuilding the project.
 5. **Hand the user into the project.** The harness file now exists, so run the Step 7 handoff: tell the user the canary to expect, give them the clickable open-project link to `${SUBSTRATE_DATA}`, and end. On the next chat the ancestor-walk loads the now-present `CLAUDE.md` and the harness self-check + canary run normally.
 
 ---
@@ -333,9 +337,9 @@ The gate routes here when a project marker exists but the visible `${SUBSTRATE_D
 
 A returning user may arrive with a `bc-import` bundle from another machine. When the gate flags an import bundle in scope, it routes here to the imported-state branch instead of first-contact:
 
-1. **Validate the bundle** — confirm the visible/hidden split is preserved and the bundle's `state_version` is not newer than this plugin (if it is, tell the user to upgrade the receiving plugin first; do not activate).
-2. **Activate both surfaces** — write the hidden side (including its `.env` key slot) into the current `${SUBSTRATE_STATE}`, and the visible side into a newly-picked parent as `${SUBSTRATE_DATA}`. Write/update both markers (hidden pointer + visible version-stamp) to cross-reference them.
-3. **Frame as a returning user**, not a new one — no email gate, no re-mint. Hand off to `bc-path-traversal` (or the inline framing) as if the user were returning natively.
+1. **Validate the bundle** — confirm the project-folder layout is intact (`CLAUDE.md`, `MEMORY.md`, `.be-civic/marker`, `.be-civic/state/`) and the bundle's `state_version` is not newer than this plugin (if it is, tell the user to upgrade the receiving plugin first; do not activate).
+2. **Activate the folder** — have the user pick a parent (Step 6.1), then restore the whole project folder into `<picked-parent>/BeCivic/` as `${SUBSTRATE_DATA}`, including its hidden `.be-civic/state/` and the single `.gitignore`. `bc-import` restores the harness key to `${SUBSTRATE_STATE}/.env` **when the bundle carried it** — the exporter writes the key as a loose `identity/env` member (it is gitignored, so absent from the committed bundle). A key-bearing bundle is therefore credential-bearing; treat it like a passport scan. Write/refresh the `.be-civic/marker` so detection resolves to this folder.
+3. **Frame as a returning user**, not a new one — never re-mint profile/registry. Check the key: if `${SUBSTRATE_STATE}/.env` has a `BECIVIC_HARNESS_KEY` after restore (the bundle carried identity), the user is fully restored — hand off to `bc-path-traversal` (or the inline framing) with **no** email gate. Only if the key is absent (the bundle was exported without identity) does the keyless half-state trigger the identity-preserving email→code recovery (re-verifying the same email restores the **same** `user_id`, not a new one). Either way, no new identity is minted.
 
 ---
 
@@ -371,4 +375,4 @@ If they want to keep talking about data, hold position. If they decide not to pr
 - Meta-question answering, off-topic redirect, no-intent tour. The `be-civic` gate handles those.
 - The auto-commit monitor (`hooks/auto-commit-monitor.js`) and the recovery sweep (`preamble.py`). This skill writes the markers and `.gitignore` files they depend on, then gets out of the way.
 
-This skill exists for one thing: take a user who said yes at the gate → match the procedure they came for → verify their email → mint their pseudonymous identity → write the two-surface state shape with the carry-over → hand the user cleanly into a fresh chat inside their project folder, where the harness takes over. It does not introduce the plan, it does not run the procedure, and it does not render the about-you form — those are not this conversation's job.
+This skill exists for one thing: take a user who said yes at the gate → match the procedure they came for → verify their email → pick the project folder → mint their pseudonymous identity → write the project state shape (one folder, one git repo) with the carry-over → hand the user cleanly into a fresh chat inside their project folder, where the harness takes over. It does not introduce the plan, it does not run the procedure, and it does not render the about-you form — those are not this conversation's job.
