@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """bc_import.py — Be Civic portable-archive importer.
 
-Validates and restores a bc_export bundle on the destination machine.
+Validates and restores a bc_export bundle into the ONE durable project folder
+on the destination machine. State lives at the `.be-civic/state/` subtree inside
+that folder, so restoring the single `git bundle --all` brings back everything
+committed (visible prose + state) in one shot.
 
 By default a bundle carries the user's Identity (the harness key), so after
 activation the user is fully active: profile, events, procedures, documents,
@@ -13,25 +16,25 @@ Import sequence
 ────────────────
   1. Receive     — user passes the .tar.gz archive path
   2. Probe       — read manifest.json; check state_version vs receiving plugin
-  3. Stage       — unpack to a temp dir (NOT the live surfaces)
-  4. Verify      — confirm surfaces/data.bundle + surfaces/state.bundle present;
-                   validate bundle integrity via `git bundle verify`
-  5. Reconcile   — if existing state is present on either surface → prompt
-  6. Activate    — restore git repos + git checkout at destination paths
+  3. Stage       — unpack to a temp dir (NOT the live folder)
+  4. Verify      — confirm surfaces/becivic.bundle present; validate integrity
+  5. Reconcile   — if existing state is present in the folder → prompt
+  6. Activate    — restore the git repo + checkout at the destination folder,
+                   write the detection-only marker, restore the loose key
+
+NO BACKWARD-COMPAT: greenfield — no active users. This importer ONLY reads the
+single-surface bundle format (surfaces/becivic.bundle). The old two-surface
+format (data.bundle + state.bundle) is not supported.
 
 Usage
 ──────
-  python3 bc_import.py <bundle.tar.gz> \\
-                       --data <destination_SUBSTRATE_DATA_parent> \\
-                       --state <destination_SUBSTRATE_STATE>
+  python3 bc_import.py <bundle.tar.gz> --data <destination_BeCivic_folder>
 
-  # With Cowork env vars (state path from CLAUDE_PLUGIN_DATA):
-  python3 bc_import.py <bundle.tar.gz> \\
-                       --cowork \\
-                       --data-parent ~/Documents
+  # With Cowork (BeCivic/ created inside the picked parent):
+  python3 bc_import.py <bundle.tar.gz> --cowork --data-parent ~/Documents
 
   # Dry-run (validate only, do not write):
-  python3 bc_import.py <bundle.tar.gz> --cowork --dry-run
+  python3 bc_import.py <bundle.tar.gz> --data ~/BeCivic --dry-run
 
 Runtime: Python 3 stdlib only. No third-party deps.
 """
@@ -40,7 +43,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import tarfile
@@ -49,7 +51,7 @@ from pathlib import Path
 
 
 # ── Plugin version — must match plugin.json / version.json ──────────────────
-PLUGIN_VERSION = "0.3.0"
+PLUGIN_VERSION = "0.6.0"
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -147,10 +149,10 @@ def _restore_bundle(bundle_path: Path, dest: Path, label: str) -> bool:
     return True
 
 
-def _surface_has_existing_state(surface_path: Path) -> bool:
-    """Return True if the surface has already been initialised."""
-    marker = surface_path / ".be-civic" / "marker"
-    version = surface_path / "version.json"
+def _folder_has_existing_state(folder_path: Path) -> bool:
+    """Return True if the project folder has already been initialised."""
+    marker = folder_path / ".be-civic" / "marker"
+    version = folder_path / ".be-civic" / "state" / "version.json"
     return marker.exists() or version.exists()
 
 
@@ -176,11 +178,10 @@ def _prompt_reconcile(label: str) -> str:
 def run_import(
     archive: Path,
     data_dest: Path,
-    state_dest: Path,
     dry_run: bool,
     non_interactive: bool = False,
 ) -> None:
-    """Full import sequence."""
+    """Full import sequence — single project folder."""
 
     # ── Step 1: Receive ───────────────────────────────────────────────────────
     if not archive.exists():
@@ -241,105 +242,92 @@ def run_import(
             )
             sys.exit(1)
 
-        # ── Step 3: Stage — locate bundles ────────────────────────────────────
+        # ── Step 3: Stage — locate the single bundle ──────────────────────────
         surfaces_dir = tmp_path / "surfaces"
-        data_bundle = surfaces_dir / "data.bundle"
-        state_bundle = surfaces_dir / "state.bundle"
+        becivic_bundle = surfaces_dir / "becivic.bundle"
 
         # ── Step 4: Verify — git bundle verify ────────────────────────────────
         print("\nVerifying bundle integrity...")
-        errors = []
-
-        if not data_bundle.exists():
-            errors.append("surfaces/data.bundle is missing from the archive.")
-        elif not _git_bundle_verify(data_bundle):
-            errors.append("surfaces/data.bundle failed git bundle verify.")
-        else:
-            print("  data.bundle    : OK")
-
-        if not state_bundle.exists():
-            errors.append("surfaces/state.bundle is missing from the archive.")
-        elif not _git_bundle_verify(state_bundle):
-            errors.append("surfaces/state.bundle failed git bundle verify.")
-        else:
-            print("  state.bundle   : OK")
-
-        if errors:
-            for e in errors:
-                print(f"ERROR: {e}", file=sys.stderr)
+        if not becivic_bundle.exists():
+            print(
+                "ERROR: surfaces/becivic.bundle is missing from the archive.\n"
+                "This importer only reads the single-surface bundle format. The "
+                "old two-surface format (data.bundle + state.bundle) is not "
+                "supported.",
+                file=sys.stderr,
+            )
             sys.exit(1)
+        if not _git_bundle_verify(becivic_bundle):
+            print("ERROR: surfaces/becivic.bundle failed git bundle verify.", file=sys.stderr)
+            sys.exit(1)
+        print("  becivic.bundle : OK")
 
         if dry_run:
             print("\nDRY RUN — verification passed. No files will be written.")
-            print(f"  Would restore visible surface to : {data_dest}")
-            print(f"  Would restore hidden surface to  : {state_dest}")
+            print(f"  Would restore project folder to : {data_dest}")
             _print_post_import_guidance(not identity_excluded)
             return
 
         # ── Step 5: Reconcile — check for existing state ──────────────────────
-        for surface_path, label, bundle_path in [
-            (data_dest, "visible (SUBSTRATE_DATA)", data_bundle),
-            (state_dest, "hidden (SUBSTRATE_STATE)", state_bundle),
-        ]:
-            if _surface_has_existing_state(surface_path):
-                if non_interactive:
-                    print(
-                        f"WARNING: Existing state on {label} surface at {surface_path}.\n"
-                        "Non-interactive mode: skipping (existing state preserved).",
-                        file=sys.stderr,
-                    )
-                    continue
+        if _folder_has_existing_state(data_dest):
+            label = "project (SUBSTRATE_DATA)"
+            if non_interactive:
+                print(
+                    f"WARNING: Existing state in the folder at {data_dest}.\n"
+                    "Non-interactive mode: skipping (existing state preserved).",
+                    file=sys.stderr,
+                )
+                print("Import skipped.")
+                return
+            choice = _prompt_reconcile(label)
+            if choice == "abort":
+                print("Import aborted by user.")
+                sys.exit(0)
+            elif choice == "merge":
+                print(f"  Skipping {label} (keeping existing state).")
+                print("Import skipped.")
+                return
+            # replace: fall through to restore
 
-                choice = _prompt_reconcile(label)
-                if choice == "abort":
-                    print("Import aborted by user.")
-                    sys.exit(0)
-                elif choice == "merge":
-                    print(f"  Skipping {label} surface (keeping existing state).")
-                    continue
-                # replace: fall through to restore
-
-        # ── Step 6: Activate — restore bundles ────────────────────────────────
+        # ── Step 6: Activate — restore the single bundle ──────────────────────
         print("\nActivating...")
 
-        data_ok = _restore_bundle(data_bundle, data_dest, "visible (SUBSTRATE_DATA)")
-        state_ok = _restore_bundle(state_bundle, state_dest, "hidden (SUBSTRATE_STATE)")
-
-        if not (data_ok and state_ok):
+        data_ok = _restore_bundle(becivic_bundle, data_dest, "project (SUBSTRATE_DATA)")
+        if not data_ok:
             print(
-                "\nERROR: One or both surfaces failed to restore. "
+                "\nERROR: The project folder failed to restore. "
                 "Check errors above and retry.",
                 file=sys.stderr,
             )
             sys.exit(1)
 
-        # Update the .be-civic/marker on both surfaces so the harness can
-        # cross-reference them.
-        _write_marker(data_dest, state_dest)
+        # Write the detection-only .be-civic/marker at the folder root (no
+        # hidden-path pointer field — state is a known child of the folder).
+        _write_marker(data_dest)
 
         # Restore Identity (the harness key) if the bundle carried it. .env is
-        # gitignored on the hidden surface, so the monitor never commits it.
+        # gitignored at .be-civic/state/.env, so the monitor never commits it.
         identity_src = tmp_path / "identity" / "env"
         if identity_src.exists():
-            (state_dest / ".env").write_bytes(identity_src.read_bytes())
+            env_dest = data_dest / ".be-civic" / "state" / ".env"
+            env_dest.parent.mkdir(parents=True, exist_ok=True)
+            env_dest.write_bytes(identity_src.read_bytes())
 
         print("\nImport complete.")
         _print_post_import_guidance(not identity_excluded)
 
 
-def _write_marker(data_dest: Path, state_dest: Path) -> None:
-    """Write/update .be-civic/marker files on both surfaces."""
-    # Hidden surface marker points to visible path.
-    hidden_marker_dir = state_dest / ".be-civic"
-    hidden_marker_dir.mkdir(parents=True, exist_ok=True)
-    (hidden_marker_dir / "marker").write_text(str(data_dest))
+def _write_marker(data_dest: Path) -> None:
+    """Write the detection-only .be-civic/marker at the project-folder root.
 
-    # Visible surface marker is a version stamp.
-    visible_marker_dir = data_dest / ".be-civic"
-    visible_marker_dir.mkdir(parents=True, exist_ok=True)
-    marker_path = visible_marker_dir / "marker"
+    The marker is detection-only — it carries no hidden-path pointer (state is a
+    known child of the folder). Idempotent: leave an existing marker in place
+    (it carries the user_id / version stamp written at onboarding)."""
+    marker_dir = data_dest / ".be-civic"
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    marker_path = marker_dir / "marker"
     if not marker_path.exists():
-        marker_path.write_text("be-civic-v0.3.0")
+        marker_path.write_text(f"be-civic-v{PLUGIN_VERSION}\n")
 
 
 def _print_post_import_guidance(identity_in_bundle: bool) -> None:
@@ -376,33 +364,24 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("bundle", type=Path, help="path to the .tar.gz bundle from bc_export")
 
-    path_group = parser.add_mutually_exclusive_group(required=True)
-    path_group.add_argument(
-        "--cowork",
-        action="store_true",
-        help="resolve state path from CLAUDE_PLUGIN_DATA env var (Cowork runtime)",
-    )
-    path_group.add_argument(
-        "--state",
-        type=Path,
-        metavar="SUBSTRATE_STATE",
-        help="destination for the hidden surface",
-    )
-
+    # The destination is the ONE project folder. State (.be-civic/state/) is a
+    # child of it — it is derived, never passed separately.
     parser.add_argument(
         "--data",
         type=Path,
         metavar="SUBSTRATE_DATA",
-        help=(
-            "destination parent directory for the visible surface (BeCivic/ subfolder "
-            "will be created inside it). Required unless --data-parent is used."
-        ),
+        help="destination project folder (restored in place).",
+    )
+    parser.add_argument(
+        "--cowork",
+        action="store_true",
+        help="Cowork runtime: pair with --data-parent to create BeCivic/ inside the parent",
     )
     parser.add_argument(
         "--data-parent",
         type=Path,
         metavar="PARENT",
-        help="parent directory; BeCivic/ subfolder will be created inside it",
+        help="parent directory; a BeCivic/ subfolder is created inside it (the project folder)",
     )
     parser.add_argument(
         "--dry-run",
@@ -417,33 +396,18 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
-    # Resolve state path.
-    if args.cowork:
-        state_env = os.environ.get("CLAUDE_PLUGIN_DATA")
-        if not state_env:
-            print(
-                "ERROR: CLAUDE_PLUGIN_DATA not set. "
-                "Pass --state explicitly or run inside Cowork.",
-                file=sys.stderr,
-            )
-            return 1
-        state_dest = Path(state_env)
-    else:
-        state_dest = args.state
-
-    # Resolve data (visible surface) destination.
+    # Resolve the single project-folder destination.
     if args.data:
         data_dest = args.data
     elif args.data_parent:
         data_dest = args.data_parent / "BeCivic"
     else:
-        parser.error("provide --data or --data-parent to specify the visible surface destination")
+        parser.error("provide --data <folder> or --data-parent <parent> for the project folder")
         return 1  # unreachable
 
     run_import(
         archive=args.bundle,
         data_dest=data_dest,
-        state_dest=state_dest,
         dry_run=args.dry_run,
         non_interactive=args.non_interactive,
     )

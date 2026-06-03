@@ -69,7 +69,7 @@ Explain Be Civic in plain language, two-three sentences:
 
 Use AskUserQuestion with three options (MECE: the three options are exhaustive and non-overlapping):
 
-- **A) Yes, set up a Be Civic project** (recommended) — invokes `bc-onboarding` peer skill in `new-project` mode. That skill calls `request_cowork_directory`, writes the harness CLAUDE.md, initialises empty state on both the hidden surface (`${SUBSTRATE_STATE}`) and the visible surface (`${SUBSTRATE_DATA}`), writes `.be-civic/marker` to both surfaces, runs the intake.
+- **A) Yes, set up a Be Civic project** (recommended) — invokes `bc-onboarding` peer skill in `new-project` mode. That skill calls `request_cowork_directory`, creates the project folder (`${SUBSTRATE_DATA}`) as a single git repo, writes the harness CLAUDE.md, initialises empty agent-managed state in the hidden `.be-civic/state` subdir (`${SUBSTRATE_STATE}`), writes the `.be-civic/marker`, runs the intake.
 - **B) Just answer this one question** — advice-only mode. Answer the user's immediate question with a brief disclaimer that nothing persists to disk, no observations are buffered, and the harness discipline does not apply. After answering, gently offer the project setup again as a follow-up.
 - **C) Not interested, drop the subject** — close out politely.
 
@@ -85,12 +85,12 @@ When an import bundle is supplied, run the activation script:
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/bc_import.py <bundle.tar.gz> --cowork --data-parent <user-chosen-parent>
 ```
 
-The script validates the bundle, checks `state_version` against the running plugin, restores both surfaces, and writes the `.be-civic/marker` cross-references. Identity is not in the bundle; post-import state is "returning user, needs to re-verify".
+The script validates the bundle, checks `state_version` against the running plugin, restores the project folder (including its hidden `.be-civic/state` subdir), and writes the `.be-civic/marker`. If the bundle carried the user's identity (the exporter includes the harness key as a loose `identity/env` member when present), the import restores it and the user is fully restored. If not, post-import state is "returning user, needs to re-verify" (identity-preserving — re-verifying the same email restores the same identity).
 
 If an import bundle is detected:
 
 1. Route to `bc-onboarding` in **imported-state** mode regardless of whether a local marker exists.
-2. bc-onboarding validates the bundle, activates into both the hidden and visible surfaces, writes the marker, and frames the experience as a returning user continuing their work.
+2. bc-onboarding validates the bundle, activates the restored project folder (state subdir included), writes the marker, and frames the experience as a returning user continuing their work.
 3. Do NOT treat an import as a new-user setup; preserve the existing process state.
 
 ## 6. Project NOT found, user has no specific query yet (off_topic / no_intent)
@@ -105,7 +105,7 @@ No folder is created, no onboarding is triggered.
 
 When the user's message classifies as `meta` — specifically a question about data handling, privacy, or what Be Civic stores — respond with the following verbatim. Do not paraphrase, summarise, or shorten it:
 
-> "Be Civic stores your administrative notes and documents locally in a folder you choose. Nothing leaves your device unless you explicitly submit a report or observation to the Be Civic knowledge graph, at which point only the content of that submission is sent — never your personal documents or profile data. Your harness key (used to authenticate submissions) is kept in a hidden state folder that is never committed to git. You can rotate or erase your identity at any time via the key-rotation flow."
+> "Be Civic stores your administrative notes and documents locally in a folder you choose. Nothing leaves your device unless you explicitly submit a report or observation to the Be Civic knowledge graph, at which point only the content of that submission is sent — never your personal documents or profile data. Your harness key (used to authenticate submissions) is kept in a hidden `.be-civic/state` folder inside your project, and is never committed to git. You can rotate or erase your identity at any time via the key-rotation flow."
 
 After delivering this snippet, offer to continue with the user's original goal if there was one.
 

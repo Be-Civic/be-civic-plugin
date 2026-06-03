@@ -1,13 +1,26 @@
-# Be Civic project marker.
+# Be Civic project marker (detection-only).
 #
 # The be-civic plugin's gate skill checks for this file (or one in a parent
 # directory) to detect that the conversation is running inside a Be Civic
-# project. When present, the project's CLAUDE.md harness is treated as the
-# active session context and the gate skill exits quietly.
+# project, and the preamble uses it to resolve the project folder. When present,
+# the project's CLAUDE.md harness is treated as the active session context and
+# the gate skill exits quietly.
 #
-# All Be Civic system state — sessions, observation buffers, pending submissions
-# — lives under this .be-civic/ directory. User-visible state (profile.json,
-# MEMORY.md, documents/, research notes) lives at the project root.
+# Everything Be Civic lives inside this one project folder: user-visible state
+# (CLAUDE.md, MEMORY.md, profile data, documents/, research notes) at the root,
+# and agent-managed state (the harness key, registries, session buffers) under
+# the hidden .be-civic/state/ subdirectory beside this file. There is no
+# separate location to point at — this marker carries detection metadata only.
+#
+# Fields below are filled in at setup. Do not put any private information here.
+#
+#   user_id        the pseudonymous identity id
+#   plugin_version the be-civic plugin version that created the project
+#   created_at     ISO-8601 UTC timestamp of project creation
+#
+user_id=<user_id>
+plugin_version=<plugin_version>
+created_at=<RFC3339 UTC timestamp>
 #
 # Do not delete this file unless you want to convert the folder back to a
 # non-Be-Civic folder.
