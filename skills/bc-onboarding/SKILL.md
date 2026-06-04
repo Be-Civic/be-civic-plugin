@@ -124,7 +124,7 @@ On a `[Be Civic access] resend` message, re-run this step for the held email; a 
 
 ## Step 4. Receive the code
 
-The user reads the 6-digit code from the email and enters it in the widget; you receive `[Be Civic access] code: <digits>`. That is the trigger for Step 5 — no link, no paste-back, no polling.
+The user reads the 6-digit code from the email and enters it in the widget; you receive `[Be Civic access] code: <digits>`. **Act on it in the same turn — your response to the `code:` message IS the Step 5 verify call.** Do not emit an empty acknowledgement turn ("Got it, checking that now…") and then wait: that burns a round-trip and leaves the user watching a spinner. The `code:` message is itself the trigger — no link, no paste-back, no polling, no holding turn.
 
 If a `code:` message arrives but you have no held `verification_id` (e.g. a stale session resumed from `.pending-verification` that has since expired), re-run Step 3 first, then ask the user — in chat — for the fresh code.
 
