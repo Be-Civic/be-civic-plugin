@@ -17,3 +17,4 @@ dist/
 # OS junk
 Thumbs.db
 desktop.ini
+.gstack/

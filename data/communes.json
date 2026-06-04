@@ -1,0 +1,7412 @@
+{
+ "schema_version": 1,
+ "_meta": {
+  "commune_count": 565,
+  "nomenclature_date": "2025-01-01",
+  "postcode_source": "Reconciled GeoNames BE place-name match (confirmed by OpenDataSoft) + OpenDataSoft for sub-localities; 4-digit only; place-name collisions resolved by ODS agreement. 565/565 covered.",
+  "name_source": "bc-knowledge-graph/data/communes.json (Statbel REFNIS 2025-01-01)",
+  "note": "Public reference data shipped in-plugin for the onboarding commune picker. The form resolves only a full 'Name (postcode)' selection to a NIS5 (ambiguous bare name/postcode never auto-resolves). Regenerate the datalist via scripts/build_form_communes.py."
+ },
+ "communes": [
+  {
+   "nis5": "44084",
+   "name": {
+    "fr": "Aalter",
+    "nl": "Aalter",
+    "de": "Aalter",
+    "en": "Aalter"
+   },
+   "postcodes": [
+    "9880",
+    "9881",
+    "9910"
+   ]
+  },
+  {
+   "nis5": "24001",
+   "name": {
+    "fr": "Aarschot",
+    "nl": "Aarschot",
+    "de": "Aarschot",
+    "en": "Aarschot"
+   },
+   "postcodes": [
+    "3200",
+    "3201",
+    "3202"
+   ]
+  },
+  {
+   "nis5": "11001",
+   "name": {
+    "fr": "Aartselaar",
+    "nl": "Aartselaar",
+    "de": "Aartselaar",
+    "en": "Aartselaar"
+   },
+   "postcodes": [
+    "2630"
+   ]
+  },
+  {
+   "nis5": "23105",
+   "name": {
+    "fr": "Affligem",
+    "nl": "Affligem",
+    "de": "Affligem",
+    "en": "Affligem"
+   },
+   "postcodes": [
+    "1790"
+   ]
+  },
+  {
+   "nis5": "52074",
+   "name": {
+    "fr": "Aiseau-Presles",
+    "nl": "Aiseau-Presles",
+    "de": "Aiseau-Presles",
+    "en": "Aiseau-Presles"
+   },
+   "postcodes": [
+    "6250"
+   ]
+  },
+  {
+   "nis5": "73001",
+   "name": {
+    "fr": "Alken",
+    "nl": "Alken",
+    "de": "Alken",
+    "en": "Alken"
+   },
+   "postcodes": [
+    "3570"
+   ]
+  },
+  {
+   "nis5": "41002",
+   "name": {
+    "fr": "Alost",
+    "nl": "Aalst",
+    "de": "Aalst",
+    "en": "Alost"
+   },
+   "postcodes": [
+    "9300",
+    "9308",
+    "9310"
+   ]
+  },
+  {
+   "nis5": "38002",
+   "name": {
+    "fr": "Alveringem",
+    "nl": "Alveringem",
+    "de": "Alveringem",
+    "en": "Alveringem"
+   },
+   "postcodes": [
+    "8690",
+    "8691"
+   ]
+  },
+  {
+   "nis5": "61003",
+   "name": {
+    "fr": "Amay",
+    "nl": "Amay",
+    "de": "Amay",
+    "en": "Amay"
+   },
+   "postcodes": [
+    "4540"
+   ]
+  },
+  {
+   "nis5": "63001",
+   "name": {
+    "fr": "Amblève",
+    "nl": "Amel",
+    "de": "Amel",
+    "en": "Amblève"
+   },
+   "postcodes": [
+    "4770",
+    "4771"
+   ]
+  },
+  {
+   "nis5": "92003",
+   "name": {
+    "fr": "Andenne",
+    "nl": "Andenne",
+    "de": "Andenne",
+    "en": "Andenne"
+   },
+   "postcodes": [
+    "5300"
+   ]
+  },
+  {
+   "nis5": "21001",
+   "name": {
+    "fr": "Anderlecht",
+    "nl": "Anderlecht",
+    "de": "Anderlecht",
+    "en": "Anderlecht"
+   },
+   "postcodes": [
+    "1070"
+   ]
+  },
+  {
+   "nis5": "56001",
+   "name": {
+    "fr": "Anderlues",
+    "nl": "Anderlues",
+    "de": "Anderlues",
+    "en": "Anderlues"
+   },
+   "postcodes": [
+    "6150"
+   ]
+  },
+  {
+   "nis5": "91005",
+   "name": {
+    "fr": "Anhée",
+    "nl": "Anhée",
+    "de": "Anhée",
+    "en": "Anhée"
+   },
+   "postcodes": [
+    "5537"
+   ]
+  },
+  {
+   "nis5": "62003",
+   "name": {
+    "fr": "Ans",
+    "nl": "Ans",
+    "de": "Ans",
+    "en": "Ans"
+   },
+   "postcodes": [
+    "4430",
+    "4431",
+    "4432"
+   ]
+  },
+  {
+   "nis5": "61079",
+   "name": {
+    "fr": "Anthisnes",
+    "nl": "Anthisnes",
+    "de": "Anthisnes",
+    "en": "Anthisnes"
+   },
+   "postcodes": [
+    "4160",
+    "4161",
+    "4162",
+    "4163"
+   ]
+  },
+  {
+   "nis5": "57003",
+   "name": {
+    "fr": "Antoing",
+    "nl": "Antoing",
+    "de": "Antoing",
+    "en": "Antoing"
+   },
+   "postcodes": [
+    "7640",
+    "7641",
+    "7642",
+    "7643"
+   ]
+  },
+  {
+   "nis5": "11002",
+   "name": {
+    "fr": "Anvers",
+    "nl": "Antwerpen",
+    "de": "Antwerpen",
+    "en": "Antwerp"
+   },
+   "postcodes": [
+    "2000",
+    "2018",
+    "2020",
+    "2030",
+    "2040",
+    "2050",
+    "2060",
+    "2099",
+    "2100",
+    "2140",
+    "2150",
+    "2170",
+    "2180",
+    "2600",
+    "2610",
+    "2660"
+   ]
+  },
+  {
+   "nis5": "34002",
+   "name": {
+    "fr": "Anzegem",
+    "nl": "Anzegem",
+    "de": "Anzegem",
+    "en": "Anzegem"
+   },
+   "postcodes": [
+    "8570",
+    "8572",
+    "8573"
+   ]
+  },
+  {
+   "nis5": "37020",
+   "name": {
+    "fr": "Ardooie",
+    "nl": "Ardooie",
+    "de": "Ardooie",
+    "en": "Ardooie"
+   },
+   "postcodes": [
+    "8850",
+    "8851"
+   ]
+  },
+  {
+   "nis5": "13001",
+   "name": {
+    "fr": "Arendonk",
+    "nl": "Arendonk",
+    "de": "Arendonk",
+    "en": "Arendonk"
+   },
+   "postcodes": [
+    "2370"
+   ]
+  },
+  {
+   "nis5": "81001",
+   "name": {
+    "fr": "Arlon",
+    "nl": "Aarlen",
+    "de": "Arlon",
+    "en": "Arlon"
+   },
+   "postcodes": [
+    "6700",
+    "6704",
+    "6706"
+   ]
+  },
+  {
+   "nis5": "71002",
+   "name": {
+    "fr": "As",
+    "nl": "As",
+    "de": "As",
+    "en": "As"
+   },
+   "postcodes": [
+    "3665",
+    "3668"
+   ]
+  },
+  {
+   "nis5": "23002",
+   "name": {
+    "fr": "Asse",
+    "nl": "Asse",
+    "de": "Asse",
+    "en": "Asse"
+   },
+   "postcodes": [
+    "1730",
+    "1731",
+    "1733"
+   ]
+  },
+  {
+   "nis5": "43002",
+   "name": {
+    "fr": "Assenede",
+    "nl": "Assenede",
+    "de": "Assenede",
+    "en": "Assenede"
+   },
+   "postcodes": [
+    "9960",
+    "9961",
+    "9968"
+   ]
+  },
+  {
+   "nis5": "92006",
+   "name": {
+    "fr": "Assesse",
+    "nl": "Assesse",
+    "de": "Assesse",
+    "en": "Assesse"
+   },
+   "postcodes": [
+    "5330",
+    "5332",
+    "5333",
+    "5334",
+    "5336"
+   ]
+  },
+  {
+   "nis5": "51004",
+   "name": {
+    "fr": "Ath",
+    "nl": "Aat",
+    "de": "Ath",
+    "en": "Ath"
+   },
+   "postcodes": [
+    "7800",
+    "7801",
+    "7802",
+    "7803",
+    "7804",
+    "7810",
+    "7811",
+    "7812",
+    "7822",
+    "7823"
+   ]
+  },
+  {
+   "nis5": "81003",
+   "name": {
+    "fr": "Attert",
+    "nl": "Attert",
+    "de": "Attert",
+    "en": "Attert"
+   },
+   "postcodes": [
+    "6717"
+   ]
+  },
+  {
+   "nis5": "81004",
+   "name": {
+    "fr": "Aubange",
+    "nl": "Aubange",
+    "de": "Aubange",
+    "en": "Aubange"
+   },
+   "postcodes": [
+    "6790",
+    "6791",
+    "6792"
+   ]
+  },
+  {
+   "nis5": "63003",
+   "name": {
+    "fr": "Aubel",
+    "nl": "Aubel",
+    "de": "Aubel",
+    "en": "Aubel"
+   },
+   "postcodes": [
+    "4880"
+   ]
+  },
+  {
+   "nis5": "45035",
+   "name": {
+    "fr": "Audenarde",
+    "nl": "Oudenaarde",
+    "de": "Oudenaarde",
+    "en": "Audenarde"
+   },
+   "postcodes": [
+    "9700"
+   ]
+  },
+  {
+   "nis5": "21002",
+   "name": {
+    "fr": "Auderghem",
+    "nl": "Oudergem",
+    "de": "Auderghem",
+    "en": "Auderghem"
+   },
+   "postcodes": [
+    "1160"
+   ]
+  },
+  {
+   "nis5": "34003",
+   "name": {
+    "fr": "Avelgem",
+    "nl": "Avelgem",
+    "de": "Avelgem",
+    "en": "Avelgem"
+   },
+   "postcodes": [
+    "8580",
+    "8581",
+    "8582",
+    "8583"
+   ]
+  },
+  {
+   "nis5": "62006",
+   "name": {
+    "fr": "Awans",
+    "nl": "Awans",
+    "de": "Awans",
+    "en": "Awans"
+   },
+   "postcodes": [
+    "4099",
+    "4340",
+    "4342"
+   ]
+  },
+  {
+   "nis5": "62009",
+   "name": {
+    "fr": "Aywaille",
+    "nl": "Aywaille",
+    "de": "Aywaille",
+    "en": "Aywaille"
+   },
+   "postcodes": [
+    "4920"
+   ]
+  },
+  {
+   "nis5": "63004",
+   "name": {
+    "fr": "Baelen",
+    "nl": "Baelen",
+    "de": "Baelen",
+    "en": "Baelen"
+   },
+   "postcodes": [
+    "4837"
+   ]
+  },
+  {
+   "nis5": "13002",
+   "name": {
+    "fr": "Baerle-Duc",
+    "nl": "Baarle-Hertog",
+    "de": "Baarle-Hertog",
+    "en": "Baerle-Duc"
+   },
+   "postcodes": [
+    "2387"
+   ]
+  },
+  {
+   "nis5": "13003",
+   "name": {
+    "fr": "Balen",
+    "nl": "Balen",
+    "de": "Balen",
+    "en": "Balen"
+   },
+   "postcodes": [
+    "2490",
+    "2491"
+   ]
+  },
+  {
+   "nis5": "62011",
+   "name": {
+    "fr": "Bassenge",
+    "nl": "Bitsingen",
+    "de": "Bassenge",
+    "en": "Bassenge"
+   },
+   "postcodes": [
+    "4690"
+   ]
+  },
+  {
+   "nis5": "82039",
+   "name": {
+    "fr": "Bastogne",
+    "nl": "Bastenaken",
+    "de": "Bastnach",
+    "en": "Bastogne"
+   },
+   "postcodes": [
+    "6600",
+    "6686",
+    "6687",
+    "6688"
+   ]
+  },
+  {
+   "nis5": "56005",
+   "name": {
+    "fr": "Beaumont",
+    "nl": "Beaumont",
+    "de": "Beaumont",
+    "en": "Beaumont"
+   },
+   "postcodes": [
+    "6500",
+    "6511"
+   ]
+  },
+  {
+   "nis5": "91013",
+   "name": {
+    "fr": "Beauraing",
+    "nl": "Beauraing",
+    "de": "Beauraing",
+    "en": "Beauraing"
+   },
+   "postcodes": [
+    "5570",
+    "5571",
+    "5572",
+    "5573",
+    "5574",
+    "5576"
+   ]
+  },
+  {
+   "nis5": "25005",
+   "name": {
+    "fr": "Beauvechain",
+    "nl": "Bevekom",
+    "de": "Beauvechain",
+    "en": "Beauvechain"
+   },
+   "postcodes": [
+    "1320"
+   ]
+  },
+  {
+   "nis5": "31003",
+   "name": {
+    "fr": "Beernem",
+    "nl": "Beernem",
+    "de": "Beernem",
+    "en": "Beernem"
+   },
+   "postcodes": [
+    "8730"
+   ]
+  },
+  {
+   "nis5": "13004",
+   "name": {
+    "fr": "Beerse",
+    "nl": "Beerse",
+    "de": "Beerse",
+    "en": "Beerse"
+   },
+   "postcodes": [
+    "2340"
+   ]
+  },
+  {
+   "nis5": "23003",
+   "name": {
+    "fr": "Beersel",
+    "nl": "Beersel",
+    "de": "Beersel",
+    "en": "Beersel"
+   },
+   "postcodes": [
+    "1650",
+    "1651",
+    "1652",
+    "1653",
+    "1654"
+   ]
+  },
+  {
+   "nis5": "24007",
+   "name": {
+    "fr": "Begijnendijk",
+    "nl": "Begijnendijk",
+    "de": "Begijnendijk",
+    "en": "Begijnendijk"
+   },
+   "postcodes": [
+    "3130"
+   ]
+  },
+  {
+   "nis5": "24008",
+   "name": {
+    "fr": "Bekkevoort",
+    "nl": "Bekkevoort",
+    "de": "Bekkevoort",
+    "en": "Bekkevoort"
+   },
+   "postcodes": [
+    "3460",
+    "3461"
+   ]
+  },
+  {
+   "nis5": "51008",
+   "name": {
+    "fr": "Beloeil",
+    "nl": "Beloeil",
+    "de": "Beloeil",
+    "en": "Beloeil"
+   },
+   "postcodes": [
+    "7970",
+    "7971",
+    "7972",
+    "7973"
+   ]
+  },
+  {
+   "nis5": "21003",
+   "name": {
+    "fr": "Berchem-Sainte-Agathe",
+    "nl": "Sint-Agatha-Berchem",
+    "de": "Berchem-Sainte-Agathe",
+    "en": "Berchem-Sainte-Agathe"
+   },
+   "postcodes": [
+    "1082"
+   ]
+  },
+  {
+   "nis5": "71004",
+   "name": {
+    "fr": "Beringen",
+    "nl": "Beringen",
+    "de": "Beringen",
+    "en": "Beringen"
+   },
+   "postcodes": [
+    "3580",
+    "3581",
+    "3582",
+    "3583"
+   ]
+  },
+  {
+   "nis5": "12002",
+   "name": {
+    "fr": "Berlaar",
+    "nl": "Berlaar",
+    "de": "Berlaar",
+    "en": "Berlaar"
+   },
+   "postcodes": [
+    "2590"
+   ]
+  },
+  {
+   "nis5": "42003",
+   "name": {
+    "fr": "Berlare",
+    "nl": "Berlare",
+    "de": "Berlare",
+    "en": "Berlare"
+   },
+   "postcodes": [
+    "9290"
+   ]
+  },
+  {
+   "nis5": "64008",
+   "name": {
+    "fr": "Berloz",
+    "nl": "Berloz",
+    "de": "Berloz",
+    "en": "Berloz"
+   },
+   "postcodes": [
+    "4257"
+   ]
+  },
+  {
+   "nis5": "51009",
+   "name": {
+    "fr": "Bernissart",
+    "nl": "Bernissart",
+    "de": "Bernissart",
+    "en": "Bernissart"
+   },
+   "postcodes": [
+    "7320",
+    "7321",
+    "7322"
+   ]
+  },
+  {
+   "nis5": "24009",
+   "name": {
+    "fr": "Bertem",
+    "nl": "Bertem",
+    "de": "Bertem",
+    "en": "Bertem"
+   },
+   "postcodes": [
+    "3060",
+    "3061"
+   ]
+  },
+  {
+   "nis5": "84009",
+   "name": {
+    "fr": "Bertrix",
+    "nl": "Bertrix",
+    "de": "Bertrix",
+    "en": "Bertrix"
+   },
+   "postcodes": [
+    "6880"
+   ]
+  },
+  {
+   "nis5": "46030",
+   "name": {
+    "fr": "Beveren-Kruibeke-Zwijndrecht",
+    "nl": "Beveren-Kruibeke-Zwijndrecht",
+    "de": "Beveren-Kruibeke-Zwijndrecht",
+    "en": "Beveren-Kruibeke-Zwijndrecht"
+   },
+   "postcodes": [
+    "2070",
+    "9120",
+    "9130",
+    "9150"
+   ]
+  },
+  {
+   "nis5": "62015",
+   "name": {
+    "fr": "Beyne-Heusay",
+    "nl": "Beyne-Heusay",
+    "de": "Beyne-Heusay",
+    "en": "Beyne-Heusay"
+   },
+   "postcodes": [
+    "4610"
+   ]
+  },
+  {
+   "nis5": "24011",
+   "name": {
+    "fr": "Bierbeek",
+    "nl": "Bierbeek",
+    "de": "Bierbeek",
+    "en": "Bierbeek"
+   },
+   "postcodes": [
+    "3360"
+   ]
+  },
+  {
+   "nis5": "73110",
+   "name": {
+    "fr": "Bilzen-Hoeselt",
+    "nl": "Bilzen-Hoeselt",
+    "de": "Bilzen-Hoeselt",
+    "en": "Bilzen-Hoeselt"
+   },
+   "postcodes": [
+    "3730",
+    "3732",
+    "3740",
+    "3742",
+    "3746"
+   ]
+  },
+  {
+   "nis5": "58002",
+   "name": {
+    "fr": "Binche",
+    "nl": "Binche",
+    "de": "Binche",
+    "en": "Binche"
+   },
+   "postcodes": [
+    "7130",
+    "7131",
+    "7133",
+    "7134"
+   ]
+  },
+  {
+   "nis5": "91015",
+   "name": {
+    "fr": "Bièvre",
+    "nl": "Bièvre",
+    "de": "Bièvre",
+    "en": "Bièvre"
+   },
+   "postcodes": [
+    "5555"
+   ]
+  },
+  {
+   "nis5": "23009",
+   "name": {
+    "fr": "Biévène",
+    "nl": "Bever",
+    "de": "Bever",
+    "en": "Biévène"
+   },
+   "postcodes": [
+    "1547"
+   ]
+  },
+  {
+   "nis5": "31004",
+   "name": {
+    "fr": "Blankenberge",
+    "nl": "Blankenberge",
+    "de": "Blankenberge",
+    "en": "Blankenberge"
+   },
+   "postcodes": [
+    "8370"
+   ]
+  },
+  {
+   "nis5": "62119",
+   "name": {
+    "fr": "Blegny",
+    "nl": "Blegny",
+    "de": "Blegny",
+    "en": "Blegny"
+   },
+   "postcodes": [
+    "4670",
+    "4671",
+    "4672"
+   ]
+  },
+  {
+   "nis5": "72003",
+   "name": {
+    "fr": "Bocholt",
+    "nl": "Bocholt",
+    "de": "Bocholt",
+    "en": "Bocholt"
+   },
+   "postcodes": [
+    "3950"
+   ]
+  },
+  {
+   "nis5": "11004",
+   "name": {
+    "fr": "Boechout",
+    "nl": "Boechout",
+    "de": "Boechout",
+    "en": "Boechout"
+   },
+   "postcodes": [
+    "2530",
+    "2531"
+   ]
+  },
+  {
+   "nis5": "12005",
+   "name": {
+    "fr": "Bonheiden",
+    "nl": "Bonheiden",
+    "de": "Bonheiden",
+    "en": "Bonheiden"
+   },
+   "postcodes": [
+    "2820"
+   ]
+  },
+  {
+   "nis5": "11005",
+   "name": {
+    "fr": "Boom",
+    "nl": "Boom",
+    "de": "Boom",
+    "en": "Boom"
+   },
+   "postcodes": [
+    "2850"
+   ]
+  },
+  {
+   "nis5": "24014",
+   "name": {
+    "fr": "Boortmeerbeek",
+    "nl": "Boortmeerbeek",
+    "de": "Boortmeerbeek",
+    "en": "Boortmeerbeek"
+   },
+   "postcodes": [
+    "3190",
+    "3191"
+   ]
+  },
+  {
+   "nis5": "12007",
+   "name": {
+    "fr": "Bornem",
+    "nl": "Bornem",
+    "de": "Bornem",
+    "en": "Bornem"
+   },
+   "postcodes": [
+    "2880"
+   ]
+  },
+  {
+   "nis5": "84010",
+   "name": {
+    "fr": "Bouillon",
+    "nl": "Bouillon",
+    "de": "Bouillon",
+    "en": "Bouillon"
+   },
+   "postcodes": [
+    "6830",
+    "6831",
+    "6832",
+    "6833",
+    "6834",
+    "6836",
+    "6838"
+   ]
+  },
+  {
+   "nis5": "71034",
+   "name": {
+    "fr": "Bourg-Léopold",
+    "nl": "Leopoldsburg",
+    "de": "Leopoldsburg",
+    "en": "Bourg-Léopold"
+   },
+   "postcodes": [
+    "3970",
+    "3971"
+   ]
+  },
+  {
+   "nis5": "53014",
+   "name": {
+    "fr": "Boussu",
+    "nl": "Boussu",
+    "de": "Boussu",
+    "en": "Boussu"
+   },
+   "postcodes": [
+    "7300",
+    "7301"
+   ]
+  },
+  {
+   "nis5": "24016",
+   "name": {
+    "fr": "Boutersem",
+    "nl": "Boutersem",
+    "de": "Boutersem",
+    "en": "Boutersem"
+   },
+   "postcodes": [
+    "3370"
+   ]
+  },
+  {
+   "nis5": "25014",
+   "name": {
+    "fr": "Braine-l'Alleud",
+    "nl": "Eigenbrakel",
+    "de": "Braine-l'Alleud",
+    "en": "Braine-l'Alleud"
+   },
+   "postcodes": [
+    "1420",
+    "1421",
+    "1428"
+   ]
+  },
+  {
+   "nis5": "25015",
+   "name": {
+    "fr": "Braine-le-Château",
+    "nl": "Kasteelbrakel",
+    "de": "Braine-le-Château",
+    "en": "Braine-le-Château"
+   },
+   "postcodes": [
+    "1440"
+   ]
+  },
+  {
+   "nis5": "55004",
+   "name": {
+    "fr": "Braine-le-Comte",
+    "nl": "'s Gravenbrakel",
+    "de": "Braine-le-Comte",
+    "en": "Braine-le-Comte"
+   },
+   "postcodes": [
+    "7090"
+   ]
+  },
+  {
+   "nis5": "64015",
+   "name": {
+    "fr": "Braives",
+    "nl": "Braives",
+    "de": "Braives",
+    "en": "Braives"
+   },
+   "postcodes": [
+    "4260",
+    "4261",
+    "4263"
+   ]
+  },
+  {
+   "nis5": "45059",
+   "name": {
+    "fr": "Brakel",
+    "nl": "Brakel",
+    "de": "Brakel",
+    "en": "Brakel"
+   },
+   "postcodes": [
+    "9660",
+    "9661"
+   ]
+  },
+  {
+   "nis5": "11008",
+   "name": {
+    "fr": "Brasschaat",
+    "nl": "Brasschaat",
+    "de": "Brasschaat",
+    "en": "Brasschaat"
+   },
+   "postcodes": [
+    "2930"
+   ]
+  },
+  {
+   "nis5": "11009",
+   "name": {
+    "fr": "Brecht",
+    "nl": "Brecht",
+    "de": "Brecht",
+    "en": "Brecht"
+   },
+   "postcodes": [
+    "2960"
+   ]
+  },
+  {
+   "nis5": "35002",
+   "name": {
+    "fr": "Bredene",
+    "nl": "Bredene",
+    "de": "Bredene",
+    "en": "Bredene"
+   },
+   "postcodes": [
+    "8450"
+   ]
+  },
+  {
+   "nis5": "72004",
+   "name": {
+    "fr": "Bree",
+    "nl": "Bree",
+    "de": "Bree",
+    "en": "Bree"
+   },
+   "postcodes": [
+    "3960"
+   ]
+  },
+  {
+   "nis5": "51012",
+   "name": {
+    "fr": "Brugelette",
+    "nl": "Brugelette",
+    "de": "Brugelette",
+    "en": "Brugelette"
+   },
+   "postcodes": [
+    "7940",
+    "7941",
+    "7942",
+    "7943"
+   ]
+  },
+  {
+   "nis5": "31005",
+   "name": {
+    "fr": "Bruges",
+    "nl": "Brugge",
+    "de": "Brügge",
+    "en": "Bruges"
+   },
+   "postcodes": [
+    "8000",
+    "8200",
+    "8310",
+    "8380"
+   ]
+  },
+  {
+   "nis5": "57093",
+   "name": {
+    "fr": "Brunehaut",
+    "nl": "Brunehaut",
+    "de": "Brunehaut",
+    "en": "Brunehaut"
+   },
+   "postcodes": [
+    "7620",
+    "7621",
+    "7622",
+    "7623",
+    "7624"
+   ]
+  },
+  {
+   "nis5": "21004",
+   "name": {
+    "fr": "Bruxelles",
+    "nl": "Brussel",
+    "de": "Brüssel",
+    "en": "Brussels"
+   },
+   "postcodes": [
+    "1000",
+    "1005",
+    "1006",
+    "1007",
+    "1008",
+    "1009",
+    "1011",
+    "1012",
+    "1020",
+    "1041",
+    "1048",
+    "1099",
+    "1105",
+    "1110",
+    "1120",
+    "1130"
+   ]
+  },
+  {
+   "nis5": "42004",
+   "name": {
+    "fr": "Buggenhout",
+    "nl": "Buggenhout",
+    "de": "Buggenhout",
+    "en": "Buggenhout"
+   },
+   "postcodes": [
+    "9255"
+   ]
+  },
+  {
+   "nis5": "63012",
+   "name": {
+    "fr": "Bullange",
+    "nl": "Büllingen",
+    "de": "Büllingen",
+    "en": "Bullange"
+   },
+   "postcodes": [
+    "4760",
+    "4761"
+   ]
+  },
+  {
+   "nis5": "61010",
+   "name": {
+    "fr": "Burdinne",
+    "nl": "Burdinne",
+    "de": "Burdinne",
+    "en": "Burdinne"
+   },
+   "postcodes": [
+    "4210"
+   ]
+  },
+  {
+   "nis5": "63087",
+   "name": {
+    "fr": "Burg-Reuland",
+    "nl": "Burg-Reuland",
+    "de": "Burg-Reuland",
+    "en": "Burg-Reuland"
+   },
+   "postcodes": [
+    "4790",
+    "4791"
+   ]
+  },
+  {
+   "nis5": "63013",
+   "name": {
+    "fr": "Butgenbach",
+    "nl": "Bütgenbach",
+    "de": "Bütgenbach",
+    "en": "Butgenbach"
+   },
+   "postcodes": [
+    "4750"
+   ]
+  },
+  {
+   "nis5": "57018",
+   "name": {
+    "fr": "Celles",
+    "nl": "Celles",
+    "de": "Celles",
+    "en": "Celles"
+   },
+   "postcodes": [
+    "5561",
+    "7760"
+   ]
+  },
+  {
+   "nis5": "93010",
+   "name": {
+    "fr": "Cerfontaine",
+    "nl": "Cerfontaine",
+    "de": "Cerfontaine",
+    "en": "Cerfontaine"
+   },
+   "postcodes": [
+    "5630"
+   ]
+  },
+  {
+   "nis5": "52010",
+   "name": {
+    "fr": "Chapelle-lez-Herlaimont",
+    "nl": "Chapelle-lez-Herlaimont",
+    "de": "Chapelle-lez-Herlaimont",
+    "en": "Chapelle-lez-Herlaimont"
+   },
+   "postcodes": [
+    "7160"
+   ]
+  },
+  {
+   "nis5": "52011",
+   "name": {
+    "fr": "Charleroi",
+    "nl": "Charleroi",
+    "de": "Charleroi",
+    "en": "Charleroi"
+   },
+   "postcodes": [
+    "6000",
+    "6001",
+    "6010",
+    "6020",
+    "6030",
+    "6031",
+    "6032",
+    "6040",
+    "6041",
+    "6042",
+    "6043",
+    "6044",
+    "6060",
+    "6061"
+   ]
+  },
+  {
+   "nis5": "25117",
+   "name": {
+    "fr": "Chastre",
+    "nl": "Chastre",
+    "de": "Chastre",
+    "en": "Chastre"
+   },
+   "postcodes": [
+    "1450"
+   ]
+  },
+  {
+   "nis5": "62022",
+   "name": {
+    "fr": "Chaudfontaine",
+    "nl": "Chaudfontaine",
+    "de": "Chaudfontaine",
+    "en": "Chaudfontaine"
+   },
+   "postcodes": [
+    "4050",
+    "4051",
+    "4052",
+    "4053"
+   ]
+  },
+  {
+   "nis5": "25018",
+   "name": {
+    "fr": "Chaumont-Gistoux",
+    "nl": "Chaumont-Gistoux",
+    "de": "Chaumont-Gistoux",
+    "en": "Chaumont-Gistoux"
+   },
+   "postcodes": [
+    "1325"
+   ]
+  },
+  {
+   "nis5": "56016",
+   "name": {
+    "fr": "Chimay",
+    "nl": "Chimay",
+    "de": "Chimay",
+    "en": "Chimay"
+   },
+   "postcodes": [
+    "6460",
+    "6461",
+    "6462",
+    "6463",
+    "6464"
+   ]
+  },
+  {
+   "nis5": "85007",
+   "name": {
+    "fr": "Chiny",
+    "nl": "Chiny",
+    "de": "Chiny",
+    "en": "Chiny"
+   },
+   "postcodes": [
+    "6810",
+    "6811",
+    "6812",
+    "6813"
+   ]
+  },
+  {
+   "nis5": "51014",
+   "name": {
+    "fr": "Chièvres",
+    "nl": "Chièvres",
+    "de": "Chièvres",
+    "en": "Chièvres"
+   },
+   "postcodes": [
+    "7950",
+    "7951"
+   ]
+  },
+  {
+   "nis5": "52012",
+   "name": {
+    "fr": "Châtelet",
+    "nl": "Châtelet",
+    "de": "Châtelet",
+    "en": "Châtelet"
+   },
+   "postcodes": [
+    "6200"
+   ]
+  },
+  {
+   "nis5": "91030",
+   "name": {
+    "fr": "Ciney",
+    "nl": "Ciney",
+    "de": "Ciney",
+    "en": "Ciney"
+   },
+   "postcodes": [
+    "5590"
+   ]
+  },
+  {
+   "nis5": "61012",
+   "name": {
+    "fr": "Clavier",
+    "nl": "Clavier",
+    "de": "Clavier",
+    "en": "Clavier"
+   },
+   "postcodes": [
+    "4560"
+   ]
+  },
+  {
+   "nis5": "53082",
+   "name": {
+    "fr": "Colfontaine",
+    "nl": "Colfontaine",
+    "de": "Colfontaine",
+    "en": "Colfontaine"
+   },
+   "postcodes": [
+    "7340"
+   ]
+  },
+  {
+   "nis5": "62026",
+   "name": {
+    "fr": "Comblain-au-Pont",
+    "nl": "Comblain-au-Pont",
+    "de": "Comblain-au-Pont",
+    "en": "Comblain-au-Pont"
+   },
+   "postcodes": [
+    "4170",
+    "4171"
+   ]
+  },
+  {
+   "nis5": "57097",
+   "name": {
+    "fr": "Comines-Warneton",
+    "nl": "Komen-Waasten",
+    "de": "Comines-Warneton",
+    "en": "Comines-Warneton"
+   },
+   "postcodes": [
+    "7780",
+    "7781",
+    "7782",
+    "7783",
+    "7784"
+   ]
+  },
+  {
+   "nis5": "52015",
+   "name": {
+    "fr": "Courcelles",
+    "nl": "Courcelles",
+    "de": "Courcelles",
+    "en": "Courcelles"
+   },
+   "postcodes": [
+    "6180",
+    "6181",
+    "6182",
+    "6183"
+   ]
+  },
+  {
+   "nis5": "25023",
+   "name": {
+    "fr": "Court-Saint-Étienne",
+    "nl": "Court-Saint-Étienne",
+    "de": "Court-Saint-Étienne",
+    "en": "Court-Saint-Étienne"
+   },
+   "postcodes": [
+    "1490"
+   ]
+  },
+  {
+   "nis5": "34022",
+   "name": {
+    "fr": "Courtrai",
+    "nl": "Kortrijk",
+    "de": "Kortrijk",
+    "en": "Courtrai"
+   },
+   "postcodes": [
+    "8500",
+    "8501",
+    "8510",
+    "8511"
+   ]
+  },
+  {
+   "nis5": "93014",
+   "name": {
+    "fr": "Couvin",
+    "nl": "Couvin",
+    "de": "Couvin",
+    "en": "Couvin"
+   },
+   "postcodes": [
+    "5660"
+   ]
+  },
+  {
+   "nis5": "64021",
+   "name": {
+    "fr": "Crisnée",
+    "nl": "Crisnée",
+    "de": "Crisnée",
+    "en": "Crisnée"
+   },
+   "postcodes": [
+    "4367"
+   ]
+  },
+  {
+   "nis5": "62027",
+   "name": {
+    "fr": "Dalhem",
+    "nl": "Dalhem",
+    "de": "Dalhem",
+    "en": "Dalhem"
+   },
+   "postcodes": [
+    "4606",
+    "4607"
+   ]
+  },
+  {
+   "nis5": "31006",
+   "name": {
+    "fr": "Damme",
+    "nl": "Damme",
+    "de": "Damme",
+    "en": "Damme"
+   },
+   "postcodes": [
+    "8340"
+   ]
+  },
+  {
+   "nis5": "84016",
+   "name": {
+    "fr": "Daverdisse",
+    "nl": "Daverdisse",
+    "de": "Daverdisse",
+    "en": "Daverdisse"
+   },
+   "postcodes": [
+    "6929"
+   ]
+  },
+  {
+   "nis5": "35029",
+   "name": {
+    "fr": "De Haan",
+    "nl": "De Haan",
+    "de": "De Haan",
+    "en": "De Haan"
+   },
+   "postcodes": [
+    "8420",
+    "8421"
+   ]
+  },
+  {
+   "nis5": "34009",
+   "name": {
+    "fr": "Deerlijk",
+    "nl": "Deerlijk",
+    "de": "Deerlijk",
+    "en": "Deerlijk"
+   },
+   "postcodes": [
+    "8540"
+   ]
+  },
+  {
+   "nis5": "44083",
+   "name": {
+    "fr": "Deinze",
+    "nl": "Deinze",
+    "de": "Deinze",
+    "en": "Deinze"
+   },
+   "postcodes": [
+    "9800",
+    "9850"
+   ]
+  },
+  {
+   "nis5": "41011",
+   "name": {
+    "fr": "Denderleeuw",
+    "nl": "Denderleeuw",
+    "de": "Denderleeuw",
+    "en": "Denderleeuw"
+   },
+   "postcodes": [
+    "9470",
+    "9472",
+    "9473"
+   ]
+  },
+  {
+   "nis5": "37002",
+   "name": {
+    "fr": "Dentergem",
+    "nl": "Dentergem",
+    "de": "Dentergem",
+    "en": "Dentergem"
+   },
+   "postcodes": [
+    "8720"
+   ]
+  },
+  {
+   "nis5": "13006",
+   "name": {
+    "fr": "Dessel",
+    "nl": "Dessel",
+    "de": "Dessel",
+    "en": "Dessel"
+   },
+   "postcodes": [
+    "2480"
+   ]
+  },
+  {
+   "nis5": "44013",
+   "name": {
+    "fr": "Destelbergen",
+    "nl": "Destelbergen",
+    "de": "Destelbergen",
+    "en": "Destelbergen"
+   },
+   "postcodes": [
+    "9070"
+   ]
+  },
+  {
+   "nis5": "71011",
+   "name": {
+    "fr": "Diepenbeek",
+    "nl": "Diepenbeek",
+    "de": "Diepenbeek",
+    "en": "Diepenbeek"
+   },
+   "postcodes": [
+    "3590"
+   ]
+  },
+  {
+   "nis5": "24020",
+   "name": {
+    "fr": "Diest",
+    "nl": "Diest",
+    "de": "Diest",
+    "en": "Diest"
+   },
+   "postcodes": [
+    "3290",
+    "3293",
+    "3294"
+   ]
+  },
+  {
+   "nis5": "23016",
+   "name": {
+    "fr": "Dilbeek",
+    "nl": "Dilbeek",
+    "de": "Dilbeek",
+    "en": "Dilbeek"
+   },
+   "postcodes": [
+    "1700",
+    "1701",
+    "1702",
+    "1703"
+   ]
+  },
+  {
+   "nis5": "72041",
+   "name": {
+    "fr": "Dilsen-Stokkem",
+    "nl": "Dilsen-Stokkem",
+    "de": "Dilsen-Stokkem",
+    "en": "Dilsen-Stokkem"
+   },
+   "postcodes": [
+    "3650"
+   ]
+  },
+  {
+   "nis5": "91034",
+   "name": {
+    "fr": "Dinant",
+    "nl": "Dinant",
+    "de": "Dinant",
+    "en": "Dinant"
+   },
+   "postcodes": [
+    "5500",
+    "5501",
+    "5502",
+    "5503",
+    "5504"
+   ]
+  },
+  {
+   "nis5": "63020",
+   "name": {
+    "fr": "Dison",
+    "nl": "Dison",
+    "de": "Dison",
+    "en": "Dison"
+   },
+   "postcodes": [
+    "4820",
+    "4821"
+   ]
+  },
+  {
+   "nis5": "32003",
+   "name": {
+    "fr": "Dixmude",
+    "nl": "Diksmuide",
+    "de": "Diksmuide",
+    "en": "Dixmude"
+   },
+   "postcodes": [
+    "8600"
+   ]
+  },
+  {
+   "nis5": "93018",
+   "name": {
+    "fr": "Doische",
+    "nl": "Doische",
+    "de": "Doische",
+    "en": "Doische"
+   },
+   "postcodes": [
+    "5680"
+   ]
+  },
+  {
+   "nis5": "64023",
+   "name": {
+    "fr": "Donceel",
+    "nl": "Donceel",
+    "de": "Donceel",
+    "en": "Donceel"
+   },
+   "postcodes": [
+    "4357"
+   ]
+  },
+  {
+   "nis5": "53020",
+   "name": {
+    "fr": "Dour",
+    "nl": "Dour",
+    "de": "Dour",
+    "en": "Dour"
+   },
+   "postcodes": [
+    "7370"
+   ]
+  },
+  {
+   "nis5": "23098",
+   "name": {
+    "fr": "Drogenbos",
+    "nl": "Drogenbos",
+    "de": "Drogenbos",
+    "en": "Drogenbos"
+   },
+   "postcodes": [
+    "1620"
+   ]
+  },
+  {
+   "nis5": "12009",
+   "name": {
+    "fr": "Duffel",
+    "nl": "Duffel",
+    "de": "Duffel",
+    "en": "Duffel"
+   },
+   "postcodes": [
+    "2570"
+   ]
+  },
+  {
+   "nis5": "83012",
+   "name": {
+    "fr": "Durbuy",
+    "nl": "Durbuy",
+    "de": "Durbuy",
+    "en": "Durbuy"
+   },
+   "postcodes": [
+    "6940",
+    "6941"
+   ]
+  },
+  {
+   "nis5": "11013",
+   "name": {
+    "fr": "Edegem",
+    "nl": "Edegem",
+    "de": "Edegem",
+    "en": "Edegem"
+   },
+   "postcodes": [
+    "2650"
+   ]
+  },
+  {
+   "nis5": "43005",
+   "name": {
+    "fr": "Eeklo",
+    "nl": "Eeklo",
+    "de": "Eeklo",
+    "en": "Eeklo"
+   },
+   "postcodes": [
+    "9900"
+   ]
+  },
+  {
+   "nis5": "51017",
+   "name": {
+    "fr": "Ellezelles",
+    "nl": "Elzele",
+    "de": "Ellezelles",
+    "en": "Ellezelles"
+   },
+   "postcodes": [
+    "7890"
+   ]
+  },
+  {
+   "nis5": "51067",
+   "name": {
+    "fr": "Enghien",
+    "nl": "Edingen",
+    "de": "Enghien",
+    "en": "Enghien"
+   },
+   "postcodes": [
+    "7850"
+   ]
+  },
+  {
+   "nis5": "61080",
+   "name": {
+    "fr": "Engis",
+    "nl": "Engis",
+    "de": "Engis",
+    "en": "Engis"
+   },
+   "postcodes": [
+    "4480"
+   ]
+  },
+  {
+   "nis5": "41082",
+   "name": {
+    "fr": "Erpe-Mere",
+    "nl": "Erpe-Mere",
+    "de": "Erpe-Mere",
+    "en": "Erpe-Mere"
+   },
+   "postcodes": [
+    "9420"
+   ]
+  },
+  {
+   "nis5": "56022",
+   "name": {
+    "fr": "Erquelinnes",
+    "nl": "Erquelinnes",
+    "de": "Erquelinnes",
+    "en": "Erquelinnes"
+   },
+   "postcodes": [
+    "6560"
+   ]
+  },
+  {
+   "nis5": "62032",
+   "name": {
+    "fr": "Esneux",
+    "nl": "Esneux",
+    "de": "Esneux",
+    "en": "Esneux"
+   },
+   "postcodes": [
+    "4130"
+   ]
+  },
+  {
+   "nis5": "34043",
+   "name": {
+    "fr": "Espierres-Helchin",
+    "nl": "Spiere-Helkijn",
+    "de": "Spiere-Helkijn",
+    "en": "Espierres-Helchin"
+   },
+   "postcodes": [
+    "8587"
+   ]
+  },
+  {
+   "nis5": "11016",
+   "name": {
+    "fr": "Essen",
+    "nl": "Essen",
+    "de": "Essen",
+    "en": "Essen"
+   },
+   "postcodes": [
+    "2910"
+   ]
+  },
+  {
+   "nis5": "57027",
+   "name": {
+    "fr": "Estaimpuis",
+    "nl": "Estaimpuis",
+    "de": "Estaimpuis",
+    "en": "Estaimpuis"
+   },
+   "postcodes": [
+    "7730"
+   ]
+  },
+  {
+   "nis5": "58003",
+   "name": {
+    "fr": "Estinnes",
+    "nl": "Estinnes",
+    "de": "Estinnes",
+    "en": "Estinnes"
+   },
+   "postcodes": [
+    "7120"
+   ]
+  },
+  {
+   "nis5": "21005",
+   "name": {
+    "fr": "Etterbeek",
+    "nl": "Etterbeek",
+    "de": "Etterbeek",
+    "en": "Etterbeek"
+   },
+   "postcodes": [
+    "1040"
+   ]
+  },
+  {
+   "nis5": "63023",
+   "name": {
+    "fr": "Eupen",
+    "nl": "Eupen",
+    "de": "Eupen",
+    "en": "Eupen"
+   },
+   "postcodes": [
+    "4700",
+    "4701"
+   ]
+  },
+  {
+   "nis5": "21006",
+   "name": {
+    "fr": "Evere",
+    "nl": "Evere",
+    "de": "Evere",
+    "en": "Evere"
+   },
+   "postcodes": [
+    "1046",
+    "1049",
+    "1140"
+   ]
+  },
+  {
+   "nis5": "44019",
+   "name": {
+    "fr": "Evergem",
+    "nl": "Evergem",
+    "de": "Evergem",
+    "en": "Evergem"
+   },
+   "postcodes": [
+    "9940"
+   ]
+  },
+  {
+   "nis5": "64076",
+   "name": {
+    "fr": "Faimes",
+    "nl": "Faimes",
+    "de": "Faimes",
+    "en": "Faimes"
+   },
+   "postcodes": [
+    "4317"
+   ]
+  },
+  {
+   "nis5": "52018",
+   "name": {
+    "fr": "Farciennes",
+    "nl": "Farciennes",
+    "de": "Farciennes",
+    "en": "Farciennes"
+   },
+   "postcodes": [
+    "6240"
+   ]
+  },
+  {
+   "nis5": "82009",
+   "name": {
+    "fr": "Fauvillers",
+    "nl": "Fauvillers",
+    "de": "Fauvillers",
+    "en": "Fauvillers"
+   },
+   "postcodes": [
+    "6637"
+   ]
+  },
+  {
+   "nis5": "92138",
+   "name": {
+    "fr": "Fernelmont",
+    "nl": "Fernelmont",
+    "de": "Fernelmont",
+    "en": "Fernelmont"
+   },
+   "postcodes": [
+    "5380"
+   ]
+  },
+  {
+   "nis5": "61019",
+   "name": {
+    "fr": "Ferrières",
+    "nl": "Ferrières",
+    "de": "Ferrières",
+    "en": "Ferrières"
+   },
+   "postcodes": [
+    "4190"
+   ]
+  },
+  {
+   "nis5": "64025",
+   "name": {
+    "fr": "Fexhe-le-Haut-Clocher",
+    "nl": "Fexhe-le-Haut-Clocher",
+    "de": "Fexhe-le-Haut-Clocher",
+    "en": "Fexhe-le-Haut-Clocher"
+   },
+   "postcodes": [
+    "4347"
+   ]
+  },
+  {
+   "nis5": "52021",
+   "name": {
+    "fr": "Fleurus",
+    "nl": "Fleurus",
+    "de": "Fleurus",
+    "en": "Fleurus"
+   },
+   "postcodes": [
+    "6075",
+    "6099",
+    "6220",
+    "6221",
+    "6222",
+    "6223",
+    "6224"
+   ]
+  },
+  {
+   "nis5": "51019",
+   "name": {
+    "fr": "Flobecq",
+    "nl": "Vloesberg",
+    "de": "Flobecq",
+    "en": "Flobecq"
+   },
+   "postcodes": [
+    "7880"
+   ]
+  },
+  {
+   "nis5": "92045",
+   "name": {
+    "fr": "Floreffe",
+    "nl": "Floreffe",
+    "de": "Floreffe",
+    "en": "Floreffe"
+   },
+   "postcodes": [
+    "5150"
+   ]
+  },
+  {
+   "nis5": "93022",
+   "name": {
+    "fr": "Florennes",
+    "nl": "Florennes",
+    "de": "Florennes",
+    "en": "Florennes"
+   },
+   "postcodes": [
+    "5620",
+    "5621"
+   ]
+  },
+  {
+   "nis5": "85011",
+   "name": {
+    "fr": "Florenville",
+    "nl": "Florenville",
+    "de": "Florenville",
+    "en": "Florenville"
+   },
+   "postcodes": [
+    "6820",
+    "6821",
+    "6823",
+    "6824"
+   ]
+  },
+  {
+   "nis5": "62120",
+   "name": {
+    "fr": "Flémalle",
+    "nl": "Flémalle",
+    "de": "Flémalle",
+    "en": "Flémalle"
+   },
+   "postcodes": [
+    "4400"
+   ]
+  },
+  {
+   "nis5": "62038",
+   "name": {
+    "fr": "Fléron",
+    "nl": "Fléron",
+    "de": "Fléron",
+    "en": "Fléron"
+   },
+   "postcodes": [
+    "4620",
+    "4621",
+    "4623",
+    "4624"
+   ]
+  },
+  {
+   "nis5": "52022",
+   "name": {
+    "fr": "Fontaine-l'Évêque",
+    "nl": "Fontaine-l'Évêque",
+    "de": "Fontaine-l'Évêque",
+    "en": "Fontaine-l'Évêque"
+   },
+   "postcodes": [
+    "6140",
+    "6141",
+    "6142"
+   ]
+  },
+  {
+   "nis5": "21007",
+   "name": {
+    "fr": "Forest",
+    "nl": "Vorst",
+    "de": "Forest",
+    "en": "Forest"
+   },
+   "postcodes": [
+    "1190"
+   ]
+  },
+  {
+   "nis5": "92048",
+   "name": {
+    "fr": "Fosses-la-Ville",
+    "nl": "Fosses-la-Ville",
+    "de": "Fosses-la-Ville",
+    "en": "Fosses-la-Ville"
+   },
+   "postcodes": [
+    "5070"
+   ]
+  },
+  {
+   "nis5": "73109",
+   "name": {
+    "fr": "Fourons",
+    "nl": "Voeren",
+    "de": "Voeren",
+    "en": "Fourons"
+   },
+   "postcodes": [
+    "3790",
+    "3791",
+    "3792",
+    "3793",
+    "3798"
+   ]
+  },
+  {
+   "nis5": "53028",
+   "name": {
+    "fr": "Frameries",
+    "nl": "Frameries",
+    "de": "Frameries",
+    "en": "Frameries"
+   },
+   "postcodes": [
+    "7080"
+   ]
+  },
+  {
+   "nis5": "51065",
+   "name": {
+    "fr": "Frasnes-lez-Anvaing",
+    "nl": "Frasnes-lez-Anvaing",
+    "de": "Frasnes-lez-Anvaing",
+    "en": "Frasnes-lez-Anvaing"
+   },
+   "postcodes": [
+    "7910",
+    "7911",
+    "7912"
+   ]
+  },
+  {
+   "nis5": "56029",
+   "name": {
+    "fr": "Froidchapelle",
+    "nl": "Froidchapelle",
+    "de": "Froidchapelle",
+    "en": "Froidchapelle"
+   },
+   "postcodes": [
+    "6440",
+    "6441"
+   ]
+  },
+  {
+   "nis5": "38025",
+   "name": {
+    "fr": "Furnes",
+    "nl": "Veurne",
+    "de": "Veurne",
+    "en": "Furnes"
+   },
+   "postcodes": [
+    "8630"
+   ]
+  },
+  {
+   "nis5": "44021",
+   "name": {
+    "fr": "Gand",
+    "nl": "Gent",
+    "de": "Gent",
+    "en": "Gand"
+   },
+   "postcodes": [
+    "9000",
+    "9030",
+    "9031",
+    "9032",
+    "9040",
+    "9041",
+    "9042",
+    "9050",
+    "9051",
+    "9052",
+    "9075",
+    "9099"
+   ]
+  },
+  {
+   "nis5": "21008",
+   "name": {
+    "fr": "Ganshoren",
+    "nl": "Ganshoren",
+    "de": "Ganshoren",
+    "en": "Ganshoren"
+   },
+   "postcodes": [
+    "1083"
+   ]
+  },
+  {
+   "nis5": "44020",
+   "name": {
+    "fr": "Gavere",
+    "nl": "Gavere",
+    "de": "Gavere",
+    "en": "Gavere"
+   },
+   "postcodes": [
+    "9890"
+   ]
+  },
+  {
+   "nis5": "91054",
+   "name": {
+    "fr": "Gedinne",
+    "nl": "Gedinne",
+    "de": "Gedinne",
+    "en": "Gedinne"
+   },
+   "postcodes": [
+    "5575"
+   ]
+  },
+  {
+   "nis5": "13008",
+   "name": {
+    "fr": "Geel",
+    "nl": "Geel",
+    "de": "Geel",
+    "en": "Geel"
+   },
+   "postcodes": [
+    "2440"
+   ]
+  },
+  {
+   "nis5": "64029",
+   "name": {
+    "fr": "Geer",
+    "nl": "Geer",
+    "de": "Geer",
+    "en": "Geer"
+   },
+   "postcodes": [
+    "4250",
+    "4252",
+    "4253",
+    "4254"
+   ]
+  },
+  {
+   "nis5": "24028",
+   "name": {
+    "fr": "Geetbets",
+    "nl": "Geetbets",
+    "de": "Geetbets",
+    "en": "Geetbets"
+   },
+   "postcodes": [
+    "3450",
+    "3454"
+   ]
+  },
+  {
+   "nis5": "92142",
+   "name": {
+    "fr": "Gembloux",
+    "nl": "Gembloux",
+    "de": "Gembloux",
+    "en": "Gembloux"
+   },
+   "postcodes": [
+    "5030",
+    "5031",
+    "5032"
+   ]
+  },
+  {
+   "nis5": "25031",
+   "name": {
+    "fr": "Genappe",
+    "nl": "Genepiën",
+    "de": "Genappe",
+    "en": "Genappe"
+   },
+   "postcodes": [
+    "1470",
+    "1471",
+    "1472",
+    "1473",
+    "1474",
+    "1476"
+   ]
+  },
+  {
+   "nis5": "71016",
+   "name": {
+    "fr": "Genk",
+    "nl": "Genk",
+    "de": "Genk",
+    "en": "Genk"
+   },
+   "postcodes": [
+    "3600"
+   ]
+  },
+  {
+   "nis5": "52025",
+   "name": {
+    "fr": "Gerpinnes",
+    "nl": "Gerpinnes",
+    "de": "Gerpinnes",
+    "en": "Gerpinnes"
+   },
+   "postcodes": [
+    "6280"
+   ]
+  },
+  {
+   "nis5": "92054",
+   "name": {
+    "fr": "Gesves",
+    "nl": "Gesves",
+    "de": "Gesves",
+    "en": "Gesves"
+   },
+   "postcodes": [
+    "5340"
+   ]
+  },
+  {
+   "nis5": "71017",
+   "name": {
+    "fr": "Gingelom",
+    "nl": "Gingelom",
+    "de": "Gingelom",
+    "en": "Gingelom"
+   },
+   "postcodes": [
+    "3890",
+    "3891"
+   ]
+  },
+  {
+   "nis5": "35005",
+   "name": {
+    "fr": "Gistel",
+    "nl": "Gistel",
+    "de": "Gistel",
+    "en": "Gistel"
+   },
+   "postcodes": [
+    "8470"
+   ]
+  },
+  {
+   "nis5": "24137",
+   "name": {
+    "fr": "Glabbeek",
+    "nl": "Glabbeek",
+    "de": "Glabbeek",
+    "en": "Glabbeek"
+   },
+   "postcodes": [
+    "3380",
+    "3384"
+   ]
+  },
+  {
+   "nis5": "82037",
+   "name": {
+    "fr": "Gouvy",
+    "nl": "Gouvy",
+    "de": "Gouvy",
+    "en": "Gouvy"
+   },
+   "postcodes": [
+    "6670",
+    "6671",
+    "6672",
+    "6673",
+    "6674"
+   ]
+  },
+  {
+   "nis5": "41018",
+   "name": {
+    "fr": "Grammont",
+    "nl": "Geraardsbergen",
+    "de": "Geraardsbergen",
+    "en": "Grammont"
+   },
+   "postcodes": [
+    "9500",
+    "9506"
+   ]
+  },
+  {
+   "nis5": "25037",
+   "name": {
+    "fr": "Grez-Doiceau",
+    "nl": "Graven",
+    "de": "Grez-Doiceau",
+    "en": "Grez-Doiceau"
+   },
+   "postcodes": [
+    "1390"
+   ]
+  },
+  {
+   "nis5": "23025",
+   "name": {
+    "fr": "Grimbergen",
+    "nl": "Grimbergen",
+    "de": "Grimbergen",
+    "en": "Grimbergen"
+   },
+   "postcodes": [
+    "1850",
+    "1851",
+    "1852",
+    "1853"
+   ]
+  },
+  {
+   "nis5": "13010",
+   "name": {
+    "fr": "Grobbendonk",
+    "nl": "Grobbendonk",
+    "de": "Grobbendonk",
+    "en": "Grobbendonk"
+   },
+   "postcodes": [
+    "2280",
+    "2288"
+   ]
+  },
+  {
+   "nis5": "62118",
+   "name": {
+    "fr": "Grâce-Hollogne",
+    "nl": "Grâce-Hollogne",
+    "de": "Grâce-Hollogne",
+    "en": "Grâce-Hollogne"
+   },
+   "postcodes": [
+    "4460"
+   ]
+  },
+  {
+   "nis5": "24033",
+   "name": {
+    "fr": "Haacht",
+    "nl": "Haacht",
+    "de": "Haacht",
+    "en": "Haacht"
+   },
+   "postcodes": [
+    "3150"
+   ]
+  },
+  {
+   "nis5": "41024",
+   "name": {
+    "fr": "Haaltert",
+    "nl": "Haaltert",
+    "de": "Haaltert",
+    "en": "Haaltert"
+   },
+   "postcodes": [
+    "9450",
+    "9451"
+   ]
+  },
+  {
+   "nis5": "85046",
+   "name": {
+    "fr": "Habay",
+    "nl": "Habay",
+    "de": "Habay",
+    "en": "Habay"
+   },
+   "postcodes": [
+    "6720",
+    "6721",
+    "6723",
+    "6724"
+   ]
+  },
+  {
+   "nis5": "23027",
+   "name": {
+    "fr": "Hal",
+    "nl": "Halle",
+    "de": "Halle",
+    "en": "Hal"
+   },
+   "postcodes": [
+    "1500",
+    "1501",
+    "1502"
+   ]
+  },
+  {
+   "nis5": "71020",
+   "name": {
+    "fr": "Halen",
+    "nl": "Halen",
+    "de": "Halen",
+    "en": "Halen"
+   },
+   "postcodes": [
+    "3545"
+   ]
+  },
+  {
+   "nis5": "56086",
+   "name": {
+    "fr": "Ham-sur-Heure-Nalinnes",
+    "nl": "Ham-sur-Heure-Nalinnes",
+    "de": "Ham-sur-Heure-Nalinnes",
+    "en": "Ham-sur-Heure-Nalinnes"
+   },
+   "postcodes": [
+    "6120"
+   ]
+  },
+  {
+   "nis5": "42008",
+   "name": {
+    "fr": "Hamme",
+    "nl": "Hamme",
+    "de": "Hamme",
+    "en": "Hamme"
+   },
+   "postcodes": [
+    "9220"
+   ]
+  },
+  {
+   "nis5": "61024",
+   "name": {
+    "fr": "Hamoir",
+    "nl": "Hamoir",
+    "de": "Hamoir",
+    "en": "Hamoir"
+   },
+   "postcodes": [
+    "4180",
+    "4181"
+   ]
+  },
+  {
+   "nis5": "91059",
+   "name": {
+    "fr": "Hamois",
+    "nl": "Hamois",
+    "de": "Hamois",
+    "en": "Hamois"
+   },
+   "postcodes": [
+    "5360",
+    "5361",
+    "5362",
+    "5363",
+    "5364"
+   ]
+  },
+  {
+   "nis5": "72037",
+   "name": {
+    "fr": "Hamont-Achel",
+    "nl": "Hamont-Achel",
+    "de": "Hamont-Achel",
+    "en": "Hamont-Achel"
+   },
+   "postcodes": [
+    "3930"
+   ]
+  },
+  {
+   "nis5": "64034",
+   "name": {
+    "fr": "Hannut",
+    "nl": "Hannuit",
+    "de": "Hannut",
+    "en": "Hannut"
+   },
+   "postcodes": [
+    "4280"
+   ]
+  },
+  {
+   "nis5": "34013",
+   "name": {
+    "fr": "Harelbeke",
+    "nl": "Harelbeke",
+    "de": "Harelbeke",
+    "en": "Harelbeke"
+   },
+   "postcodes": [
+    "8530",
+    "8531"
+   ]
+  },
+  {
+   "nis5": "71072",
+   "name": {
+    "fr": "Hasselt",
+    "nl": "Hasselt",
+    "de": "Hasselt",
+    "en": "Hasselt"
+   },
+   "postcodes": [
+    "3500",
+    "3501",
+    "3510",
+    "3511",
+    "3512",
+    "3720",
+    "3721",
+    "3722",
+    "3723",
+    "3724"
+   ]
+  },
+  {
+   "nis5": "91142",
+   "name": {
+    "fr": "Hastière",
+    "nl": "Hastière",
+    "de": "Hastière",
+    "en": "Hastière"
+   },
+   "postcodes": [
+    "5540",
+    "5541",
+    "5542",
+    "5543",
+    "5544"
+   ]
+  },
+  {
+   "nis5": "91064",
+   "name": {
+    "fr": "Havelange",
+    "nl": "Havelange",
+    "de": "Havelange",
+    "en": "Havelange"
+   },
+   "postcodes": [
+    "5370",
+    "5372",
+    "5374",
+    "5376"
+   ]
+  },
+  {
+   "nis5": "72038",
+   "name": {
+    "fr": "Hechtel-Eksel",
+    "nl": "Hechtel-Eksel",
+    "de": "Hechtel-Eksel",
+    "en": "Hechtel-Eksel"
+   },
+   "postcodes": [
+    "3940",
+    "3941"
+   ]
+  },
+  {
+   "nis5": "73022",
+   "name": {
+    "fr": "Heers",
+    "nl": "Heers",
+    "de": "Heers",
+    "en": "Heers"
+   },
+   "postcodes": [
+    "3870"
+   ]
+  },
+  {
+   "nis5": "12014",
+   "name": {
+    "fr": "Heist-op-den-Berg",
+    "nl": "Heist-op-den-Berg",
+    "de": "Heist-op-den-Berg",
+    "en": "Heist-op-den-Berg"
+   },
+   "postcodes": [
+    "2220",
+    "2221",
+    "2222",
+    "2223"
+   ]
+  },
+  {
+   "nis5": "11018",
+   "name": {
+    "fr": "Hemiksem",
+    "nl": "Hemiksem",
+    "de": "Hemiksem",
+    "en": "Hemiksem"
+   },
+   "postcodes": [
+    "2620"
+   ]
+  },
+  {
+   "nis5": "53039",
+   "name": {
+    "fr": "Hensies",
+    "nl": "Hensies",
+    "de": "Hensies",
+    "en": "Hensies"
+   },
+   "postcodes": [
+    "7350"
+   ]
+  },
+  {
+   "nis5": "84029",
+   "name": {
+    "fr": "Herbeumont",
+    "nl": "Herbeumont",
+    "de": "Herbeumont",
+    "en": "Herbeumont"
+   },
+   "postcodes": [
+    "6887"
+   ]
+  },
+  {
+   "nis5": "71024",
+   "name": {
+    "fr": "Herck-la-Ville",
+    "nl": "Herk-de-Stad",
+    "de": "Herk-de-Stad",
+    "en": "Herck-la-Ville"
+   },
+   "postcodes": [
+    "3540"
+   ]
+  },
+  {
+   "nis5": "24038",
+   "name": {
+    "fr": "Herent",
+    "nl": "Herent",
+    "de": "Herent",
+    "en": "Herent"
+   },
+   "postcodes": [
+    "3020"
+   ]
+  },
+  {
+   "nis5": "13011",
+   "name": {
+    "fr": "Herentals",
+    "nl": "Herentals",
+    "de": "Herentals",
+    "en": "Herentals"
+   },
+   "postcodes": [
+    "2200"
+   ]
+  },
+  {
+   "nis5": "13012",
+   "name": {
+    "fr": "Herenthout",
+    "nl": "Herenthout",
+    "de": "Herenthout",
+    "en": "Herenthout"
+   },
+   "postcodes": [
+    "2270"
+   ]
+  },
+  {
+   "nis5": "13013",
+   "name": {
+    "fr": "Herselt",
+    "nl": "Herselt",
+    "de": "Herselt",
+    "en": "Herselt"
+   },
+   "postcodes": [
+    "2230"
+   ]
+  },
+  {
+   "nis5": "62051",
+   "name": {
+    "fr": "Herstal",
+    "nl": "Herstal",
+    "de": "Herstal",
+    "en": "Herstal"
+   },
+   "postcodes": [
+    "4040",
+    "4041",
+    "4042"
+   ]
+  },
+  {
+   "nis5": "73028",
+   "name": {
+    "fr": "Herstappe",
+    "nl": "Herstappe",
+    "de": "Herstappe",
+    "en": "Herstappe"
+   },
+   "postcodes": [
+    "3717"
+   ]
+  },
+  {
+   "nis5": "63035",
+   "name": {
+    "fr": "Herve",
+    "nl": "Herve",
+    "de": "Herve",
+    "en": "Herve"
+   },
+   "postcodes": [
+    "4650",
+    "4651",
+    "4652",
+    "4653",
+    "4654"
+   ]
+  },
+  {
+   "nis5": "41027",
+   "name": {
+    "fr": "Herzele",
+    "nl": "Herzele",
+    "de": "Herzele",
+    "en": "Herzele"
+   },
+   "postcodes": [
+    "9550",
+    "9551",
+    "9552"
+   ]
+  },
+  {
+   "nis5": "71070",
+   "name": {
+    "fr": "Heusden-Zolder",
+    "nl": "Heusden-Zolder",
+    "de": "Heusden-Zolder",
+    "en": "Heusden-Zolder"
+   },
+   "postcodes": [
+    "3550"
+   ]
+  },
+  {
+   "nis5": "33039",
+   "name": {
+    "fr": "Heuvelland",
+    "nl": "Heuvelland",
+    "de": "Heuvelland",
+    "en": "Heuvelland"
+   },
+   "postcodes": [
+    "8950",
+    "8951",
+    "8952",
+    "8953",
+    "8954",
+    "8956",
+    "8958"
+   ]
+  },
+  {
+   "nis5": "24041",
+   "name": {
+    "fr": "Hoegaarden",
+    "nl": "Hoegaarden",
+    "de": "Hoegaarden",
+    "en": "Hoegaarden"
+   },
+   "postcodes": [
+    "3320",
+    "3321"
+   ]
+  },
+  {
+   "nis5": "23033",
+   "name": {
+    "fr": "Hoeilaart",
+    "nl": "Hoeilaart",
+    "de": "Hoeilaart",
+    "en": "Hoeilaart"
+   },
+   "postcodes": [
+    "1560"
+   ]
+  },
+  {
+   "nis5": "24043",
+   "name": {
+    "fr": "Holsbeek",
+    "nl": "Holsbeek",
+    "de": "Holsbeek",
+    "en": "Holsbeek"
+   },
+   "postcodes": [
+    "3220",
+    "3221"
+   ]
+  },
+  {
+   "nis5": "53083",
+   "name": {
+    "fr": "Honnelles",
+    "nl": "Honnelles",
+    "de": "Honnelles",
+    "en": "Honnelles"
+   },
+   "postcodes": [
+    "7387"
+   ]
+  },
+  {
+   "nis5": "36006",
+   "name": {
+    "fr": "Hooglede",
+    "nl": "Hooglede",
+    "de": "Hooglede",
+    "en": "Hooglede"
+   },
+   "postcodes": [
+    "8830"
+   ]
+  },
+  {
+   "nis5": "13014",
+   "name": {
+    "fr": "Hoogstraten",
+    "nl": "Hoogstraten",
+    "de": "Hoogstraten",
+    "en": "Hoogstraten"
+   },
+   "postcodes": [
+    "2320",
+    "2321",
+    "2323",
+    "2328"
+   ]
+  },
+  {
+   "nis5": "45062",
+   "name": {
+    "fr": "Horebeke",
+    "nl": "Horebeke",
+    "de": "Horebeke",
+    "en": "Horebeke"
+   },
+   "postcodes": [
+    "9667"
+   ]
+  },
+  {
+   "nis5": "83028",
+   "name": {
+    "fr": "Hotton",
+    "nl": "Hotton",
+    "de": "Hotton",
+    "en": "Hotton"
+   },
+   "postcodes": [
+    "6990"
+   ]
+  },
+  {
+   "nis5": "82014",
+   "name": {
+    "fr": "Houffalize",
+    "nl": "Houffalize",
+    "de": "Houffalize",
+    "en": "Houffalize"
+   },
+   "postcodes": [
+    "6660",
+    "6661",
+    "6662",
+    "6663",
+    "6666"
+   ]
+  },
+  {
+   "nis5": "72039",
+   "name": {
+    "fr": "Houthalen-Helchteren",
+    "nl": "Houthalen-Helchteren",
+    "de": "Houthalen-Helchteren",
+    "en": "Houthalen-Helchteren"
+   },
+   "postcodes": [
+    "3530"
+   ]
+  },
+  {
+   "nis5": "32006",
+   "name": {
+    "fr": "Houthulst",
+    "nl": "Houthulst",
+    "de": "Houthulst",
+    "en": "Houthulst"
+   },
+   "postcodes": [
+    "8650"
+   ]
+  },
+  {
+   "nis5": "91072",
+   "name": {
+    "fr": "Houyet",
+    "nl": "Houyet",
+    "de": "Houyet",
+    "en": "Houyet"
+   },
+   "postcodes": [
+    "5560",
+    "5562",
+    "5563",
+    "5564"
+   ]
+  },
+  {
+   "nis5": "11021",
+   "name": {
+    "fr": "Hove",
+    "nl": "Hove",
+    "de": "Hove",
+    "en": "Hove"
+   },
+   "postcodes": [
+    "2540"
+   ]
+  },
+  {
+   "nis5": "24045",
+   "name": {
+    "fr": "Huldenberg",
+    "nl": "Huldenberg",
+    "de": "Huldenberg",
+    "en": "Huldenberg"
+   },
+   "postcodes": [
+    "3040"
+   ]
+  },
+  {
+   "nis5": "13016",
+   "name": {
+    "fr": "Hulshout",
+    "nl": "Hulshout",
+    "de": "Hulshout",
+    "en": "Hulshout"
+   },
+   "postcodes": [
+    "2235"
+   ]
+  },
+  {
+   "nis5": "61031",
+   "name": {
+    "fr": "Huy",
+    "nl": "Hoei",
+    "de": "Huy",
+    "en": "Huy"
+   },
+   "postcodes": [
+    "4500"
+   ]
+  },
+  {
+   "nis5": "25118",
+   "name": {
+    "fr": "Hélécine",
+    "nl": "Hélécine",
+    "de": "Hélécine",
+    "en": "Hélécine"
+   },
+   "postcodes": [
+    "1357"
+   ]
+  },
+  {
+   "nis5": "61028",
+   "name": {
+    "fr": "Héron",
+    "nl": "Héron",
+    "de": "Héron",
+    "en": "Héron"
+   },
+   "postcodes": [
+    "4217",
+    "4218"
+   ]
+  },
+  {
+   "nis5": "35006",
+   "name": {
+    "fr": "Ichtegem",
+    "nl": "Ichtegem",
+    "de": "Ichtegem",
+    "en": "Ichtegem"
+   },
+   "postcodes": [
+    "8480"
+   ]
+  },
+  {
+   "nis5": "25043",
+   "name": {
+    "fr": "Incourt",
+    "nl": "Incourt",
+    "de": "Incourt",
+    "en": "Incourt"
+   },
+   "postcodes": [
+    "1315"
+   ]
+  },
+  {
+   "nis5": "36007",
+   "name": {
+    "fr": "Ingelmunster",
+    "nl": "Ingelmunster",
+    "de": "Ingelmunster",
+    "en": "Ingelmunster"
+   },
+   "postcodes": [
+    "8770"
+   ]
+  },
+  {
+   "nis5": "25044",
+   "name": {
+    "fr": "Ittre",
+    "nl": "Itter",
+    "de": "Ittre",
+    "en": "Ittre"
+   },
+   "postcodes": [
+    "1460",
+    "1461"
+   ]
+  },
+  {
+   "nis5": "21009",
+   "name": {
+    "fr": "Ixelles",
+    "nl": "Elsene",
+    "de": "Ixelles",
+    "en": "Ixelles"
+   },
+   "postcodes": [
+    "1047",
+    "1050"
+   ]
+  },
+  {
+   "nis5": "36008",
+   "name": {
+    "fr": "Izegem",
+    "nl": "Izegem",
+    "de": "Izegem",
+    "en": "Izegem"
+   },
+   "postcodes": [
+    "8870"
+   ]
+  },
+  {
+   "nis5": "31012",
+   "name": {
+    "fr": "Jabbeke",
+    "nl": "Jabbeke",
+    "de": "Jabbeke",
+    "en": "Jabbeke"
+   },
+   "postcodes": [
+    "8490"
+   ]
+  },
+  {
+   "nis5": "63038",
+   "name": {
+    "fr": "Jalhay",
+    "nl": "Jalhay",
+    "de": "Jalhay",
+    "en": "Jalhay"
+   },
+   "postcodes": [
+    "4845"
+   ]
+  },
+  {
+   "nis5": "92140",
+   "name": {
+    "fr": "Jemeppe-sur-Sambre",
+    "nl": "Jemeppe-sur-Sambre",
+    "de": "Jemeppe-sur-Sambre",
+    "en": "Jemeppe-sur-Sambre"
+   },
+   "postcodes": [
+    "5190"
+   ]
+  },
+  {
+   "nis5": "21010",
+   "name": {
+    "fr": "Jette",
+    "nl": "Jette",
+    "de": "Jette",
+    "en": "Jette"
+   },
+   "postcodes": [
+    "1090"
+   ]
+  },
+  {
+   "nis5": "25048",
+   "name": {
+    "fr": "Jodoigne",
+    "nl": "Geldenaken",
+    "de": "Jodoigne",
+    "en": "Jodoigne"
+   },
+   "postcodes": [
+    "1370"
+   ]
+  },
+  {
+   "nis5": "62060",
+   "name": {
+    "fr": "Juprelle",
+    "nl": "Juprelle",
+    "de": "Juprelle",
+    "en": "Juprelle"
+   },
+   "postcodes": [
+    "4450",
+    "4451",
+    "4452",
+    "4453",
+    "4458"
+   ]
+  },
+  {
+   "nis5": "53044",
+   "name": {
+    "fr": "Jurbise",
+    "nl": "Jurbeke",
+    "de": "Jurbise",
+    "en": "Jurbise"
+   },
+   "postcodes": [
+    "7050"
+   ]
+  },
+  {
+   "nis5": "11022",
+   "name": {
+    "fr": "Kalmthout",
+    "nl": "Kalmthout",
+    "de": "Kalmthout",
+    "en": "Kalmthout"
+   },
+   "postcodes": [
+    "2920"
+   ]
+  },
+  {
+   "nis5": "23038",
+   "name": {
+    "fr": "Kampenhout",
+    "nl": "Kampenhout",
+    "de": "Kampenhout",
+    "en": "Kampenhout"
+   },
+   "postcodes": [
+    "1910"
+   ]
+  },
+  {
+   "nis5": "23039",
+   "name": {
+    "fr": "Kapelle-op-den-Bos",
+    "nl": "Kapelle-op-den-Bos",
+    "de": "Kapelle-op-den-Bos",
+    "en": "Kapelle-op-den-Bos"
+   },
+   "postcodes": [
+    "1880"
+   ]
+  },
+  {
+   "nis5": "11023",
+   "name": {
+    "fr": "Kapellen",
+    "nl": "Kapellen",
+    "de": "Kapellen",
+    "en": "Kapellen"
+   },
+   "postcodes": [
+    "2950",
+    "3381"
+   ]
+  },
+  {
+   "nis5": "43007",
+   "name": {
+    "fr": "Kaprijke",
+    "nl": "Kaprijke",
+    "de": "Kaprijke",
+    "en": "Kaprijke"
+   },
+   "postcodes": [
+    "9970",
+    "9971"
+   ]
+  },
+  {
+   "nis5": "13017",
+   "name": {
+    "fr": "Kasterlee",
+    "nl": "Kasterlee",
+    "de": "Kasterlee",
+    "en": "Kasterlee"
+   },
+   "postcodes": [
+    "2460"
+   ]
+  },
+  {
+   "nis5": "24048",
+   "name": {
+    "fr": "Keerbergen",
+    "nl": "Keerbergen",
+    "de": "Keerbergen",
+    "en": "Keerbergen"
+   },
+   "postcodes": [
+    "3140"
+   ]
+  },
+  {
+   "nis5": "72018",
+   "name": {
+    "fr": "Kinrooi",
+    "nl": "Kinrooi",
+    "de": "Kinrooi",
+    "en": "Kinrooi"
+   },
+   "postcodes": [
+    "3640"
+   ]
+  },
+  {
+   "nis5": "45060",
+   "name": {
+    "fr": "Kluisbergen",
+    "nl": "Kluisbergen",
+    "de": "Kluisbergen",
+    "en": "Kluisbergen"
+   },
+   "postcodes": [
+    "9690"
+   ]
+  },
+  {
+   "nis5": "31043",
+   "name": {
+    "fr": "Knokke-Heist",
+    "nl": "Knokke-Heist",
+    "de": "Knokke-Heist",
+    "en": "Knokke-Heist"
+   },
+   "postcodes": [
+    "8300",
+    "8301"
+   ]
+  },
+  {
+   "nis5": "32010",
+   "name": {
+    "fr": "Koekelare",
+    "nl": "Koekelare",
+    "de": "Koekelare",
+    "en": "Koekelare"
+   },
+   "postcodes": [
+    "8680"
+   ]
+  },
+  {
+   "nis5": "21011",
+   "name": {
+    "fr": "Koekelberg",
+    "nl": "Koekelberg",
+    "de": "Koekelberg",
+    "en": "Koekelberg"
+   },
+   "postcodes": [
+    "1081"
+   ]
+  },
+  {
+   "nis5": "38014",
+   "name": {
+    "fr": "Koksijde",
+    "nl": "Koksijde",
+    "de": "Koksijde",
+    "en": "Koksijde"
+   },
+   "postcodes": [
+    "8670"
+   ]
+  },
+  {
+   "nis5": "11024",
+   "name": {
+    "fr": "Kontich",
+    "nl": "Kontich",
+    "de": "Kontich",
+    "en": "Kontich"
+   },
+   "postcodes": [
+    "2550"
+   ]
+  },
+  {
+   "nis5": "32011",
+   "name": {
+    "fr": "Kortemark",
+    "nl": "Kortemark",
+    "de": "Kortemark",
+    "en": "Kortemark"
+   },
+   "postcodes": [
+    "8610"
+   ]
+  },
+  {
+   "nis5": "24054",
+   "name": {
+    "fr": "Kortenaken",
+    "nl": "Kortenaken",
+    "de": "Kortenaken",
+    "en": "Kortenaken"
+   },
+   "postcodes": [
+    "3470",
+    "3471",
+    "3472",
+    "3473"
+   ]
+  },
+  {
+   "nis5": "24055",
+   "name": {
+    "fr": "Kortenberg",
+    "nl": "Kortenberg",
+    "de": "Kortenberg",
+    "en": "Kortenberg"
+   },
+   "postcodes": [
+    "3070",
+    "3071",
+    "3078"
+   ]
+  },
+  {
+   "nis5": "23099",
+   "name": {
+    "fr": "Kraainem",
+    "nl": "Kraainem",
+    "de": "Kraainem",
+    "en": "Kraainem"
+   },
+   "postcodes": [
+    "1950"
+   ]
+  },
+  {
+   "nis5": "45068",
+   "name": {
+    "fr": "Kruisem",
+    "nl": "Kruisem",
+    "de": "Kruisem",
+    "en": "Kruisem"
+   },
+   "postcodes": [
+    "9750",
+    "9770",
+    "9771",
+    "9772"
+   ]
+  },
+  {
+   "nis5": "34023",
+   "name": {
+    "fr": "Kuurne",
+    "nl": "Kuurne",
+    "de": "Kuurne",
+    "en": "Kuurne"
+   },
+   "postcodes": [
+    "8520"
+   ]
+  },
+  {
+   "nis5": "92141",
+   "name": {
+    "fr": "La Bruyère",
+    "nl": "La Bruyère",
+    "de": "La Bruyère",
+    "en": "La Bruyère"
+   },
+   "postcodes": [
+    "5080",
+    "5081"
+   ]
+  },
+  {
+   "nis5": "63040",
+   "name": {
+    "fr": "La Calamine",
+    "nl": "Kelmis",
+    "de": "Kelmis",
+    "en": "La Calamine"
+   },
+   "postcodes": [
+    "4720",
+    "4721",
+    "4728"
+   ]
+  },
+  {
+   "nis5": "25050",
+   "name": {
+    "fr": "La Hulpe",
+    "nl": "Terhulpen",
+    "de": "La Hulpe",
+    "en": "La Hulpe"
+   },
+   "postcodes": [
+    "1310"
+   ]
+  },
+  {
+   "nis5": "58001",
+   "name": {
+    "fr": "La Louvière",
+    "nl": "La Louvière",
+    "de": "La Louvière",
+    "en": "La Louvière"
+   },
+   "postcodes": [
+    "7100",
+    "7110"
+   ]
+  },
+  {
+   "nis5": "38008",
+   "name": {
+    "fr": "La Panne",
+    "nl": "De Panne",
+    "de": "De Panne",
+    "en": "La Panne"
+   },
+   "postcodes": [
+    "8660"
+   ]
+  },
+  {
+   "nis5": "83031",
+   "name": {
+    "fr": "La Roche-en-Ardenne",
+    "nl": "La Roche-en-Ardenne",
+    "de": "La Roche-en-Ardenne",
+    "en": "La Roche-en-Ardenne"
+   },
+   "postcodes": [
+    "6980",
+    "6982",
+    "6983",
+    "6984",
+    "6986"
+   ]
+  },
+  {
+   "nis5": "13053",
+   "name": {
+    "fr": "Laakdal",
+    "nl": "Laakdal",
+    "de": "Laakdal",
+    "en": "Laakdal"
+   },
+   "postcodes": [
+    "2430",
+    "2431"
+   ]
+  },
+  {
+   "nis5": "42010",
+   "name": {
+    "fr": "Laarne",
+    "nl": "Laarne",
+    "de": "Laarne",
+    "en": "Laarne"
+   },
+   "postcodes": [
+    "9270"
+   ]
+  },
+  {
+   "nis5": "73042",
+   "name": {
+    "fr": "Lanaken",
+    "nl": "Lanaken",
+    "de": "Lanaken",
+    "en": "Lanaken"
+   },
+   "postcodes": [
+    "3620",
+    "3621"
+   ]
+  },
+  {
+   "nis5": "24059",
+   "name": {
+    "fr": "Landen",
+    "nl": "Landen",
+    "de": "Landen",
+    "en": "Landen"
+   },
+   "postcodes": [
+    "3400",
+    "3401",
+    "3404"
+   ]
+  },
+  {
+   "nis5": "33040",
+   "name": {
+    "fr": "Langemark-Poelkapelle",
+    "nl": "Langemark-Poelkapelle",
+    "de": "Langemark-Poelkapelle",
+    "en": "Langemark-Poelkapelle"
+   },
+   "postcodes": [
+    "8920"
+   ]
+  },
+  {
+   "nis5": "25119",
+   "name": {
+    "fr": "Lasne",
+    "nl": "Lasne",
+    "de": "Lasne",
+    "en": "Lasne"
+   },
+   "postcodes": [
+    "1380"
+   ]
+  },
+  {
+   "nis5": "55035",
+   "name": {
+    "fr": "Le Roeulx",
+    "nl": "Le Roeulx",
+    "de": "Le Roeulx",
+    "en": "Le Roeulx"
+   },
+   "postcodes": [
+    "7070"
+   ]
+  },
+  {
+   "nis5": "42011",
+   "name": {
+    "fr": "Lebbeke",
+    "nl": "Lebbeke",
+    "de": "Lebbeke",
+    "en": "Lebbeke"
+   },
+   "postcodes": [
+    "9280"
+   ]
+  },
+  {
+   "nis5": "41034",
+   "name": {
+    "fr": "Lede",
+    "nl": "Lede",
+    "de": "Lede",
+    "en": "Lede"
+   },
+   "postcodes": [
+    "9340"
+   ]
+  },
+  {
+   "nis5": "36010",
+   "name": {
+    "fr": "Ledegem",
+    "nl": "Ledegem",
+    "de": "Ledegem",
+    "en": "Ledegem"
+   },
+   "postcodes": [
+    "8880"
+   ]
+  },
+  {
+   "nis5": "34025",
+   "name": {
+    "fr": "Lendelede",
+    "nl": "Lendelede",
+    "de": "Lendelede",
+    "en": "Lendelede"
+   },
+   "postcodes": [
+    "8860"
+   ]
+  },
+  {
+   "nis5": "23104",
+   "name": {
+    "fr": "Lennik",
+    "nl": "Lennik",
+    "de": "Lennik",
+    "en": "Lennik"
+   },
+   "postcodes": [
+    "1750"
+   ]
+  },
+  {
+   "nis5": "53046",
+   "name": {
+    "fr": "Lens",
+    "nl": "Lens",
+    "de": "Lens",
+    "en": "Lens"
+   },
+   "postcodes": [
+    "7870"
+   ]
+  },
+  {
+   "nis5": "52075",
+   "name": {
+    "fr": "Les Bons Villers",
+    "nl": "Les Bons Villers",
+    "de": "Les Bons Villers",
+    "en": "Les Bons Villers"
+   },
+   "postcodes": [
+    "6210",
+    "6211"
+   ]
+  },
+  {
+   "nis5": "51069",
+   "name": {
+    "fr": "Lessines",
+    "nl": "Lessen",
+    "de": "Lessines",
+    "en": "Lessines"
+   },
+   "postcodes": [
+    "7860",
+    "7861",
+    "7862",
+    "7863",
+    "7864",
+    "7866"
+   ]
+  },
+  {
+   "nis5": "57094",
+   "name": {
+    "fr": "Leuze-en-Hainaut",
+    "nl": "Leuze-en-Hainaut",
+    "de": "Leuze-en-Hainaut",
+    "en": "Leuze-en-Hainaut"
+   },
+   "postcodes": [
+    "7900",
+    "7901",
+    "7903",
+    "7904",
+    "7906"
+   ]
+  },
+  {
+   "nis5": "84035",
+   "name": {
+    "fr": "Libin",
+    "nl": "Libin",
+    "de": "Libin",
+    "en": "Libin"
+   },
+   "postcodes": [
+    "6890"
+   ]
+  },
+  {
+   "nis5": "84077",
+   "name": {
+    "fr": "Libramont-Chevigny",
+    "nl": "Libramont-Chevigny",
+    "de": "Libramont-Chevigny",
+    "en": "Libramont-Chevigny"
+   },
+   "postcodes": [
+    "6800"
+   ]
+  },
+  {
+   "nis5": "36011",
+   "name": {
+    "fr": "Lichtervelde",
+    "nl": "Lichtervelde",
+    "de": "Lichtervelde",
+    "en": "Lichtervelde"
+   },
+   "postcodes": [
+    "8810"
+   ]
+  },
+  {
+   "nis5": "23044",
+   "name": {
+    "fr": "Liedekerke",
+    "nl": "Liedekerke",
+    "de": "Liedekerke",
+    "en": "Liedekerke"
+   },
+   "postcodes": [
+    "1770"
+   ]
+  },
+  {
+   "nis5": "45063",
+   "name": {
+    "fr": "Lierde",
+    "nl": "Lierde",
+    "de": "Lierde",
+    "en": "Lierde"
+   },
+   "postcodes": [
+    "9570",
+    "9571",
+    "9572"
+   ]
+  },
+  {
+   "nis5": "63045",
+   "name": {
+    "fr": "Lierneux",
+    "nl": "Lierneux",
+    "de": "Lierneux",
+    "en": "Lierneux"
+   },
+   "postcodes": [
+    "4990"
+   ]
+  },
+  {
+   "nis5": "12021",
+   "name": {
+    "fr": "Lierre",
+    "nl": "Lier",
+    "de": "Lier",
+    "en": "Lierre"
+   },
+   "postcodes": [
+    "2500"
+   ]
+  },
+  {
+   "nis5": "44085",
+   "name": {
+    "fr": "Lievegem",
+    "nl": "Lievegem",
+    "de": "Lievegem",
+    "en": "Lievegem"
+   },
+   "postcodes": [
+    "9920",
+    "9921",
+    "9930",
+    "9931",
+    "9932",
+    "9950"
+   ]
+  },
+  {
+   "nis5": "13019",
+   "name": {
+    "fr": "Lille",
+    "nl": "Lille",
+    "de": "Lille",
+    "en": "Lille"
+   },
+   "postcodes": [
+    "2275"
+   ]
+  },
+  {
+   "nis5": "63046",
+   "name": {
+    "fr": "Limbourg",
+    "nl": "Limburg",
+    "de": "Limbourg",
+    "en": "Limbourg"
+   },
+   "postcodes": [
+    "4830",
+    "4831",
+    "4834"
+   ]
+  },
+  {
+   "nis5": "64047",
+   "name": {
+    "fr": "Lincent",
+    "nl": "Lijsem",
+    "de": "Lincent",
+    "en": "Lincent"
+   },
+   "postcodes": [
+    "4287"
+   ]
+  },
+  {
+   "nis5": "23100",
+   "name": {
+    "fr": "Linkebeek",
+    "nl": "Linkebeek",
+    "de": "Linkebeek",
+    "en": "Linkebeek"
+   },
+   "postcodes": [
+    "1630"
+   ]
+  },
+  {
+   "nis5": "11025",
+   "name": {
+    "fr": "Lint",
+    "nl": "Lint",
+    "de": "Lint",
+    "en": "Lint"
+   },
+   "postcodes": [
+    "2547"
+   ]
+  },
+  {
+   "nis5": "24133",
+   "name": {
+    "fr": "Linter",
+    "nl": "Linter",
+    "de": "Linter",
+    "en": "Linter"
+   },
+   "postcodes": [
+    "3350"
+   ]
+  },
+  {
+   "nis5": "62063",
+   "name": {
+    "fr": "Liège",
+    "nl": "Luik",
+    "de": "Lüttich",
+    "en": "Liège"
+   },
+   "postcodes": [
+    "4000",
+    "4020",
+    "4030",
+    "4031",
+    "4032"
+   ]
+  },
+  {
+   "nis5": "32030",
+   "name": {
+    "fr": "Lo-Reninge",
+    "nl": "Lo-Reninge",
+    "de": "Lo-Reninge",
+    "en": "Lo-Reninge"
+   },
+   "postcodes": [
+    "8647"
+   ]
+  },
+  {
+   "nis5": "56044",
+   "name": {
+    "fr": "Lobbes",
+    "nl": "Lobbes",
+    "de": "Lobbes",
+    "en": "Lobbes"
+   },
+   "postcodes": [
+    "6540",
+    "6542",
+    "6543"
+   ]
+  },
+  {
+   "nis5": "44087",
+   "name": {
+    "fr": "Lochristi",
+    "nl": "Lochristi",
+    "de": "Lochristi",
+    "en": "Lochristi"
+   },
+   "postcodes": [
+    "9080",
+    "9185"
+   ]
+  },
+  {
+   "nis5": "46029",
+   "name": {
+    "fr": "Lokeren",
+    "nl": "Lokeren",
+    "de": "Lokeren",
+    "en": "Lokeren"
+   },
+   "postcodes": [
+    "9160",
+    "9180"
+   ]
+  },
+  {
+   "nis5": "72020",
+   "name": {
+    "fr": "Lommel",
+    "nl": "Lommel",
+    "de": "Lommel",
+    "en": "Lommel"
+   },
+   "postcodes": [
+    "3920"
+   ]
+  },
+  {
+   "nis5": "23045",
+   "name": {
+    "fr": "Londerzeel",
+    "nl": "Londerzeel",
+    "de": "Londerzeel",
+    "en": "Londerzeel"
+   },
+   "postcodes": [
+    "1840"
+   ]
+  },
+  {
+   "nis5": "63048",
+   "name": {
+    "fr": "Lontzen",
+    "nl": "Lontzen",
+    "de": "Lontzen",
+    "en": "Lontzen"
+   },
+   "postcodes": [
+    "4710",
+    "4711"
+   ]
+  },
+  {
+   "nis5": "24062",
+   "name": {
+    "fr": "Louvain",
+    "nl": "Leuven",
+    "de": "Löwen",
+    "en": "Louvain"
+   },
+   "postcodes": [
+    "3000",
+    "3001",
+    "3010",
+    "3012",
+    "3018"
+   ]
+  },
+  {
+   "nis5": "24066",
+   "name": {
+    "fr": "Lubbeek",
+    "nl": "Lubbeek",
+    "de": "Lubbeek",
+    "en": "Lubbeek"
+   },
+   "postcodes": [
+    "3210",
+    "3211",
+    "3212"
+   ]
+  },
+  {
+   "nis5": "71037",
+   "name": {
+    "fr": "Lummen",
+    "nl": "Lummen",
+    "de": "Lummen",
+    "en": "Lummen"
+   },
+   "postcodes": [
+    "3560"
+   ]
+  },
+  {
+   "nis5": "24130",
+   "name": {
+    "fr": "Léau",
+    "nl": "Zoutleeuw",
+    "de": "Zoutleeuw",
+    "en": "Léau"
+   },
+   "postcodes": [
+    "3440"
+   ]
+  },
+  {
+   "nis5": "84033",
+   "name": {
+    "fr": "Léglise",
+    "nl": "Léglise",
+    "de": "Léglise",
+    "en": "Léglise"
+   },
+   "postcodes": [
+    "6860"
+   ]
+  },
+  {
+   "nis5": "45064",
+   "name": {
+    "fr": "Maarkedal",
+    "nl": "Maarkedal",
+    "de": "Maarkedal",
+    "en": "Maarkedal"
+   },
+   "postcodes": [
+    "9680",
+    "9681",
+    "9688"
+   ]
+  },
+  {
+   "nis5": "72021",
+   "name": {
+    "fr": "Maaseik",
+    "nl": "Maaseik",
+    "de": "Maaseik",
+    "en": "Maaseik"
+   },
+   "postcodes": [
+    "3680"
+   ]
+  },
+  {
+   "nis5": "73107",
+   "name": {
+    "fr": "Maasmechelen",
+    "nl": "Maasmechelen",
+    "de": "Maasmechelen",
+    "en": "Maasmechelen"
+   },
+   "postcodes": [
+    "3630",
+    "3631"
+   ]
+  },
+  {
+   "nis5": "23047",
+   "name": {
+    "fr": "Machelen",
+    "nl": "Machelen",
+    "de": "Machelen",
+    "en": "Machelen"
+   },
+   "postcodes": [
+    "1830",
+    "1831",
+    "1931",
+    "1934"
+   ]
+  },
+  {
+   "nis5": "43010",
+   "name": {
+    "fr": "Maldegem",
+    "nl": "Maldegem",
+    "de": "Maldegem",
+    "en": "Maldegem"
+   },
+   "postcodes": [
+    "9990",
+    "9991",
+    "9992"
+   ]
+  },
+  {
+   "nis5": "12025",
+   "name": {
+    "fr": "Malines",
+    "nl": "Mechelen",
+    "de": "Mechelen",
+    "en": "Malines"
+   },
+   "postcodes": [
+    "2800",
+    "2801",
+    "2811",
+    "2812"
+   ]
+  },
+  {
+   "nis5": "11057",
+   "name": {
+    "fr": "Malle",
+    "nl": "Malle",
+    "de": "Malle",
+    "en": "Malle"
+   },
+   "postcodes": [
+    "2390"
+   ]
+  },
+  {
+   "nis5": "63049",
+   "name": {
+    "fr": "Malmedy",
+    "nl": "Malmedy",
+    "de": "Malmedy",
+    "en": "Malmedy"
+   },
+   "postcodes": [
+    "4960"
+   ]
+  },
+  {
+   "nis5": "55086",
+   "name": {
+    "fr": "Manage",
+    "nl": "Manage",
+    "de": "Manage",
+    "en": "Manage"
+   },
+   "postcodes": [
+    "7170"
+   ]
+  },
+  {
+   "nis5": "83055",
+   "name": {
+    "fr": "Manhay",
+    "nl": "Manhay",
+    "de": "Manhay",
+    "en": "Manhay"
+   },
+   "postcodes": [
+    "6960"
+   ]
+  },
+  {
+   "nis5": "83034",
+   "name": {
+    "fr": "Marche-en-Famenne",
+    "nl": "Marche-en-Famenne",
+    "de": "Marche-en-Famenne",
+    "en": "Marche-en-Famenne"
+   },
+   "postcodes": [
+    "6900"
+   ]
+  },
+  {
+   "nis5": "61039",
+   "name": {
+    "fr": "Marchin",
+    "nl": "Marchin",
+    "de": "Marchin",
+    "en": "Marchin"
+   },
+   "postcodes": [
+    "4570"
+   ]
+  },
+  {
+   "nis5": "81013",
+   "name": {
+    "fr": "Martelange",
+    "nl": "Martelange",
+    "de": "Martelange",
+    "en": "Martelange"
+   },
+   "postcodes": [
+    "6630"
+   ]
+  },
+  {
+   "nis5": "13021",
+   "name": {
+    "fr": "Meerhout",
+    "nl": "Meerhout",
+    "de": "Meerhout",
+    "en": "Meerhout"
+   },
+   "postcodes": [
+    "2450"
+   ]
+  },
+  {
+   "nis5": "23050",
+   "name": {
+    "fr": "Meise",
+    "nl": "Meise",
+    "de": "Meise",
+    "en": "Meise"
+   },
+   "postcodes": [
+    "1860",
+    "1861"
+   ]
+  },
+  {
+   "nis5": "85024",
+   "name": {
+    "fr": "Meix-devant-Virton",
+    "nl": "Meix-devant-Virton",
+    "de": "Meix-devant-Virton",
+    "en": "Meix-devant-Virton"
+   },
+   "postcodes": [
+    "6769"
+   ]
+  },
+  {
+   "nis5": "34027",
+   "name": {
+    "fr": "Menin",
+    "nl": "Menen",
+    "de": "Menen",
+    "en": "Menin"
+   },
+   "postcodes": [
+    "8930"
+   ]
+  },
+  {
+   "nis5": "56049",
+   "name": {
+    "fr": "Merbes-le-Château",
+    "nl": "Merbes-le-Château",
+    "de": "Merbes-le-Château",
+    "en": "Merbes-le-Château"
+   },
+   "postcodes": [
+    "6567"
+   ]
+  },
+  {
+   "nis5": "23052",
+   "name": {
+    "fr": "Merchtem",
+    "nl": "Merchtem",
+    "de": "Merchtem",
+    "en": "Merchtem"
+   },
+   "postcodes": [
+    "1785"
+   ]
+  },
+  {
+   "nis5": "44088",
+   "name": {
+    "fr": "Merelbeke-Melle",
+    "nl": "Merelbeke-Melle",
+    "de": "Merelbeke-Melle",
+    "en": "Merelbeke-Melle"
+   },
+   "postcodes": [
+    "9090",
+    "9820"
+   ]
+  },
+  {
+   "nis5": "13023",
+   "name": {
+    "fr": "Merksplas",
+    "nl": "Merksplas",
+    "de": "Merksplas",
+    "en": "Merksplas"
+   },
+   "postcodes": [
+    "2330"
+   ]
+  },
+  {
+   "nis5": "81015",
+   "name": {
+    "fr": "Messancy",
+    "nl": "Messancy",
+    "de": "Messancy",
+    "en": "Messancy"
+   },
+   "postcodes": [
+    "6780",
+    "6781",
+    "6782"
+   ]
+  },
+  {
+   "nis5": "33016",
+   "name": {
+    "fr": "Messines",
+    "nl": "Mesen",
+    "de": "Mesen",
+    "en": "Messines"
+   },
+   "postcodes": [
+    "8957"
+   ]
+  },
+  {
+   "nis5": "92087",
+   "name": {
+    "fr": "Mettet",
+    "nl": "Mettet",
+    "de": "Mettet",
+    "en": "Mettet"
+   },
+   "postcodes": [
+    "5640",
+    "5641",
+    "5644",
+    "5646"
+   ]
+  },
+  {
+   "nis5": "35011",
+   "name": {
+    "fr": "Middelkerke",
+    "nl": "Middelkerke",
+    "de": "Middelkerke",
+    "en": "Middelkerke"
+   },
+   "postcodes": [
+    "8430",
+    "8431",
+    "8432",
+    "8433",
+    "8434"
+   ]
+  },
+  {
+   "nis5": "61041",
+   "name": {
+    "fr": "Modave",
+    "nl": "Modave",
+    "de": "Modave",
+    "en": "Modave"
+   },
+   "postcodes": [
+    "4577"
+   ]
+  },
+  {
+   "nis5": "13025",
+   "name": {
+    "fr": "Mol",
+    "nl": "Mol",
+    "de": "Mol",
+    "en": "Mol"
+   },
+   "postcodes": [
+    "2400"
+   ]
+  },
+  {
+   "nis5": "21012",
+   "name": {
+    "fr": "Molenbeek-Saint-Jean",
+    "nl": "Sint-Jans-Molenbeek",
+    "de": "Molenbeek-Saint-Jean",
+    "en": "Molenbeek-Saint-Jean"
+   },
+   "postcodes": [
+    "1080"
+   ]
+  },
+  {
+   "nis5": "56051",
+   "name": {
+    "fr": "Momignies",
+    "nl": "Momignies",
+    "de": "Momignies",
+    "en": "Momignies"
+   },
+   "postcodes": [
+    "6590",
+    "6591",
+    "6592",
+    "6593",
+    "6594",
+    "6596"
+   ]
+  },
+  {
+   "nis5": "53053",
+   "name": {
+    "fr": "Mons",
+    "nl": "Bergen",
+    "de": "Mons",
+    "en": "Mons"
+   },
+   "postcodes": [
+    "7000",
+    "7010",
+    "7011",
+    "7012",
+    "7020",
+    "7021",
+    "7022",
+    "7024",
+    "7030",
+    "7031",
+    "7032",
+    "7033",
+    "7034"
+   ]
+  },
+  {
+   "nis5": "25068",
+   "name": {
+    "fr": "Mont-Saint-Guibert",
+    "nl": "Mont-Saint-Guibert",
+    "de": "Mont-Saint-Guibert",
+    "en": "Mont-Saint-Guibert"
+   },
+   "postcodes": [
+    "1348",
+    "1435"
+   ]
+  },
+  {
+   "nis5": "57095",
+   "name": {
+    "fr": "Mont-de-l'Enclus",
+    "nl": "Mont-de-l'Enclus",
+    "de": "Mont-de-l'Enclus",
+    "en": "Mont-de-l'Enclus"
+   },
+   "postcodes": [
+    "7750"
+   ]
+  },
+  {
+   "nis5": "24134",
+   "name": {
+    "fr": "Montaigu-Zichem",
+    "nl": "Scherpenheuvel-Zichem",
+    "de": "Scherpenheuvel-Zichem",
+    "en": "Montaigu-Zichem"
+   },
+   "postcodes": [
+    "3270",
+    "3271",
+    "3272"
+   ]
+  },
+  {
+   "nis5": "52048",
+   "name": {
+    "fr": "Montigny-le-Tilleul",
+    "nl": "Montigny-le-Tilleul",
+    "de": "Montigny-le-Tilleul",
+    "en": "Montigny-le-Tilleul"
+   },
+   "postcodes": [
+    "6110",
+    "6111"
+   ]
+  },
+  {
+   "nis5": "36012",
+   "name": {
+    "fr": "Moorslede",
+    "nl": "Moorslede",
+    "de": "Moorslede",
+    "en": "Moorslede"
+   },
+   "postcodes": [
+    "8890"
+   ]
+  },
+  {
+   "nis5": "58004",
+   "name": {
+    "fr": "Morlanwelz",
+    "nl": "Morlanwelz",
+    "de": "Morlanwelz",
+    "en": "Morlanwelz"
+   },
+   "postcodes": [
+    "7140",
+    "7141"
+   ]
+  },
+  {
+   "nis5": "11029",
+   "name": {
+    "fr": "Mortsel",
+    "nl": "Mortsel",
+    "de": "Mortsel",
+    "en": "Mortsel"
+   },
+   "postcodes": [
+    "2640"
+   ]
+  },
+  {
+   "nis5": "57096",
+   "name": {
+    "fr": "Mouscron",
+    "nl": "Moeskroen",
+    "de": "Mouscron",
+    "en": "Mouscron"
+   },
+   "postcodes": [
+    "7700",
+    "7711",
+    "7712"
+   ]
+  },
+  {
+   "nis5": "85026",
+   "name": {
+    "fr": "Musson",
+    "nl": "Musson",
+    "de": "Musson",
+    "en": "Musson"
+   },
+   "postcodes": [
+    "6750"
+   ]
+  },
+  {
+   "nis5": "92094",
+   "name": {
+    "fr": "Namur",
+    "nl": "Namen",
+    "de": "Namur",
+    "en": "Namur"
+   },
+   "postcodes": [
+    "5000",
+    "5001",
+    "5002",
+    "5003",
+    "5004",
+    "5010",
+    "5012",
+    "5020",
+    "5021",
+    "5022",
+    "5024",
+    "5100",
+    "5101"
+   ]
+  },
+  {
+   "nis5": "61043",
+   "name": {
+    "fr": "Nandrin",
+    "nl": "Nandrin",
+    "de": "Nandrin",
+    "en": "Nandrin"
+   },
+   "postcodes": [
+    "4550"
+   ]
+  },
+  {
+   "nis5": "83040",
+   "name": {
+    "fr": "Nassogne",
+    "nl": "Nassogne",
+    "de": "Nassogne",
+    "en": "Nassogne"
+   },
+   "postcodes": [
+    "6950",
+    "6951",
+    "6952",
+    "6953"
+   ]
+  },
+  {
+   "nis5": "44086",
+   "name": {
+    "fr": "Nazareth-De Pinte",
+    "nl": "Nazareth-De Pinte",
+    "de": "Nazareth-De Pinte",
+    "en": "Nazareth-De Pinte"
+   },
+   "postcodes": [
+    "9810",
+    "9840"
+   ]
+  },
+  {
+   "nis5": "84043",
+   "name": {
+    "fr": "Neufchâteau",
+    "nl": "Neufchâteau",
+    "de": "Neufchâteau",
+    "en": "Neufchâteau"
+   },
+   "postcodes": [
+    "4608",
+    "6840"
+   ]
+  },
+  {
+   "nis5": "62121",
+   "name": {
+    "fr": "Neupré",
+    "nl": "Neupré",
+    "de": "Neupré",
+    "en": "Neupré"
+   },
+   "postcodes": [
+    "4120",
+    "4121",
+    "4122"
+   ]
+  },
+  {
+   "nis5": "11030",
+   "name": {
+    "fr": "Niel",
+    "nl": "Niel",
+    "de": "Niel",
+    "en": "Niel"
+   },
+   "postcodes": [
+    "2845"
+   ]
+  },
+  {
+   "nis5": "38016",
+   "name": {
+    "fr": "Nieuport",
+    "nl": "Nieuwpoort",
+    "de": "Nieuwpoort",
+    "en": "Nieuport"
+   },
+   "postcodes": [
+    "8620"
+   ]
+  },
+  {
+   "nis5": "71045",
+   "name": {
+    "fr": "Nieuwerkerken",
+    "nl": "Nieuwerkerken",
+    "de": "Nieuwerkerken",
+    "en": "Nieuwerkerken"
+   },
+   "postcodes": [
+    "3850",
+    "9320"
+   ]
+  },
+  {
+   "nis5": "12026",
+   "name": {
+    "fr": "Nijlen",
+    "nl": "Nijlen",
+    "de": "Nijlen",
+    "en": "Nijlen"
+   },
+   "postcodes": [
+    "2560"
+   ]
+  },
+  {
+   "nis5": "41048",
+   "name": {
+    "fr": "Ninove",
+    "nl": "Ninove",
+    "de": "Ninove",
+    "en": "Ninove"
+   },
+   "postcodes": [
+    "9400",
+    "9401",
+    "9402",
+    "9403",
+    "9404",
+    "9406"
+   ]
+  },
+  {
+   "nis5": "25072",
+   "name": {
+    "fr": "Nivelles",
+    "nl": "Nijvel",
+    "de": "Nivelles",
+    "en": "Nivelles"
+   },
+   "postcodes": [
+    "1400",
+    "1401",
+    "1402",
+    "1404"
+   ]
+  },
+  {
+   "nis5": "92097",
+   "name": {
+    "fr": "Ohey",
+    "nl": "Ohey",
+    "de": "Ohey",
+    "en": "Ohey"
+   },
+   "postcodes": [
+    "5350",
+    "5351",
+    "5352",
+    "5353",
+    "5354"
+   ]
+  },
+  {
+   "nis5": "13029",
+   "name": {
+    "fr": "Olen",
+    "nl": "Olen",
+    "de": "Olen",
+    "en": "Olen"
+   },
+   "postcodes": [
+    "2250"
+   ]
+  },
+  {
+   "nis5": "63057",
+   "name": {
+    "fr": "Olne",
+    "nl": "Olne",
+    "de": "Olne",
+    "en": "Olne"
+   },
+   "postcodes": [
+    "4877"
+   ]
+  },
+  {
+   "nis5": "91103",
+   "name": {
+    "fr": "Onhaye",
+    "nl": "Onhaye",
+    "de": "Onhaye",
+    "en": "Onhaye"
+   },
+   "postcodes": [
+    "5520",
+    "5521",
+    "5522",
+    "5523",
+    "5524"
+   ]
+  },
+  {
+   "nis5": "44052",
+   "name": {
+    "fr": "Oosterzele",
+    "nl": "Oosterzele",
+    "de": "Oosterzele",
+    "en": "Oosterzele"
+   },
+   "postcodes": [
+    "9860"
+   ]
+  },
+  {
+   "nis5": "31022",
+   "name": {
+    "fr": "Oostkamp",
+    "nl": "Oostkamp",
+    "de": "Oostkamp",
+    "en": "Oostkamp"
+   },
+   "postcodes": [
+    "8020"
+   ]
+  },
+  {
+   "nis5": "37010",
+   "name": {
+    "fr": "Oostrozebeke",
+    "nl": "Oostrozebeke",
+    "de": "Oostrozebeke",
+    "en": "Oostrozebeke"
+   },
+   "postcodes": [
+    "8780"
+   ]
+  },
+  {
+   "nis5": "23060",
+   "name": {
+    "fr": "Opwijk",
+    "nl": "Opwijk",
+    "de": "Opwijk",
+    "en": "Opwijk"
+   },
+   "postcodes": [
+    "1745"
+   ]
+  },
+  {
+   "nis5": "64056",
+   "name": {
+    "fr": "Oreye",
+    "nl": "Oerle",
+    "de": "Oreye",
+    "en": "Oreye"
+   },
+   "postcodes": [
+    "4360"
+   ]
+  },
+  {
+   "nis5": "25120",
+   "name": {
+    "fr": "Orp-Jauche",
+    "nl": "Orp-Jauche",
+    "de": "Orp-Jauche",
+    "en": "Orp-Jauche"
+   },
+   "postcodes": [
+    "1350"
+   ]
+  },
+  {
+   "nis5": "35013",
+   "name": {
+    "fr": "Ostende",
+    "nl": "Oostende",
+    "de": "Ostende",
+    "en": "Ostende"
+   },
+   "postcodes": [
+    "8400"
+   ]
+  },
+  {
+   "nis5": "25121",
+   "name": {
+    "fr": "Ottignies-Louvain-la-Neuve",
+    "nl": "Ottignies-Louvain-la-Neuve",
+    "de": "Ottignies-Louvain-la-Neuve",
+    "en": "Ottignies-Louvain-la-Neuve"
+   },
+   "postcodes": [
+    "1340",
+    "1341",
+    "1342",
+    "1348"
+   ]
+  },
+  {
+   "nis5": "24086",
+   "name": {
+    "fr": "Oud-Heverlee",
+    "nl": "Oud-Heverlee",
+    "de": "Oud-Heverlee",
+    "en": "Oud-Heverlee"
+   },
+   "postcodes": [
+    "3050",
+    "3051",
+    "3052",
+    "3053",
+    "3054"
+   ]
+  },
+  {
+   "nis5": "13031",
+   "name": {
+    "fr": "Oud-Turnhout",
+    "nl": "Oud-Turnhout",
+    "de": "Oud-Turnhout",
+    "en": "Oud-Turnhout"
+   },
+   "postcodes": [
+    "2360"
+   ]
+  },
+  {
+   "nis5": "35014",
+   "name": {
+    "fr": "Oudenburg",
+    "nl": "Oudenburg",
+    "de": "Oudenburg",
+    "en": "Oudenburg"
+   },
+   "postcodes": [
+    "8460"
+   ]
+  },
+  {
+   "nis5": "72042",
+   "name": {
+    "fr": "Oudsbergen",
+    "nl": "Oudsbergen",
+    "de": "Oudsbergen",
+    "en": "Oudsbergen"
+   },
+   "postcodes": [
+    "3660",
+    "3670"
+   ]
+  },
+  {
+   "nis5": "61048",
+   "name": {
+    "fr": "Ouffet",
+    "nl": "Ouffet",
+    "de": "Ouffet",
+    "en": "Ouffet"
+   },
+   "postcodes": [
+    "4590"
+   ]
+  },
+  {
+   "nis5": "62079",
+   "name": {
+    "fr": "Oupeye",
+    "nl": "Oupeye",
+    "de": "Oupeye",
+    "en": "Oupeye"
+   },
+   "postcodes": [
+    "4680",
+    "4681",
+    "4682",
+    "4683",
+    "4684"
+   ]
+  },
+  {
+   "nis5": "23062",
+   "name": {
+    "fr": "Overijse",
+    "nl": "Overijse",
+    "de": "Overijse",
+    "en": "Overijse"
+   },
+   "postcodes": [
+    "3090"
+   ]
+  },
+  {
+   "nis5": "23106",
+   "name": {
+    "fr": "Pajottegem",
+    "nl": "Pajottegem",
+    "de": "Pajottegem",
+    "en": "Pajottegem"
+   },
+   "postcodes": [
+    "1540",
+    "1541",
+    "1570",
+    "1755"
+   ]
+  },
+  {
+   "nis5": "84050",
+   "name": {
+    "fr": "Paliseul",
+    "nl": "Paliseul",
+    "de": "Paliseul",
+    "en": "Paliseul"
+   },
+   "postcodes": [
+    "6850",
+    "6851",
+    "6852",
+    "6853",
+    "6856"
+   ]
+  },
+  {
+   "nis5": "57062",
+   "name": {
+    "fr": "Pecq",
+    "nl": "Pecq",
+    "de": "Pecq",
+    "en": "Pecq"
+   },
+   "postcodes": [
+    "7740",
+    "7742",
+    "7743"
+   ]
+  },
+  {
+   "nis5": "72030",
+   "name": {
+    "fr": "Peer",
+    "nl": "Peer",
+    "de": "Peer",
+    "en": "Peer"
+   },
+   "postcodes": [
+    "3990"
+   ]
+  },
+  {
+   "nis5": "72043",
+   "name": {
+    "fr": "Pelt",
+    "nl": "Pelt",
+    "de": "Pelt",
+    "en": "Pelt"
+   },
+   "postcodes": [
+    "3900",
+    "3910"
+   ]
+  },
+  {
+   "nis5": "23064",
+   "name": {
+    "fr": "Pepingen",
+    "nl": "Pepingen",
+    "de": "Pepingen",
+    "en": "Pepingen"
+   },
+   "postcodes": [
+    "1670",
+    "1671",
+    "1673",
+    "1674"
+   ]
+  },
+  {
+   "nis5": "63058",
+   "name": {
+    "fr": "Pepinster",
+    "nl": "Pepinster",
+    "de": "Pepinster",
+    "en": "Pepinster"
+   },
+   "postcodes": [
+    "4860",
+    "4861"
+   ]
+  },
+  {
+   "nis5": "25084",
+   "name": {
+    "fr": "Perwez",
+    "nl": "Perwijs",
+    "de": "Perwez",
+    "en": "Perwez"
+   },
+   "postcodes": [
+    "1360"
+   ]
+  },
+  {
+   "nis5": "93056",
+   "name": {
+    "fr": "Philippeville",
+    "nl": "Philippeville",
+    "de": "Philippeville",
+    "en": "Philippeville"
+   },
+   "postcodes": [
+    "5600"
+   ]
+  },
+  {
+   "nis5": "37011",
+   "name": {
+    "fr": "Pittem",
+    "nl": "Pittem",
+    "de": "Pittem",
+    "en": "Pittem"
+   },
+   "postcodes": [
+    "8740"
+   ]
+  },
+  {
+   "nis5": "63088",
+   "name": {
+    "fr": "Plombières",
+    "nl": "Plombières",
+    "de": "Plombières",
+    "en": "Plombières"
+   },
+   "postcodes": [
+    "4850",
+    "4851",
+    "4852"
+   ]
+  },
+  {
+   "nis5": "52055",
+   "name": {
+    "fr": "Pont-à-Celles",
+    "nl": "Pont-à-Celles",
+    "de": "Pont-à-Celles",
+    "en": "Pont-à-Celles"
+   },
+   "postcodes": [
+    "6230",
+    "6238"
+   ]
+  },
+  {
+   "nis5": "33021",
+   "name": {
+    "fr": "Poperinge",
+    "nl": "Poperinge",
+    "de": "Poperinge",
+    "en": "Poperinge"
+   },
+   "postcodes": [
+    "8970",
+    "8972",
+    "8978"
+   ]
+  },
+  {
+   "nis5": "92101",
+   "name": {
+    "fr": "Profondeville",
+    "nl": "Profondeville",
+    "de": "Profondeville",
+    "en": "Profondeville"
+   },
+   "postcodes": [
+    "5170"
+   ]
+  },
+  {
+   "nis5": "12029",
+   "name": {
+    "fr": "Putte",
+    "nl": "Putte",
+    "de": "Putte",
+    "en": "Putte"
+   },
+   "postcodes": [
+    "2580"
+   ]
+  },
+  {
+   "nis5": "12041",
+   "name": {
+    "fr": "Puurs-Sint-Amands",
+    "nl": "Puurs-Sint-Amands",
+    "de": "Puurs-Sint-Amands",
+    "en": "Puurs-Sint-Amands"
+   },
+   "postcodes": [
+    "2870",
+    "2890"
+   ]
+  },
+  {
+   "nis5": "57064",
+   "name": {
+    "fr": "Péruwelz",
+    "nl": "Péruwelz",
+    "de": "Péruwelz",
+    "en": "Péruwelz"
+   },
+   "postcodes": [
+    "7600",
+    "7601",
+    "7602",
+    "7603",
+    "7604",
+    "7608"
+   ]
+  },
+  {
+   "nis5": "53065",
+   "name": {
+    "fr": "Quaregnon",
+    "nl": "Quaregnon",
+    "de": "Quaregnon",
+    "en": "Quaregnon"
+   },
+   "postcodes": [
+    "7390"
+   ]
+  },
+  {
+   "nis5": "53068",
+   "name": {
+    "fr": "Quiévrain",
+    "nl": "Quiévrain",
+    "de": "Quiévrain",
+    "en": "Quiévrain"
+   },
+   "postcodes": [
+    "7380",
+    "7382"
+   ]
+  },
+  {
+   "nis5": "53084",
+   "name": {
+    "fr": "Quévy",
+    "nl": "Quévy",
+    "de": "Quévy",
+    "en": "Quévy"
+   },
+   "postcodes": [
+    "7040",
+    "7041"
+   ]
+  },
+  {
+   "nis5": "63061",
+   "name": {
+    "fr": "Raeren",
+    "nl": "Raeren",
+    "de": "Raeren",
+    "en": "Raeren"
+   },
+   "postcodes": [
+    "4730",
+    "4731"
+   ]
+  },
+  {
+   "nis5": "25122",
+   "name": {
+    "fr": "Ramillies",
+    "nl": "Ramillies",
+    "de": "Ramillies",
+    "en": "Ramillies"
+   },
+   "postcodes": [
+    "1367"
+   ]
+  },
+  {
+   "nis5": "11035",
+   "name": {
+    "fr": "Ranst",
+    "nl": "Ranst",
+    "de": "Ranst",
+    "en": "Ranst"
+   },
+   "postcodes": [
+    "2520"
+   ]
+  },
+  {
+   "nis5": "13035",
+   "name": {
+    "fr": "Ravels",
+    "nl": "Ravels",
+    "de": "Ravels",
+    "en": "Ravels"
+   },
+   "postcodes": [
+    "2380",
+    "2381",
+    "2382"
+   ]
+  },
+  {
+   "nis5": "25123",
+   "name": {
+    "fr": "Rebecq",
+    "nl": "Rebecq",
+    "de": "Rebecq",
+    "en": "Rebecq"
+   },
+   "postcodes": [
+    "1430"
+   ]
+  },
+  {
+   "nis5": "64063",
+   "name": {
+    "fr": "Remicourt",
+    "nl": "Remicourt",
+    "de": "Remicourt",
+    "en": "Remicourt"
+   },
+   "postcodes": [
+    "4350",
+    "4351"
+   ]
+  },
+  {
+   "nis5": "45041",
+   "name": {
+    "fr": "Renaix",
+    "nl": "Ronse",
+    "de": "Ronse",
+    "en": "Renaix"
+   },
+   "postcodes": [
+    "9600"
+   ]
+  },
+  {
+   "nis5": "83044",
+   "name": {
+    "fr": "Rendeux",
+    "nl": "Rendeux",
+    "de": "Rendeux",
+    "en": "Rendeux"
+   },
+   "postcodes": [
+    "6987"
+   ]
+  },
+  {
+   "nis5": "13036",
+   "name": {
+    "fr": "Retie",
+    "nl": "Retie",
+    "de": "Retie",
+    "en": "Retie"
+   },
+   "postcodes": [
+    "2470"
+   ]
+  },
+  {
+   "nis5": "23101",
+   "name": {
+    "fr": "Rhode-Saint-Genèse",
+    "nl": "Sint-Genesius-Rode",
+    "de": "Sint-Genesius-Rode",
+    "en": "Rhode-Saint-Genèse"
+   },
+   "postcodes": [
+    "1640"
+   ]
+  },
+  {
+   "nis5": "73066",
+   "name": {
+    "fr": "Riemst",
+    "nl": "Riemst",
+    "de": "Riemst",
+    "en": "Riemst"
+   },
+   "postcodes": [
+    "3770"
+   ]
+  },
+  {
+   "nis5": "13037",
+   "name": {
+    "fr": "Rijkevorsel",
+    "nl": "Rijkevorsel",
+    "de": "Rijkevorsel",
+    "en": "Rijkevorsel"
+   },
+   "postcodes": [
+    "2310"
+   ]
+  },
+  {
+   "nis5": "25091",
+   "name": {
+    "fr": "Rixensart",
+    "nl": "Rixensart",
+    "de": "Rixensart",
+    "en": "Rixensart"
+   },
+   "postcodes": [
+    "1330",
+    "1331",
+    "1332"
+   ]
+  },
+  {
+   "nis5": "91114",
+   "name": {
+    "fr": "Rochefort",
+    "nl": "Rochefort",
+    "de": "Rochefort",
+    "en": "Rochefort"
+   },
+   "postcodes": [
+    "5580",
+    "5589"
+   ]
+  },
+  {
+   "nis5": "23097",
+   "name": {
+    "fr": "Roosdaal",
+    "nl": "Roosdaal",
+    "de": "Roosdaal",
+    "en": "Roosdaal"
+   },
+   "postcodes": [
+    "1760",
+    "1761"
+   ]
+  },
+  {
+   "nis5": "24094",
+   "name": {
+    "fr": "Rotselaar",
+    "nl": "Rotselaar",
+    "de": "Rotselaar",
+    "en": "Rotselaar"
+   },
+   "postcodes": [
+    "3110",
+    "3111",
+    "3118"
+   ]
+  },
+  {
+   "nis5": "36015",
+   "name": {
+    "fr": "Roulers",
+    "nl": "Roeselare",
+    "de": "Roeselare",
+    "en": "Roulers"
+   },
+   "postcodes": [
+    "8800"
+   ]
+  },
+  {
+   "nis5": "85047",
+   "name": {
+    "fr": "Rouvroy",
+    "nl": "Rouvroy",
+    "de": "Rouvroy",
+    "en": "Rouvroy"
+   },
+   "postcodes": [
+    "6767"
+   ]
+  },
+  {
+   "nis5": "57072",
+   "name": {
+    "fr": "Rumes",
+    "nl": "Rumes",
+    "de": "Rumes",
+    "en": "Rumes"
+   },
+   "postcodes": [
+    "7610",
+    "7611",
+    "7618"
+   ]
+  },
+  {
+   "nis5": "11037",
+   "name": {
+    "fr": "Rumst",
+    "nl": "Rumst",
+    "de": "Rumst",
+    "en": "Rumst"
+   },
+   "postcodes": [
+    "2840"
+   ]
+  },
+  {
+   "nis5": "64065",
+   "name": {
+    "fr": "Saint-Georges-sur-Meuse",
+    "nl": "Saint-Georges-sur-Meuse",
+    "de": "Saint-Georges-sur-Meuse",
+    "en": "Saint-Georges-sur-Meuse"
+   },
+   "postcodes": [
+    "4470"
+   ]
+  },
+  {
+   "nis5": "53070",
+   "name": {
+    "fr": "Saint-Ghislain",
+    "nl": "Saint-Ghislain",
+    "de": "Saint-Ghislain",
+    "en": "Saint-Ghislain"
+   },
+   "postcodes": [
+    "7330",
+    "7331",
+    "7332",
+    "7333",
+    "7334"
+   ]
+  },
+  {
+   "nis5": "21013",
+   "name": {
+    "fr": "Saint-Gilles",
+    "nl": "Sint-Gillis",
+    "de": "Saint-Gilles",
+    "en": "Saint-Gilles"
+   },
+   "postcodes": [
+    "1060"
+   ]
+  },
+  {
+   "nis5": "84059",
+   "name": {
+    "fr": "Saint-Hubert",
+    "nl": "Saint-Hubert",
+    "de": "Saint-Hubert",
+    "en": "Saint-Hubert"
+   },
+   "postcodes": [
+    "6870"
+   ]
+  },
+  {
+   "nis5": "21014",
+   "name": {
+    "fr": "Saint-Josse-ten-Noode",
+    "nl": "Sint-Joost-ten-Node",
+    "de": "Saint-Josse-ten-Noode",
+    "en": "Saint-Josse-ten-Noode"
+   },
+   "postcodes": [
+    "1210",
+    "1212"
+   ]
+  },
+  {
+   "nis5": "85034",
+   "name": {
+    "fr": "Saint-Léger",
+    "nl": "Saint-Léger",
+    "de": "Saint-Léger",
+    "en": "Saint-Léger"
+   },
+   "postcodes": [
+    "6747"
+   ]
+  },
+  {
+   "nis5": "46021",
+   "name": {
+    "fr": "Saint-Nicolas",
+    "nl": "Sint-Niklaas",
+    "de": "Sint-Niklaas",
+    "en": "Saint-Nicolas"
+   },
+   "postcodes": [
+    "9100",
+    "9111",
+    "9112"
+   ]
+  },
+  {
+   "nis5": "62093",
+   "name": {
+    "fr": "Saint-Nicolas",
+    "nl": "Saint-Nicolas",
+    "de": "Saint-Nicolas",
+    "en": "Saint-Nicolas"
+   },
+   "postcodes": [
+    "4420"
+   ]
+  },
+  {
+   "nis5": "71053",
+   "name": {
+    "fr": "Saint-Trond",
+    "nl": "Sint-Truiden",
+    "de": "Sint-Truiden",
+    "en": "Saint-Trond"
+   },
+   "postcodes": [
+    "3800",
+    "3803",
+    "3806"
+   ]
+  },
+  {
+   "nis5": "63067",
+   "name": {
+    "fr": "Saint-Vith",
+    "nl": "Sankt Vith",
+    "de": "Sankt Vith",
+    "en": "Saint-Vith"
+   },
+   "postcodes": [
+    "4780",
+    "4782",
+    "4783",
+    "4784"
+   ]
+  },
+  {
+   "nis5": "82038",
+   "name": {
+    "fr": "Sainte-Ode",
+    "nl": "Sainte-Ode",
+    "de": "Sainte-Ode",
+    "en": "Sainte-Ode"
+   },
+   "postcodes": [
+    "6680",
+    "6681"
+   ]
+  },
+  {
+   "nis5": "92137",
+   "name": {
+    "fr": "Sambreville",
+    "nl": "Sambreville",
+    "de": "Sambreville",
+    "en": "Sambreville"
+   },
+   "postcodes": [
+    "5060"
+   ]
+  },
+  {
+   "nis5": "21015",
+   "name": {
+    "fr": "Schaerbeek",
+    "nl": "Schaarbeek",
+    "de": "Schaerbeek",
+    "en": "Schaerbeek"
+   },
+   "postcodes": [
+    "1030",
+    "1031",
+    "1033",
+    "1035",
+    "1043",
+    "1044"
+   ]
+  },
+  {
+   "nis5": "11038",
+   "name": {
+    "fr": "Schelle",
+    "nl": "Schelle",
+    "de": "Schelle",
+    "en": "Schelle"
+   },
+   "postcodes": [
+    "2627"
+   ]
+  },
+  {
+   "nis5": "11039",
+   "name": {
+    "fr": "Schilde",
+    "nl": "Schilde",
+    "de": "Schilde",
+    "en": "Schilde"
+   },
+   "postcodes": [
+    "2970"
+   ]
+  },
+  {
+   "nis5": "11040",
+   "name": {
+    "fr": "Schoten",
+    "nl": "Schoten",
+    "de": "Schoten",
+    "en": "Schoten"
+   },
+   "postcodes": [
+    "2900"
+   ]
+  },
+  {
+   "nis5": "55085",
+   "name": {
+    "fr": "Seneffe",
+    "nl": "Seneffe",
+    "de": "Seneffe",
+    "en": "Seneffe"
+   },
+   "postcodes": [
+    "7180",
+    "7181"
+   ]
+  },
+  {
+   "nis5": "62096",
+   "name": {
+    "fr": "Seraing",
+    "nl": "Seraing",
+    "de": "Seraing",
+    "en": "Seraing"
+   },
+   "postcodes": [
+    "4100",
+    "4101",
+    "4102"
+   ]
+  },
+  {
+   "nis5": "51068",
+   "name": {
+    "fr": "Silly",
+    "nl": "Opzullik",
+    "de": "Silly",
+    "en": "Silly"
+   },
+   "postcodes": [
+    "7830"
+   ]
+  },
+  {
+   "nis5": "46020",
+   "name": {
+    "fr": "Sint-Gillis-Waas",
+    "nl": "Sint-Gillis-Waas",
+    "de": "Sint-Gillis-Waas",
+    "en": "Sint-Gillis-Waas"
+   },
+   "postcodes": [
+    "9170"
+   ]
+  },
+  {
+   "nis5": "12035",
+   "name": {
+    "fr": "Sint-Katelijne-Waver",
+    "nl": "Sint-Katelijne-Waver",
+    "de": "Sint-Katelijne-Waver",
+    "en": "Sint-Katelijne-Waver"
+   },
+   "postcodes": [
+    "2860",
+    "2861"
+   ]
+  },
+  {
+   "nis5": "43014",
+   "name": {
+    "fr": "Sint-Laureins",
+    "nl": "Sint-Laureins",
+    "de": "Sint-Laureins",
+    "en": "Sint-Laureins"
+   },
+   "postcodes": [
+    "9980",
+    "9981",
+    "9982",
+    "9988"
+   ]
+  },
+  {
+   "nis5": "41063",
+   "name": {
+    "fr": "Sint-Lievens-Houtem",
+    "nl": "Sint-Lievens-Houtem",
+    "de": "Sint-Lievens-Houtem",
+    "en": "Sint-Lievens-Houtem"
+   },
+   "postcodes": [
+    "9520",
+    "9521"
+   ]
+  },
+  {
+   "nis5": "44064",
+   "name": {
+    "fr": "Sint-Martens-Latem",
+    "nl": "Sint-Martens-Latem",
+    "de": "Sint-Martens-Latem",
+    "en": "Sint-Martens-Latem"
+   },
+   "postcodes": [
+    "9830",
+    "9831"
+   ]
+  },
+  {
+   "nis5": "23077",
+   "name": {
+    "fr": "Sint-Pieters-Leeuw",
+    "nl": "Sint-Pieters-Leeuw",
+    "de": "Sint-Pieters-Leeuw",
+    "en": "Sint-Pieters-Leeuw"
+   },
+   "postcodes": [
+    "1600",
+    "1601",
+    "1602"
+   ]
+  },
+  {
+   "nis5": "56088",
+   "name": {
+    "fr": "Sivry-Rance",
+    "nl": "Sivry-Rance",
+    "de": "Sivry-Rance",
+    "en": "Sivry-Rance"
+   },
+   "postcodes": [
+    "6470"
+   ]
+  },
+  {
+   "nis5": "55040",
+   "name": {
+    "fr": "Soignies",
+    "nl": "Zinnik",
+    "de": "Soignies",
+    "en": "Soignies"
+   },
+   "postcodes": [
+    "7060",
+    "7061",
+    "7062",
+    "7063"
+   ]
+  },
+  {
+   "nis5": "92114",
+   "name": {
+    "fr": "Sombreffe",
+    "nl": "Sombreffe",
+    "de": "Sombreffe",
+    "en": "Sombreffe"
+   },
+   "postcodes": [
+    "5140"
+   ]
+  },
+  {
+   "nis5": "91120",
+   "name": {
+    "fr": "Somme-Leuze",
+    "nl": "Somme-Leuze",
+    "de": "Somme-Leuze",
+    "en": "Somme-Leuze"
+   },
+   "postcodes": [
+    "5377"
+   ]
+  },
+  {
+   "nis5": "62099",
+   "name": {
+    "fr": "Soumagne",
+    "nl": "Soumagne",
+    "de": "Soumagne",
+    "en": "Soumagne"
+   },
+   "postcodes": [
+    "4630",
+    "4631",
+    "4632",
+    "4633"
+   ]
+  },
+  {
+   "nis5": "63072",
+   "name": {
+    "fr": "Spa",
+    "nl": "Spa",
+    "de": "Spa",
+    "en": "Spa"
+   },
+   "postcodes": [
+    "4900"
+   ]
+  },
+  {
+   "nis5": "62100",
+   "name": {
+    "fr": "Sprimont",
+    "nl": "Sprimont",
+    "de": "Sprimont",
+    "en": "Sprimont"
+   },
+   "postcodes": [
+    "4140",
+    "4141"
+   ]
+  },
+  {
+   "nis5": "11044",
+   "name": {
+    "fr": "Stabroek",
+    "nl": "Stabroek",
+    "de": "Stabroek",
+    "en": "Stabroek"
+   },
+   "postcodes": [
+    "2940"
+   ]
+  },
+  {
+   "nis5": "36019",
+   "name": {
+    "fr": "Staden",
+    "nl": "Staden",
+    "de": "Staden",
+    "en": "Staden"
+   },
+   "postcodes": [
+    "8840"
+   ]
+  },
+  {
+   "nis5": "63073",
+   "name": {
+    "fr": "Stavelot",
+    "nl": "Stavelot",
+    "de": "Stavelot",
+    "en": "Stavelot"
+   },
+   "postcodes": [
+    "4970"
+   ]
+  },
+  {
+   "nis5": "23081",
+   "name": {
+    "fr": "Steenokkerzeel",
+    "nl": "Steenokkerzeel",
+    "de": "Steenokkerzeel",
+    "en": "Steenokkerzeel"
+   },
+   "postcodes": [
+    "1820"
+   ]
+  },
+  {
+   "nis5": "46024",
+   "name": {
+    "fr": "Stekene",
+    "nl": "Stekene",
+    "de": "Stekene",
+    "en": "Stekene"
+   },
+   "postcodes": [
+    "9190"
+   ]
+  },
+  {
+   "nis5": "63075",
+   "name": {
+    "fr": "Stoumont",
+    "nl": "Stoumont",
+    "de": "Stoumont",
+    "en": "Stoumont"
+   },
+   "postcodes": [
+    "4987"
+   ]
+  },
+  {
+   "nis5": "46025",
+   "name": {
+    "fr": "Tamise",
+    "nl": "Temse",
+    "de": "Temse",
+    "en": "Tamise"
+   },
+   "postcodes": [
+    "9140"
+   ]
+  },
+  {
+   "nis5": "84068",
+   "name": {
+    "fr": "Tellin",
+    "nl": "Tellin",
+    "de": "Tellin",
+    "en": "Tellin"
+   },
+   "postcodes": [
+    "6927"
+   ]
+  },
+  {
+   "nis5": "83049",
+   "name": {
+    "fr": "Tenneville",
+    "nl": "Tenneville",
+    "de": "Tenneville",
+    "en": "Tenneville"
+   },
+   "postcodes": [
+    "6970",
+    "6971",
+    "6972"
+   ]
+  },
+  {
+   "nis5": "42006",
+   "name": {
+    "fr": "Termonde",
+    "nl": "Dendermonde",
+    "de": "Dendermonde",
+    "en": "Termonde"
+   },
+   "postcodes": [
+    "9200"
+   ]
+  },
+  {
+   "nis5": "23086",
+   "name": {
+    "fr": "Ternat",
+    "nl": "Ternat",
+    "de": "Ternat",
+    "en": "Ternat"
+   },
+   "postcodes": [
+    "1740",
+    "1741",
+    "1742"
+   ]
+  },
+  {
+   "nis5": "24104",
+   "name": {
+    "fr": "Tervuren",
+    "nl": "Tervuren",
+    "de": "Tervuren",
+    "en": "Tervuren"
+   },
+   "postcodes": [
+    "3080"
+   ]
+  },
+  {
+   "nis5": "71071",
+   "name": {
+    "fr": "Tessenderlo-Ham",
+    "nl": "Tessenderlo-Ham",
+    "de": "Tessenderlo-Ham",
+    "en": "Tessenderlo-Ham"
+   },
+   "postcodes": [
+    "3945",
+    "3980"
+   ]
+  },
+  {
+   "nis5": "63076",
+   "name": {
+    "fr": "Theux",
+    "nl": "Theux",
+    "de": "Theux",
+    "en": "Theux"
+   },
+   "postcodes": [
+    "4910"
+   ]
+  },
+  {
+   "nis5": "63089",
+   "name": {
+    "fr": "Thimister-Clermont",
+    "nl": "Thimister-Clermont",
+    "de": "Thimister-Clermont",
+    "en": "Thimister-Clermont"
+   },
+   "postcodes": [
+    "4890"
+   ]
+  },
+  {
+   "nis5": "56078",
+   "name": {
+    "fr": "Thuin",
+    "nl": "Thuin",
+    "de": "Thuin",
+    "en": "Thuin"
+   },
+   "postcodes": [
+    "6530",
+    "6531",
+    "6532",
+    "6533",
+    "6534",
+    "6536"
+   ]
+  },
+  {
+   "nis5": "37022",
+   "name": {
+    "fr": "Tielt",
+    "nl": "Tielt",
+    "de": "Tielt",
+    "en": "Tielt"
+   },
+   "postcodes": [
+    "8700",
+    "8760"
+   ]
+  },
+  {
+   "nis5": "24135",
+   "name": {
+    "fr": "Tielt-Winge",
+    "nl": "Tielt-Winge",
+    "de": "Tielt-Winge",
+    "en": "Tielt-Winge"
+   },
+   "postcodes": [
+    "3390",
+    "3391"
+   ]
+  },
+  {
+   "nis5": "61081",
+   "name": {
+    "fr": "Tinlot",
+    "nl": "Tinlot",
+    "de": "Tinlot",
+    "en": "Tinlot"
+   },
+   "postcodes": [
+    "4557"
+   ]
+  },
+  {
+   "nis5": "85039",
+   "name": {
+    "fr": "Tintigny",
+    "nl": "Tintigny",
+    "de": "Tintigny",
+    "en": "Tintigny"
+   },
+   "postcodes": [
+    "6730"
+   ]
+  },
+  {
+   "nis5": "24107",
+   "name": {
+    "fr": "Tirlemont",
+    "nl": "Tienen",
+    "de": "Tienen",
+    "en": "Tirlemont"
+   },
+   "postcodes": [
+    "3300"
+   ]
+  },
+  {
+   "nis5": "73111",
+   "name": {
+    "fr": "Tongeren-Borgloon",
+    "nl": "Tongeren-Borgloon",
+    "de": "Tongeren-Borgloon",
+    "en": "Tongeren-Borgloon"
+   },
+   "postcodes": [
+    "3700",
+    "3840"
+   ]
+  },
+  {
+   "nis5": "31033",
+   "name": {
+    "fr": "Torhout",
+    "nl": "Torhout",
+    "de": "Torhout",
+    "en": "Torhout"
+   },
+   "postcodes": [
+    "8820"
+   ]
+  },
+  {
+   "nis5": "57081",
+   "name": {
+    "fr": "Tournai",
+    "nl": "Doornik",
+    "de": "Tournai",
+    "en": "Tournai"
+   },
+   "postcodes": [
+    "7500",
+    "7501",
+    "7502",
+    "7503",
+    "7504",
+    "7506",
+    "7510",
+    "7511",
+    "7512",
+    "7513",
+    "7520",
+    "7521",
+    "7522",
+    "7530",
+    "7531",
+    "7532",
+    "7533",
+    "7534",
+    "7536",
+    "7538",
+    "7540",
+    "7542",
+    "7543",
+    "7548"
+   ]
+  },
+  {
+   "nis5": "24109",
+   "name": {
+    "fr": "Tremelo",
+    "nl": "Tremelo",
+    "de": "Tremelo",
+    "en": "Tremelo"
+   },
+   "postcodes": [
+    "3120",
+    "3128"
+   ]
+  },
+  {
+   "nis5": "63086",
+   "name": {
+    "fr": "Trois-Ponts",
+    "nl": "Trois-Ponts",
+    "de": "Trois-Ponts",
+    "en": "Trois-Ponts"
+   },
+   "postcodes": [
+    "4980",
+    "4983"
+   ]
+  },
+  {
+   "nis5": "62122",
+   "name": {
+    "fr": "Trooz",
+    "nl": "Trooz",
+    "de": "Trooz",
+    "en": "Trooz"
+   },
+   "postcodes": [
+    "4870"
+   ]
+  },
+  {
+   "nis5": "25105",
+   "name": {
+    "fr": "Tubize",
+    "nl": "Tubeke",
+    "de": "Tubize",
+    "en": "Tubize"
+   },
+   "postcodes": [
+    "1480"
+   ]
+  },
+  {
+   "nis5": "13040",
+   "name": {
+    "fr": "Turnhout",
+    "nl": "Turnhout",
+    "de": "Turnhout",
+    "en": "Turnhout"
+   },
+   "postcodes": [
+    "2300"
+   ]
+  },
+  {
+   "nis5": "21016",
+   "name": {
+    "fr": "Uccle",
+    "nl": "Ukkel",
+    "de": "Uccle",
+    "en": "Uccle"
+   },
+   "postcodes": [
+    "1180"
+   ]
+  },
+  {
+   "nis5": "82036",
+   "name": {
+    "fr": "Vaux-sur-Sûre",
+    "nl": "Vaux-sur-Sûre",
+    "de": "Vaux-sur-Sûre",
+    "en": "Vaux-sur-Sûre"
+   },
+   "postcodes": [
+    "6640"
+   ]
+  },
+  {
+   "nis5": "61063",
+   "name": {
+    "fr": "Verlaine",
+    "nl": "Verlaine",
+    "de": "Verlaine",
+    "en": "Verlaine"
+   },
+   "postcodes": [
+    "4537"
+   ]
+  },
+  {
+   "nis5": "63079",
+   "name": {
+    "fr": "Verviers",
+    "nl": "Verviers",
+    "de": "Verviers",
+    "en": "Verviers"
+   },
+   "postcodes": [
+    "4800",
+    "4801",
+    "4802"
+   ]
+  },
+  {
+   "nis5": "82032",
+   "name": {
+    "fr": "Vielsalm",
+    "nl": "Vielsalm",
+    "de": "Vielsalm",
+    "en": "Vielsalm"
+   },
+   "postcodes": [
+    "6690",
+    "6692",
+    "6698"
+   ]
+  },
+  {
+   "nis5": "25107",
+   "name": {
+    "fr": "Villers-la-Ville",
+    "nl": "Villers-la-Ville",
+    "de": "Villers-la-Ville",
+    "en": "Villers-la-Ville"
+   },
+   "postcodes": [
+    "1495"
+   ]
+  },
+  {
+   "nis5": "61068",
+   "name": {
+    "fr": "Villers-le-Bouillet",
+    "nl": "Villers-le-Bouillet",
+    "de": "Villers-le-Bouillet",
+    "en": "Villers-le-Bouillet"
+   },
+   "postcodes": [
+    "4530"
+   ]
+  },
+  {
+   "nis5": "23088",
+   "name": {
+    "fr": "Vilvorde",
+    "nl": "Vilvoorde",
+    "de": "Vilvoorde",
+    "en": "Vilvorde"
+   },
+   "postcodes": [
+    "1800",
+    "1804"
+   ]
+  },
+  {
+   "nis5": "93090",
+   "name": {
+    "fr": "Viroinval",
+    "nl": "Viroinval",
+    "de": "Viroinval",
+    "en": "Viroinval"
+   },
+   "postcodes": [
+    "5670"
+   ]
+  },
+  {
+   "nis5": "85045",
+   "name": {
+    "fr": "Virton",
+    "nl": "Virton",
+    "de": "Virton",
+    "en": "Virton"
+   },
+   "postcodes": [
+    "6760",
+    "6761",
+    "6762"
+   ]
+  },
+  {
+   "nis5": "62108",
+   "name": {
+    "fr": "Visé",
+    "nl": "Wezet",
+    "de": "Visé",
+    "en": "Visé"
+   },
+   "postcodes": [
+    "4600",
+    "4601",
+    "4602"
+   ]
+  },
+  {
+   "nis5": "33041",
+   "name": {
+    "fr": "Vleteren",
+    "nl": "Vleteren",
+    "de": "Vleteren",
+    "en": "Vleteren"
+   },
+   "postcodes": [
+    "8640"
+   ]
+  },
+  {
+   "nis5": "13044",
+   "name": {
+    "fr": "Vorselaar",
+    "nl": "Vorselaar",
+    "de": "Vorselaar",
+    "en": "Vorselaar"
+   },
+   "postcodes": [
+    "2290"
+   ]
+  },
+  {
+   "nis5": "13046",
+   "name": {
+    "fr": "Vosselaar",
+    "nl": "Vosselaar",
+    "de": "Vosselaar",
+    "en": "Vosselaar"
+   },
+   "postcodes": [
+    "2350"
+   ]
+  },
+  {
+   "nis5": "91143",
+   "name": {
+    "fr": "Vresse-sur-Semois",
+    "nl": "Vresse-sur-Semois",
+    "de": "Vresse-sur-Semois",
+    "en": "Vresse-sur-Semois"
+   },
+   "postcodes": [
+    "5550"
+   ]
+  },
+  {
+   "nis5": "42023",
+   "name": {
+    "fr": "Waasmunster",
+    "nl": "Waasmunster",
+    "de": "Waasmunster",
+    "en": "Waasmunster"
+   },
+   "postcodes": [
+    "9250"
+   ]
+  },
+  {
+   "nis5": "63080",
+   "name": {
+    "fr": "Waimes",
+    "nl": "Weismes",
+    "de": "Weismes",
+    "en": "Waimes"
+   },
+   "postcodes": [
+    "4950"
+   ]
+  },
+  {
+   "nis5": "93088",
+   "name": {
+    "fr": "Walcourt",
+    "nl": "Walcourt",
+    "de": "Walcourt",
+    "en": "Walcourt"
+   },
+   "postcodes": [
+    "5650",
+    "5651"
+   ]
+  },
+  {
+   "nis5": "25124",
+   "name": {
+    "fr": "Walhain",
+    "nl": "Walhain",
+    "de": "Walhain",
+    "en": "Walhain"
+   },
+   "postcodes": [
+    "1457"
+   ]
+  },
+  {
+   "nis5": "61072",
+   "name": {
+    "fr": "Wanze",
+    "nl": "Wanze",
+    "de": "Wanze",
+    "en": "Wanze"
+   },
+   "postcodes": [
+    "4520"
+   ]
+  },
+  {
+   "nis5": "34040",
+   "name": {
+    "fr": "Waregem",
+    "nl": "Waregem",
+    "de": "Waregem",
+    "en": "Waregem"
+   },
+   "postcodes": [
+    "8790",
+    "8791",
+    "8792",
+    "8793"
+   ]
+  },
+  {
+   "nis5": "64074",
+   "name": {
+    "fr": "Waremme",
+    "nl": "Borgworm",
+    "de": "Waremme",
+    "en": "Waremme"
+   },
+   "postcodes": [
+    "4300"
+   ]
+  },
+  {
+   "nis5": "64075",
+   "name": {
+    "fr": "Wasseiges",
+    "nl": "Wasseiges",
+    "de": "Wasseiges",
+    "en": "Wasseiges"
+   },
+   "postcodes": [
+    "4219"
+   ]
+  },
+  {
+   "nis5": "25110",
+   "name": {
+    "fr": "Waterloo",
+    "nl": "Waterloo",
+    "de": "Waterloo",
+    "en": "Waterloo"
+   },
+   "postcodes": [
+    "1410"
+   ]
+  },
+  {
+   "nis5": "21017",
+   "name": {
+    "fr": "Watermael-Boitsfort",
+    "nl": "Watermaal-Bosvoorde",
+    "de": "Watermael-Boitsfort",
+    "en": "Watermael-Boitsfort"
+   },
+   "postcodes": [
+    "1170"
+   ]
+  },
+  {
+   "nis5": "25112",
+   "name": {
+    "fr": "Wavre",
+    "nl": "Waver",
+    "de": "Wavre",
+    "en": "Wavre"
+   },
+   "postcodes": [
+    "1300",
+    "1301"
+   ]
+  },
+  {
+   "nis5": "63084",
+   "name": {
+    "fr": "Welkenraedt",
+    "nl": "Welkenraedt",
+    "de": "Welkenraedt",
+    "en": "Welkenraedt"
+   },
+   "postcodes": [
+    "4840",
+    "4841"
+   ]
+  },
+  {
+   "nis5": "73098",
+   "name": {
+    "fr": "Wellen",
+    "nl": "Wellen",
+    "de": "Wellen",
+    "en": "Wellen"
+   },
+   "postcodes": [
+    "3830",
+    "3831",
+    "3832"
+   ]
+  },
+  {
+   "nis5": "84075",
+   "name": {
+    "fr": "Wellin",
+    "nl": "Wellin",
+    "de": "Wellin",
+    "en": "Wellin"
+   },
+   "postcodes": [
+    "6920",
+    "6921",
+    "6922",
+    "6924"
+   ]
+  },
+  {
+   "nis5": "23102",
+   "name": {
+    "fr": "Wemmel",
+    "nl": "Wemmel",
+    "de": "Wemmel",
+    "en": "Wemmel"
+   },
+   "postcodes": [
+    "1780"
+   ]
+  },
+  {
+   "nis5": "33029",
+   "name": {
+    "fr": "Wervik",
+    "nl": "Wervik",
+    "de": "Wervik",
+    "en": "Wervik"
+   },
+   "postcodes": [
+    "8940"
+   ]
+  },
+  {
+   "nis5": "13049",
+   "name": {
+    "fr": "Westerlo",
+    "nl": "Westerlo",
+    "de": "Westerlo",
+    "en": "Westerlo"
+   },
+   "postcodes": [
+    "2260"
+   ]
+  },
+  {
+   "nis5": "42025",
+   "name": {
+    "fr": "Wetteren",
+    "nl": "Wetteren",
+    "de": "Wetteren",
+    "en": "Wetteren"
+   },
+   "postcodes": [
+    "9230"
+   ]
+  },
+  {
+   "nis5": "34041",
+   "name": {
+    "fr": "Wevelgem",
+    "nl": "Wevelgem",
+    "de": "Wevelgem",
+    "en": "Wevelgem"
+   },
+   "postcodes": [
+    "8560"
+   ]
+  },
+  {
+   "nis5": "23103",
+   "name": {
+    "fr": "Wezembeek-Oppem",
+    "nl": "Wezembeek-Oppem",
+    "de": "Wezembeek-Oppem",
+    "en": "Wezembeek-Oppem"
+   },
+   "postcodes": [
+    "1970"
+   ]
+  },
+  {
+   "nis5": "42026",
+   "name": {
+    "fr": "Wichelen",
+    "nl": "Wichelen",
+    "de": "Wichelen",
+    "en": "Wichelen"
+   },
+   "postcodes": [
+    "9260"
+   ]
+  },
+  {
+   "nis5": "37017",
+   "name": {
+    "fr": "Wielsbeke",
+    "nl": "Wielsbeke",
+    "de": "Wielsbeke",
+    "en": "Wielsbeke"
+   },
+   "postcodes": [
+    "8710"
+   ]
+  },
+  {
+   "nis5": "11050",
+   "name": {
+    "fr": "Wijnegem",
+    "nl": "Wijnegem",
+    "de": "Wijnegem",
+    "en": "Wijnegem"
+   },
+   "postcodes": [
+    "2110"
+   ]
+  },
+  {
+   "nis5": "12040",
+   "name": {
+    "fr": "Willebroek",
+    "nl": "Willebroek",
+    "de": "Willebroek",
+    "en": "Willebroek"
+   },
+   "postcodes": [
+    "2830"
+   ]
+  },
+  {
+   "nis5": "37021",
+   "name": {
+    "fr": "Wingene",
+    "nl": "Wingene",
+    "de": "Wingene",
+    "en": "Wingene"
+   },
+   "postcodes": [
+    "8750",
+    "8755"
+   ]
+  },
+  {
+   "nis5": "21018",
+   "name": {
+    "fr": "Woluwe-Saint-Lambert",
+    "nl": "Sint-Lambrechts-Woluwe",
+    "de": "Woluwe-Saint-Lambert",
+    "en": "Woluwe-Saint-Lambert"
+   },
+   "postcodes": [
+    "1200"
+   ]
+  },
+  {
+   "nis5": "21019",
+   "name": {
+    "fr": "Woluwe-Saint-Pierre",
+    "nl": "Sint-Pieters-Woluwe",
+    "de": "Woluwe-Saint-Pierre",
+    "en": "Woluwe-Saint-Pierre"
+   },
+   "postcodes": [
+    "1150"
+   ]
+  },
+  {
+   "nis5": "11052",
+   "name": {
+    "fr": "Wommelgem",
+    "nl": "Wommelgem",
+    "de": "Wommelgem",
+    "en": "Wommelgem"
+   },
+   "postcodes": [
+    "2160"
+   ]
+  },
+  {
+   "nis5": "45061",
+   "name": {
+    "fr": "Wortegem-Petegem",
+    "nl": "Wortegem-Petegem",
+    "de": "Wortegem-Petegem",
+    "en": "Wortegem-Petegem"
+   },
+   "postcodes": [
+    "9790"
+   ]
+  },
+  {
+   "nis5": "11053",
+   "name": {
+    "fr": "Wuustwezel",
+    "nl": "Wuustwezel",
+    "de": "Wuustwezel",
+    "en": "Wuustwezel"
+   },
+   "postcodes": [
+    "2990"
+   ]
+  },
+  {
+   "nis5": "33011",
+   "name": {
+    "fr": "Ypres",
+    "nl": "Ieper",
+    "de": "Ypern",
+    "en": "Ypres"
+   },
+   "postcodes": [
+    "8900",
+    "8902",
+    "8904",
+    "8906",
+    "8908"
+   ]
+  },
+  {
+   "nis5": "91141",
+   "name": {
+    "fr": "Yvoir",
+    "nl": "Yvoir",
+    "de": "Yvoir",
+    "en": "Yvoir"
+   },
+   "postcodes": [
+    "5530"
+   ]
+  },
+  {
+   "nis5": "11054",
+   "name": {
+    "fr": "Zandhoven",
+    "nl": "Zandhoven",
+    "de": "Zandhoven",
+    "en": "Zandhoven"
+   },
+   "postcodes": [
+    "2240",
+    "2242",
+    "2243"
+   ]
+  },
+  {
+   "nis5": "23094",
+   "name": {
+    "fr": "Zaventem",
+    "nl": "Zaventem",
+    "de": "Zaventem",
+    "en": "Zaventem"
+   },
+   "postcodes": [
+    "1930",
+    "1932",
+    "1933",
+    "1935"
+   ]
+  },
+  {
+   "nis5": "31040",
+   "name": {
+    "fr": "Zedelgem",
+    "nl": "Zedelgem",
+    "de": "Zedelgem",
+    "en": "Zedelgem"
+   },
+   "postcodes": [
+    "8210",
+    "8211"
+   ]
+  },
+  {
+   "nis5": "42028",
+   "name": {
+    "fr": "Zele",
+    "nl": "Zele",
+    "de": "Zele",
+    "en": "Zele"
+   },
+   "postcodes": [
+    "9240"
+   ]
+  },
+  {
+   "nis5": "43018",
+   "name": {
+    "fr": "Zelzate",
+    "nl": "Zelzate",
+    "de": "Zelzate",
+    "en": "Zelzate"
+   },
+   "postcodes": [
+    "9060"
+   ]
+  },
+  {
+   "nis5": "23096",
+   "name": {
+    "fr": "Zemst",
+    "nl": "Zemst",
+    "de": "Zemst",
+    "en": "Zemst"
+   },
+   "postcodes": [
+    "1980",
+    "1981",
+    "1982"
+   ]
+  },
+  {
+   "nis5": "11055",
+   "name": {
+    "fr": "Zoersel",
+    "nl": "Zoersel",
+    "de": "Zoersel",
+    "en": "Zoersel"
+   },
+   "postcodes": [
+    "2980"
+   ]
+  },
+  {
+   "nis5": "71066",
+   "name": {
+    "fr": "Zonhoven",
+    "nl": "Zonhoven",
+    "de": "Zonhoven",
+    "en": "Zonhoven"
+   },
+   "postcodes": [
+    "3520"
+   ]
+  },
+  {
+   "nis5": "33037",
+   "name": {
+    "fr": "Zonnebeke",
+    "nl": "Zonnebeke",
+    "de": "Zonnebeke",
+    "en": "Zonnebeke"
+   },
+   "postcodes": [
+    "8980"
+   ]
+  },
+  {
+   "nis5": "41081",
+   "name": {
+    "fr": "Zottegem",
+    "nl": "Zottegem",
+    "de": "Zottegem",
+    "en": "Zottegem"
+   },
+   "postcodes": [
+    "9620"
+   ]
+  },
+  {
+   "nis5": "31042",
+   "name": {
+    "fr": "Zuienkerke",
+    "nl": "Zuienkerke",
+    "de": "Zuienkerke",
+    "en": "Zuienkerke"
+   },
+   "postcodes": [
+    "8377"
+   ]
+  },
+  {
+   "nis5": "44081",
+   "name": {
+    "fr": "Zulte",
+    "nl": "Zulte",
+    "de": "Zulte",
+    "en": "Zulte"
+   },
+   "postcodes": [
+    "9870"
+   ]
+  },
+  {
+   "nis5": "71067",
+   "name": {
+    "fr": "Zutendaal",
+    "nl": "Zutendaal",
+    "de": "Zutendaal",
+    "en": "Zutendaal"
+   },
+   "postcodes": [
+    "3690"
+   ]
+  },
+  {
+   "nis5": "45065",
+   "name": {
+    "fr": "Zwalm",
+    "nl": "Zwalm",
+    "de": "Zwalm",
+    "en": "Zwalm"
+   },
+   "postcodes": [
+    "9630",
+    "9636"
+   ]
+  },
+  {
+   "nis5": "34042",
+   "name": {
+    "fr": "Zwevegem",
+    "nl": "Zwevegem",
+    "de": "Zwevegem",
+    "en": "Zwevegem"
+   },
+   "postcodes": [
+    "8550",
+    "8551",
+    "8552",
+    "8553",
+    "8554"
+   ]
+  },
+  {
+   "nis5": "55050",
+   "name": {
+    "fr": "Écaussinnes",
+    "nl": "Écaussinnes",
+    "de": "Écaussinnes",
+    "en": "Écaussinnes"
+   },
+   "postcodes": [
+    "7190",
+    "7191"
+   ]
+  },
+  {
+   "nis5": "92035",
+   "name": {
+    "fr": "Éghezée",
+    "nl": "Éghezée",
+    "de": "Éghezée",
+    "en": "Éghezée"
+   },
+   "postcodes": [
+    "5310"
+   ]
+  },
+  {
+   "nis5": "83013",
+   "name": {
+    "fr": "Érezée",
+    "nl": "Érezée",
+    "de": "Érezée",
+    "en": "Érezée"
+   },
+   "postcodes": [
+    "6997"
+   ]
+  },
+  {
+   "nis5": "85009",
+   "name": {
+    "fr": "Étalle",
+    "nl": "Étalle",
+    "de": "Étalle",
+    "en": "Étalle"
+   },
+   "postcodes": [
+    "6740",
+    "6741",
+    "6742",
+    "6743"
+   ]
+  }
+ ]
+}

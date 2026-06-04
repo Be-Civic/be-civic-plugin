@@ -63,9 +63,11 @@ If the user's message matches a procedure by name, you may use `WebFetch GET htt
 
 ## 4. Project NOT found, user has procedure intent (clear or vague)
 
-Explain Be Civic in plain language, two-three sentences:
+Explain Be Civic in plain language, two-three sentences. **When intent is `procedure_intent_clear`, name the procedure the user just mentioned** — don't re-pitch generically or re-ask what they came for; they told you. Acknowledge it and go straight to the one decision that's actually open (set up a project or not):
 
-> "Be Civic is a guided walkthrough for Belgian administrative procedures — citizenship declarations, residency, commune registrations, that kind of thing. It works best when you set up a Be Civic project folder once, so your notes and documents stay with you across sessions. Want me to set one up now? It takes a minute."
+> "I can help with your **<the procedure they named, e.g. Belgian nationality application>** — Be Civic walks Belgian admin procedures step by step and keeps your notes and documents with you across sessions if you set up a project folder. Want me to set one up now? It takes a minute."
+
+(For `procedure_intent_vague`, keep the generic framing: *"Be Civic is a guided walkthrough for Belgian administrative procedures — citizenship declarations, residency, commune registrations, that kind of thing. It works best when you set up a project folder once… Want me to set one up now?"*)
 
 Use AskUserQuestion with three options (MECE: the three options are exhaustive and non-overlapping):
 
