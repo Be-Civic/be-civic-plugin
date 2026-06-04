@@ -154,9 +154,9 @@ Base URL `${BASE}` = `https://becivic.be`. All library reads and all submissions
 **Two response envelopes — branch on the HTTP status code first.**
 
 - **Reads + submissions** return `{ "status": <code>, "data": {…} }` on success, `{ "error": "<category>", … }` on error. The payload you want is in `.data`.
-- **Auth endpoints** (`start-verification`, `verify`, `rotate-key`, `users/rotate`) return the payload **UNWRAPPED** — e.g. `{ "user_id", "harness_key", "tier" }`, no `{status,data}` wrapper.
+- **Auth endpoints** (`start-verification`, `verify`, `rotate-key`, `users/delete`) return the payload **UNWRAPPED** — e.g. `{ "user_id", "harness_key", "tier" }` or `{ "deleted": true }`, no `{status,data}` wrapper.
 
-**Authentication.** Send `Authorization: Bearer <harness_key>` (read the value from `${SUBSTRATE_STATE}/.env`, the `BECIVIC_HARNESS_KEY=` line) on every call once provisioned. Reads succeed anonymously on `corpus:read:public` without it, but send the Bearer whenever present for full `corpus:read`. Auth endpoints take no Bearer (they mint or rotate the key).
+**Authentication.** Send `Authorization: Bearer <harness_key>` (read the value from `${SUBSTRATE_STATE}/.env`, the `BECIVIC_HARNESS_KEY=` line) on every call once provisioned. Reads succeed anonymously on `corpus:read:public` without it, but send the Bearer whenever present for full `corpus:read`. Of the auth endpoints, `start-verification` + `verify` take no Bearer (they bootstrap the key); `rotate-key` + `users/delete` require the Bearer (they act on an existing account).
 
 ### Reads (GET)
 
@@ -300,7 +300,7 @@ You MUST be ready to answer privacy questions plainly. The user may ask "where i
 - **What Be Civic sees.** "Be Civic only sees observations that you approve at the end of the session — things like 'this fee changed' or 'this document wasn't on the list.' Each one is anonymous and gets shown to you before it's sent. Nothing is ever sent without your say-so. You can cancel any item within 48 hours if you change your mind."
 - **What's on your own machine.** "Your notes live in your Be Civic folder on your computer. I keep routing context there — your region, civil status, that kind of thing — so we don't start from zero next time. The folder is yours; open it, delete it, move it whenever."
 - **Who else can see this.** "On your computer, anyone with access to your machine could read the folder. On Be Civic's side, only what you approve."
-- **How to delete everything.** "Delete your Be Civic folder. That's it — there's no account and no server-side copy of your data. If you also want the pseudonymous key that signs your contributions wiped and re-minted, I can run a key rotation for you."
+- **How to delete everything.** "Two parts. To wipe what's on your computer, delete your Be Civic folder. To erase your Be Civic account — your email and the link to your past notes — I can do that now; it can't be undone. Want me to?" If the user says yes, run the account-erasure flow below (`POST /api/users/delete`).
 
 For deeper questions, refer to `https://becivic.be/privacy` or `privacy@becivic.be`.
 
@@ -316,9 +316,13 @@ For deeper questions, refer to `https://becivic.be/privacy` or `privacy@becivic.
 
 Per-item review at session close means the user sees and approves every submission before it leaves the machine, with a 48-hour cancel window after submit.
 
-**Key rotation / erasure.** Two distinct operations, both auth endpoints (unwrapped responses, Bearer required):
-- Rotate the signing key only (same identity, new key): `POST ${BASE}/api/auth/rotate-key` body `{}` → `200 { harness_key }`. Overwrite `${SUBSTRATE_STATE}/.env`.
-- Erase and re-mint the user identity: `POST ${BASE}/api/users/rotate` body `{}` → `202 { verification_id, expires_at }` → the email-code ceremony (user enters the emailed 6-digit code) → `POST ${BASE}/api/auth/verify` body `{ verification_id, code }` mints a fresh user_id + key.
+**Key rotation / account erasure.** Two distinct operations, both auth endpoints (unwrapped responses, Bearer required on both calls):
+- Rotate the signing key only (same account, fresh key — e.g. a compromised key): `POST ${BASE}/api/auth/rotate-key` body `{}` → `200 { harness_key }`. Overwrite `${SUBSTRATE_STATE}/.env`.
+- Erase the account (right-to-erasure — **irreversible**): a two-call email-code ceremony. **Confirm with the user first** (it can't be undone), then:
+  1. `POST ${BASE}/api/users/delete` body `{}` → `202 { verification_id, expires_at }`; Be Civic emails a 6-digit code. Ask the user for it.
+  2. `POST ${BASE}/api/users/delete` body `{ verification_id, code }` → `200 { deleted: true }`. The server scrubs the email and erases the account.
+
+  On `200`: delete the local key file `${SUBSTRATE_STATE}/.env` (the key is now retired server-side), then offer to delete the Be Civic project folder. Re-onboarding later with the same email mints a fresh identity (the erased one does not come back).
 
 If the user asks why the harness is careful: "Be Civic is designed so that nothing in the verified library or in the contribution loop can identify the people who helped build it. The load-bearing guarantee is on what reaches Be Civic — that's the part we promise."
 

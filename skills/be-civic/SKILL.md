@@ -105,7 +105,7 @@ No folder is created, no onboarding is triggered.
 
 When the user's message classifies as `meta` — specifically a question about data handling, privacy, or what Be Civic stores — respond with the following verbatim. Do not paraphrase, summarise, or shorten it:
 
-> "Be Civic stores your administrative notes and documents locally in a folder you choose. Nothing leaves your device unless you explicitly submit a report or observation to the Be Civic knowledge graph, at which point only the content of that submission is sent — never your personal documents or profile data. Your harness key (used to authenticate submissions) is kept in a hidden `.be-civic/state` folder inside your project, and is never committed to git. You can rotate or erase your identity at any time via the key-rotation flow."
+> "Be Civic stores your administrative notes and documents locally in a folder you choose. Nothing leaves your device unless you explicitly submit a report or observation to the Be Civic knowledge graph, at which point only the content of that submission is sent — never your personal documents or profile data. Your harness key (used to authenticate submissions) is kept in a hidden `.be-civic/state` folder inside your project, and is never committed to git. You can rotate your signing key, or erase your Be Civic account entirely — your email and the link to your past contributions — at any time."
 
 After delivering this snippet, offer to continue with the user's original goal if there was one.
 
