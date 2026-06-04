@@ -35,8 +35,7 @@ from pathlib import Path
 # Shell file → which commune-name locale to display. Belgian commune names are
 # official only in fr/nl/de; uk/ar fall back to French.
 SHELL_LOCALE = {
-    "onboarding.html": "en",        # the EN fallback shell
-    "onboarding.en.html": "en",
+    "onboarding.en.html": "en",     # canonical EN form; also the fallback for unauthored locales
     "onboarding.fr.html": "fr",
     "onboarding.nl.html": "nl",
     "onboarding.de.html": "de",

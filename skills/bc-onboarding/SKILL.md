@@ -51,17 +51,17 @@ First, **silently identify which procedure the user came for** so the rest of se
 1. `GET https://becivic.be/api/manifest` → `{ version, generated_at, entries }`. The entity graph is in `.entries` (top-level — there is no `.data` wrapper). Search the entries client-side by `title` / `summary` / `applies_to` against the user's intent to find the Process the gate matched (or the closest match).
 2. Hold the matched entry's `title`, its Process `id`, and its `version`. These feed the procedures registry seed (§6.2) and the carry-over the next chat reads (§6.4a). If nothing in the manifest matches the user's intent (or the gate classified `procedure_intent_vague` with zero hits), hold the `intake` slug instead — `bc-discovery` resolves it in the next chat.
 
-**Do NOT fetch a Process body here** — no Process is public; an anonymous `GET https://becivic.be/api/processes/<id>` without a Bearer returns `401`. The match runs off the manifest only. **Do not present the procedure's stages, documents, fees, deadlines, or per-step detail** — none of that is introduced in the plugin; it belongs to the working session after verification.
+**Do NOT fetch a Process body here** — no Process is public today; an anonymous `GET https://becivic.be/api/processes/<id>` without a Bearer returns `401`. The match runs off the manifest only. **Do not present the procedure's stages, documents, fees, deadlines, or per-step detail** — none of that is introduced in the plugin; it belongs to the working session after verification.
 
-Then go straight to the email ask (Step 2). Keep your framing to one short beat — who you are and what's about to happen — for example, in the conversation language: *"Let's get you set up. I'll take an email so I can save your progress to a folder on your machine and so your anonymous notes can help the next person — then we're into it."* Do not render a branded introduction panel.
+Then go straight to the email ask (Step 2). Keep your framing to one short beat — who you are and what's about to happen — for example, in the conversation language: *"Let's get you set up. First I'll take your email to get you authenticated — that's what lets me open Be Civic's verified guides and save your progress. Then we're into it."* Do not render a branded introduction panel.
 
 ### 1.1. Anonymous-read fallback (user declines verification)
 
 If at any point the user declines to verify by email — "I don't want to give my email", "can I just look around?", "not yet" — **do not push.** Skip steps 2–6 entirely and operate read-only:
 
-- Reads run against `corpus:read:public` with **no Bearer** — the manifest and its per-Process `outline` via `WebFetch`. Process bodies stay gated (anonymous `GET /api/processes/<id>` returns `401`).
+- Reads run against `corpus:read:public` with **no Bearer** — the manifest (which includes a short outline per procedure) via `WebFetch`. Process bodies stay gated (anonymous `GET /api/processes/<id>` returns `401`).
 - **No submissions are possible** — Issues, Validations, Feedback, Ratings all require the pseudonymous tier. No folder is mounted; no `${SUBSTRATE_STATE}` state is written; no marker.
-- Frame the limit kindly, in conversation language: *"No problem — I can show you what's in the library and walk you through procedures right now, without an email. The thing email unlocks is saving your progress to a folder on your machine and contributing anonymous notes back so the next person has it easier. Say the word whenever you'd like to set that up."*
+- Frame the limit kindly, in conversation language: *"No problem. Without your email I can't open Be Civic's verified guides, but I'll do my best to help from what I know in the meantime. If you change your mind, just say so."*
 - The mode persists for the session. The user can opt in later by re-stating intent — pick back up at step 2.
 
 ---
@@ -95,7 +95,7 @@ If the user **closes the widget without submitting**, treat it as a decline and 
 
 On the `[Be Civic access] email: <addr>` message, validate the address shape locally (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`).
 
-**Envelope-mismatch check (do this once, before verifying).** If you can see the user's account email — e.g. the Cowork session envelope exposes one — and it differs from the `<addr>` they typed, ask once, in conversation language, before calling the endpoint: *"You're signed in as `<envelope-email>`, but you typed `<typed-email>`. Verification mints your identity against whichever address gets the code — which do you want to use?"* This is cheap and prevents a whole class of typos that mint an identity against an inbox the user can't actually read (so they can never receive the code, or recover the key later). If you have no envelope email to compare against, skip this and proceed.
+**Envelope-mismatch check (do this once, before verifying).** If you can see the user's account email — e.g. the Cowork session envelope exposes one — and it differs from the `<addr>` they typed, ask once, in conversation language, before calling the endpoint: *"You're signed in as `<envelope-email>` but you typed `<typed-email>`. The code goes to whichever address you verify, and that becomes your account — which do you want to use?"* This is cheap and prevents a whole class of typos that mint an identity against an inbox the user can't actually read (so they can never receive the code, or recover the key later). If you have no envelope email to compare against, skip this and proceed.
 
 Then call the start endpoint via **`WebFetch`**. **No auth header** — the user has no key yet.
 
@@ -116,7 +116,7 @@ This emails the user a **6-digit code**. The widget is already showing the code 
 
 - **`202`** — hold `verification_id`. **Do not write `.pending-verification` yet** — no durable write happens before the folder is picked (Step 6.1), and `${SUBSTRATE_STATE}` does not exist until then. Hold `verification_id`, `email`, and `expires_at` in working memory. Once the folder is picked and state exists, write `${SUBSTRATE_STATE}/.pending-verification` (one line) so a half-finished ceremony resumes on next session; it is transient and never committed (denied by the single `.gitignore` allowlist). (In **verification-only recovery mode** the folder already exists, so write it immediately.)
 - **Network failure / timeout** — retry with exponential backoff (250 ms → 500 ms → 1 s → 2 s). On persistent failure, tell the user the verification service is unreachable and fall to anonymous-read mode (§1.1); offer to retry later.
-- **Address rejected** — surface plainly: *"I couldn't send to that address — want to try another?"* and re-render the access widget.
+- **Address rejected** — surface plainly: *"I couldn't send a code to that address — want to try another?"* and re-render the access widget.
 
 On a `[Be Civic access] resend` message, re-run this step for the held email; a fresh `verification_id` + code are issued (replace the held one).
 
@@ -167,7 +167,7 @@ A confirmed verification with absent marker triggers the full project write. **T
 
 Call `mcp__cowork__request_cowork_directory`. The user picks a **parent folder**; the project folder is `<picked-parent>/BeCivic/` (this becomes `${SUBSTRATE_DATA}`).
 
-If the user **cancels the picker**, do not write anything. There is no separate surface that exists without a picked folder — the whole project (key included) lives inside `${SUBSTRATE_DATA}`, so with no folder there is nowhere durable to write. Say: *"I need a folder to save your project in. Want to try the picker again, or carry on in chat for now and set the folder up later?"* The latter degrades to **advice-only with ZERO durable writes** — no key, no identity, no files at all. The minted `harness_key` from Step 5 is held in working memory only this session; nothing is written. Tell the user nothing is being saved to disk yet, and that picking a folder later will save everything.
+If the user **cancels the picker**, do not write anything. There is no separate surface that exists without a picked folder — the whole project (key included) lives inside `${SUBSTRATE_DATA}`, so with no folder there is nowhere durable to write. Say: *"I need a folder to save your progress in. Want to try the picker again, or carry on here for now and set it up later?"* The latter degrades to **advice-only with ZERO durable writes** — no key, no identity, no files at all. The minted `harness_key` from Step 5 is held in working memory only this session; nothing is written. Tell the user nothing is being saved to disk yet, and that picking a folder later will save everything.
 
 ### 6.2. Write the whole project in one call — `setup_project.py`
 
@@ -192,7 +192,7 @@ printf '%s' "<harness_key>" | python3 "${SUBSTRATE_ROOT}/scripts/setup_project.p
 
 `<picked-parent>` is the folder the user picked in 6.1; the script creates `<picked-parent>/BeCivic/` as `${SUBSTRATE_DATA}`. (`${SUBSTRATE_ROOT}` is a plugin-install path — pass it through; the script reads its own templates from there. Run this via `bash`, since the install dir is only reachable on the bash side, not the host `Read` tool.)
 
-**Nested-repo guard.** If the script exits non-zero with `SETUP_ERROR: nested_repo_needs_confirmation`, the picked parent sits inside another git project and nothing was written. Warn the user plainly: *"The folder you picked sits inside another git project. I'd normally make your Be Civic folder its own little repository so your progress is saved cleanly. Want me to do that here anyway, or pick a different folder outside the other project?"* On confirmation, re-run the **same** command with `--allow-nested`; if they repick, re-run with the new `--data-root`.
+**Nested-repo guard.** If the script exits non-zero with `SETUP_ERROR: nested_repo_needs_confirmation`, the picked parent sits inside another git project and nothing was written. Warn the user plainly: *"The folder you picked sits inside another project folder that has git enabled. I'd normally give your Be Civic files their own space so your progress is saved cleanly. Want me to set it up here anyway, or pick a different folder?"* On confirmation, re-run the **same** command with `--allow-nested`; if they repick, re-run with the new `--data-root`.
 
 **Verify before handing off.** Read the script's `KEY: VALUE` stdout. Proceed to §6.5 only when you see `SETUP_RESULT: ok` **and** a real `COMMIT_SHA`. On `partial` / `failed`, surface the `SETUP_ERROR` / `OPERATOR_ALERT` line and do **not** hand off — re-run, or fall back to the manual write in the reference below. You do **not** need to Read any of the written files back: the output lines (`ENV_WRITTEN`, `PROCEDURES_WRITTEN`, `CLAUDE_MD_WRITTEN`, `COMMIT_SHA`, …) report each step. The script never echoes the key (`HARNESS_KEY: present`, value-only).
 
@@ -234,7 +234,7 @@ The script reproduces §6.2–§6.4a exactly. This is the ground-truth shape, ke
 
 Confirm to the user, in conversation language:
 
-> "You're set up — saved locally at `<absolute path to BeCivic/>`. Everything you tell me stays in this folder on your machine. The only thing that ever leaves is the anonymous notes you approve at the end of a session, and you see every one before it's sent."
+> "You're set up — saved locally at `<absolute path to BeCivic/>`. Everything you tell me stays in this folder on your machine, and nothing that identifies you is ever sent to Be Civic. I use details like your region and commune to find the right guidance for you — that stays here too. At the end of each session I'll propose any anonymous feedback worth sending back (say, a fee that changed); it includes your region and commune so it's useful to others in the same place, but never your name, documents, or ID numbers — and nothing goes without your say-so. During the alpha, Be Civic also gets anonymous usage stats — which procedures get used, where I get stuck — never anything you typed."
 
 This is the anonymity trust clause; it fires naturally at folder-mount time. Keep it to one beat.
 
@@ -248,7 +248,7 @@ So Chat 1 ends here. Hand the user a clickable link into their project, tell the
 
 ### 7.0. Only hand off if a project folder exists
 
-The handoff below requires a real `${SUBSTRATE_DATA}` folder to open. If the user cancelled the folder picker (the advice-only branch in 6.1), **nothing was written to disk** — no folder, no `CLAUDE.md`, no state — so there is nothing for a fresh chat to auto-load, and a handoff link would point nowhere. In that case **do not run the handoff (7.1–7.3).** Instead, stay in this conversation in advice-only mode: nothing is saved to disk this session (the minted key was held in working memory only). Offer the user the choice again: *"I can keep helping you here, but nothing's being saved to a folder yet. Want to pick a folder now so I can save your project and pick it up cleanly next time?"* If they pick a folder, complete **the full project write — 6.2 (init repo + `.gitignore`), 6.3 (state), and 6.4 (the rest of the folder + carry-over)** — then run the handoff. If they decline, continue in advice-only — no context switch.
+The handoff below requires a real `${SUBSTRATE_DATA}` folder to open. If the user cancelled the folder picker (the advice-only branch in 6.1), **nothing was written to disk** — no folder, no `CLAUDE.md`, no state — so there is nothing for a fresh chat to auto-load, and a handoff link would point nowhere. In that case **do not run the handoff (7.1–7.3).** Instead, stay in this conversation in advice-only mode: nothing is saved to disk this session (the minted key was held in working memory only). Offer the user the choice again: *"I can keep helping you here, but nothing's being saved yet. Want to pick a folder now so I can save your progress and pick it up cleanly next time?"* If they pick a folder, complete **the full project write — 6.2 (init repo + `.gitignore`), 6.3 (state), and 6.4 (the rest of the folder + carry-over)** — then run the handoff. If they decline, continue in advice-only — no context switch.
 
 Only when `${SUBSTRATE_DATA}` exists (the picker succeeded and 6.2 + 6.3 + 6.4 ran: the `.gitignore`, state, `.be-civic/marker`, `CLAUDE.md`, and the carry-over are all in place) do you run the handoff below.
 
@@ -262,7 +262,7 @@ Say this, in conversation language, filling `<procedure name>` and the absolute 
 >
 > [Open your <procedure name> project →](<deeplink or path>)
 >
-> When the new chat opens you should see me greet you about your **<procedure name>** straight away. If you don't see that greeting, the chat isn't inside your project folder — close it and reopen it inside your `BeCivic` folder, and I'll be there."
+> When the new chat opens you should see me name your **<procedure name>** straight away. If you don't, the chat isn't inside your project folder — close it and reopen it inside your `BeCivic` folder, and I'll be there."
 
 The recovery sentence is mandatory, not optional. It is the only safety net if the auto-load misses, because a chat opened in the wrong folder has no harness to self-correct.
 
@@ -306,7 +306,7 @@ If both gaps are present, fix the key first (verification-only mode), then the h
 The harness routes here when a project folder exists (marker present) but verification never completed, so `${SUBSTRATE_STATE}/.env` has no harness key. The user installed and set up the folder, then abandoned before entering their code — or returned to a project that never got a key. **Do NOT silently 401 against the wire; do NOT re-run the whole flow.** Just finish the one missing piece: minting and writing the key.
 
 1. **Confirm the gap.** A marker exists (so the project is real) but the key is absent (presence check on `${SUBSTRATE_STATE}/.env` — never read the value). If a `${SUBSTRATE_STATE}/.pending-verification` file is present, read its `email` / `verification_id` / `expires_at` to resume mid-ceremony.
-2. **Re-open the access widget at the right step.** Render the shipped access widget (Step 2) so the user can complete verification. If `.pending-verification` is still valid, you can go straight to the code step (tell the user a code was already emailed; offer resend). If it is expired or absent, start fresh from the email step. Frame it plainly: *"Your project's here, but your access wasn't finished setting up — let's complete that now so I can pull your procedure."*
+2. **Re-open the access widget at the right step.** Render the shipped access widget (Step 2) so the user can complete verification. If `.pending-verification` is still valid, you can go straight to the code step (tell the user a code was already emailed; offer resend). If it is expired or absent, start fresh from the email step. Frame it plainly: *"Your project's here, but your access wasn't finished setting up. Let's finish that now so I can open your guide."*
 3. **Run Steps 3 → 5** (start-verification → receive code → verify) exactly as in first-contact. On `verify` success you get `{ user_id, harness_key, tier }`.
 4. **Write the key (and only what's missing).** Write `harness_key` to `${SUBSTRATE_STATE}/.env` per Step 6.3 item 1 (the folder already exists, so the single `.gitignore` from 6.2 is already in place and the key is never staged — confirm `git check-ignore -q -- .be-civic/state/.env` passes if in doubt). Write `user-id` if it is absent. **Do NOT overwrite an existing `profile.json`, `preferences.json`, `procedures.json`, the marker, `CLAUDE.md`, or anything else in the folder** — those were already written when the folder was set up. Delete `.pending-verification` once `verify` succeeds.
 5. **Return control to the harness.** The key is now present; the harness self-check (its §3.0) passes and it proceeds with the carry-over it already has. Do not run the about-you form here — that is the harness's job in the working session.
@@ -341,7 +341,7 @@ A returning user may arrive with a `bc-import` bundle from another machine. When
 
 If the user never verifies (declined at §1.1, closed the email widget at §2, or the verification service was unreachable), the session runs read-only on `corpus:read:public`:
 
-- `WebFetch` reads of the manifest and its per-Process `outline`, **no Bearer** (Process bodies stay gated — anonymous `GET /api/processes/<id>` returns `401`).
+- `WebFetch` reads of the manifest (which includes a short outline per procedure), **no Bearer** (Process bodies stay gated — anonymous `GET /api/processes/<id>` returns `401`).
 - No submissions. No folder. No `${SUBSTRATE_STATE}` writes. No marker.
 - The mode resets each session — the next session starts anonymous again until the user opts in.
 
@@ -355,7 +355,7 @@ Frame the limit as a choice the user can reverse any time, never as a failure.
 
 If the user asks a meta question mid-onboarding (between the Step 1 framing and the email submit), pause the flow, quote `privacy-snippet.md` verbatim (load it from the file — **never paraphrase**), then offer:
 
-> "Want me to carry on setting you up, or keep talking about the data side first?"
+> "Want me to carry on setting you up, or talk through the data side first?"
 
 If they want to keep talking about data, hold position. If they decide not to proceed, fall to the anonymous-read fallback (§1.1).
 

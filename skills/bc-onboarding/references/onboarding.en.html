@@ -94,6 +94,7 @@
     margin-bottom: 4px;
   }
   .bc-hero__mark .bc-hero__dot { color: var(--brand-red); }
+  .bc-hero__mark .bc-hero__be { color: var(--brand-gold); }  /* gold "be" — matches the bc-landing wordmark */
   .bc-hero__tag {
     font-family: var(--display);
     font-weight: 700;
@@ -250,14 +251,13 @@
         <path fill="#fae042" transform="translate(12.6560 23.5) scale(0.011000 -0.011000)" d="M642 -30Q476 -30 349.5 41.5Q223 113 151.5 238.5Q80 364 80 526Q80 703 150.0 834.0Q220 965 343.0 1037.5Q466 1110 626 1110Q796 1110 915.0 1030.0Q1034 950 1091.0 805.0Q1148 660 1131 464H862V564Q862 729 809.5 801.5Q757 874 638 874Q499 874 433.5 789.5Q368 705 368 540Q368 389 433.5 306.5Q499 224 626 224Q706 224 763.0 259.0Q820 294 850 360L1122 282Q1061 134 929.5 52.0Q798 -30 642 -30ZM284 464V666H1000V464Z"/>
         <path fill="#ed2939" transform="translate(25.1520 23.5) scale(0.011000 -0.011000)" d="M184 0V272H456V0Z"/>
       </svg>
-      <span>be civic<span class="bc-hero__dot">.</span></span>
+      <span><span class="bc-hero__be">be</span> civic<span class="bc-hero__dot">.</span></span>
     </div>
 
     <p class="bc-hero__tag">Belgian admin, written for the AI you already have.</p>
     <p class="bc-hero__welcome">
-      Be Civic gives your agent a public library of verified Belgian procedures — commune,
-      federal, regional. Tell us a few things about your situation and your agent will
-      pick the right procedure for you.
+      Be Civic gives me a verified library of Belgian procedures — commune, federal, regional.
+      Tell me a few things about your situation and I'll line up the right one for you.
     </p>
 
     <div class="bc-trust" role="note">
@@ -265,8 +265,8 @@
         <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
       </svg>
       <span>
-        <strong>Everything you tell Be Civic stays in your project folder on your computer.</strong>
-        Nothing leaves your machine except observations you explicitly approve at session close.
+        <strong>Everything you tell me stays in your Be Civic folder on your computer.</strong>
+        The only things that ever leave are the short, anonymous notes you approve at the end of a session — these include your region and commune so they help others nearby, but never your name, documents, or ID numbers.
       </span>
     </div>
   </div>
@@ -343,22 +343,22 @@
 
     <!-- residency status -->
     <div class="bc-group">
-      <label class="bc-q">Your nationality / residency situation</label>
+      <label class="bc-q">Your residency situation in Belgium</label>
       <div data-pg="residency_status" style="display: flex; flex-wrap: wrap; gap: 7px;">
         <button type="button" data-value="belgian-national" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Belgian national</button>
         <button type="button" data-value="EU-citizen" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">EU citizen</button>
-        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Third-country, with a Belgian permit</button>
-        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Third-country, applying from abroad</button>
+        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Non-EU with a residence permit</button>
+        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Non-EU, not yet resident</button>
         <button type="button" data-value="asylum" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Asylum seeker</button>
         <button type="button" data-value="undocumented" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Undocumented</button>
-        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">I'm not sure</button>
+        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Not sure</button>
       </div>
-      <span class="bc-hint">If you're not sure, pick that — we'll figure it out together from your card or paperwork.</span>
+      <span class="bc-hint">Not sure? Pick that — we'll work it out together from your card or paperwork.</span>
     </div>
 
     <!-- conversation language (free text — agent pre-fills detected language at runtime) -->
     <div class="bc-group">
-      <label class="bc-q" for="bc-convlang">We can keep talking in <span data-template-fill="detected_language">English</span>, or tell us another language below.</label>
+      <label class="bc-q" for="bc-convlang">We can keep talking in <span data-template-fill="detected_language">English</span>, or tell me another language below.</label>
       <span class="bc-hint">Any language your agent speaks works — Spanish, Slovenian, Tagalog, anything.</span>
       <input id="bc-convlang" type="text" data-name="conversation_language" value="English" placeholder="e.g. English, Français, Nederlands"
              style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
@@ -377,7 +377,7 @@
 
     <!-- preferred name -->
     <div class="bc-group">
-      <label class="bc-q" for="bc-name">What should we call you?</label>
+      <label class="bc-q" for="bc-name">What should I call you?</label>
       <span class="bc-hint">First name, an initial, anything that feels right. Stays on your machine.</span>
       <input id="bc-name" type="text" data-name="preferred_name" placeholder="e.g. Maya"
              style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
@@ -396,9 +396,9 @@
 
     <!-- browser driving preference -->
     <div class="bc-group">
-      <label class="bc-q">When your agent needs to use a website (Irisbox, MyMinfin, etc.)</label>
+      <label class="bc-q">When I need to use a website (Irisbox, MyMinfin, etc.)</label>
       <div data-pg="browser_driving_preference" style="display: flex; flex-wrap: wrap; gap: 7px;">
-        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Let it drive my browser (I'll watch)</button>
+        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Let me drive your browser (you watch)</button>
         <button type="button" data-value="ask-each-time" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Ask me each time</button>
         <button type="button" data-value="never-drive" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Just give me the link, I'll do it</button>
       </div>
@@ -457,24 +457,22 @@
       </svg>
       <div>
         <strong>You're part of the Be Civic alpha.</strong> By continuing, you agree that
-        anonymous session telemetry and observations on the catalogue are part of how
-        Be Civic learns during pre-launch. We need this to ship a good product.
+        anonymous usage stats and the notes you approve are part of how Be Civic improves
+        before launch. We need this to ship a good product.
         <details class="bc-consent__details">
           <summary>What's included, and what can I change later?</summary>
           <div class="bc-consent__details-body">
-            <p><strong>Anonymous telemetry</strong> — session length, turn count, which procedures
-            get used, where the agent gets stuck. Categorical fields only. Never your prompt text,
+            <p><strong>Anonymous usage stats</strong> — session length, turn count, which procedures
+            get used, where your agent gets stuck. Categories only. Never your prompt text,
             file paths, or document content.</p>
-            <p><strong>Observations</strong> — concerns about the catalogue, amendments, ratings,
-            free-text feedback. Each one shown to you at session close before send; you can edit
-            or drop any.</p>
-            <p><strong>Path-source validations</strong> — "this commune accepted this document on
-            this date." Anonymous by construction; commits inline as confirmation that something
-            worked.</p>
+            <p><strong>Notes you approve</strong> — things about a procedure (a fee changed, a
+            document wasn't on the list), ratings, free-text feedback. Each shown to you at session
+            close before it's sent; you can edit or drop any.</p>
+            <p><strong>Confirmations</strong> — "this commune accepted this document on this date."
+            Anonymous by design; sent as confirmation that something worked.</p>
             <p><strong>During alpha these can't be turned off individually</strong> — they're how we
-            improve fast enough to launch. Once Be Civic is out of alpha, you'll get granular
-            controls over each. <strong>To stop using Be Civic entirely</strong>, just tell your
-            agent and delete the project folder.</p>
+            improve fast enough to launch. After alpha you'll get granular controls. <strong>To stop
+            entirely</strong>, tell me to erase your account and delete the folder.</p>
           </div>
         </details>
       </div>
