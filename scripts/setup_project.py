@@ -47,7 +47,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 
 # Default plugin version stamped into the marker (matches plugin.json /
 # preamble.py PLUGIN_VERSION_STRING). Overridable via --plugin-version.
-PLUGIN_VERSION_STRING = "0.6.0"
+PLUGIN_VERSION_STRING = "0.7.0"
 
 # Template locations relative to ${SUBSTRATE_ROOT} (the plugin install dir).
 GITIGNORE_REL = "data/gitignore.txt"

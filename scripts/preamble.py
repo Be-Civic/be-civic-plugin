@@ -71,7 +71,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 CURRENT_SCHEMA_VERSION = 1
 
 # Plugin version string for provenance in version.json (matches plugin.json).
-PLUGIN_VERSION_STRING = "0.6.0"
+PLUGIN_VERSION_STRING = "0.7.0"
 
 # How far up the directory tree the ancestor-walk looks for `.be-civic/marker`.
 MARKER_WALK_CAP = 12
