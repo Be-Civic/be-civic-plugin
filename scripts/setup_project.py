@@ -359,13 +359,21 @@ def main(argv: list[str] | None = None) -> int:
         print("SETUP_ERROR: cannot_create_folder")
         return 1
 
-    # .gitignore FIRST — before any git add could stage the key.
+    # .gitignore FIRST — it is the load-bearing protection for the harness key.
+    # If it cannot be written (missing template / wrong --substrate-root), ABORT
+    # before writing any state: a `.env` on disk without the allowlist is an
+    # unprotected key. The commit guard below would refuse the commit, but the
+    # key would still be sitting in the folder for the monitor or the user to
+    # stage. So fail closed here rather than continuing.
     try:
         _write(substrate_data / ".gitignore", _read_template(substrate_root, GITIGNORE_REL))
-        step("GITIGNORE_WRITTEN", True)
+        print("GITIGNORE_WRITTEN: ok")
         files_written += 1
-    except OSError:
-        step("GITIGNORE_WRITTEN", False)
+    except OSError as exc:
+        print("GITIGNORE_WRITTEN: failed")
+        print("SETUP_RESULT: failed")
+        print(f"SETUP_ERROR: gitignore_write_failed_{type(exc).__name__}")
+        return 1
 
     if becivic_is_repo:
         print("GIT_INIT: already_repo")
@@ -389,7 +397,11 @@ def main(argv: list[str] | None = None) -> int:
             existing_env_differs = (f"BECIVIC_HARNESS_KEY={key}" not in existing)
         except OSError:
             existing_env_differs = False
-    if mode == "reuse" and existing_env_differs:
+    # Identity guard applies whenever a DIFFERENT key already exists — not only
+    # in `reuse` mode. A folder can carry a `.env` with no marker yet (a prior
+    # run crashed mid-write → mode reads as `fresh`); guarding only on `reuse`
+    # would let a new key clobber that existing identity.
+    if existing_env_differs:
         print("ENV_WRITTEN: skipped_mismatch")
         print("OPERATOR_ALERT: existing .env holds a different harness key; "
               "refusing to overwrite another identity")
