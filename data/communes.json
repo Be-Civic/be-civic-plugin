@@ -3,9 +3,9 @@
  "_meta": {
   "commune_count": 565,
   "nomenclature_date": "2025-01-01",
-  "postcode_source": "Reconciled: GeoNames BE postal place-name match (authoritative for main postcodes) overlaid with OpenDataSoft georef-belgium-postal-codes for sub-localities; cross-validated. 565/565 communes covered.",
+  "postcode_source": "Reconciled GeoNames BE place-name match (confirmed by OpenDataSoft) + OpenDataSoft for sub-localities; 4-digit only; place-name collisions resolved by ODS agreement. 565/565 covered.",
   "name_source": "bc-knowledge-graph/data/communes.json (Statbel REFNIS 2025-01-01)",
-  "note": "Public reference data — shipped in-plugin for the onboarding commune picker. Regenerate the form datalist via scripts/build_form_communes.py."
+  "note": "Public reference data shipped in-plugin for the onboarding commune picker. The form resolves only a full 'Name (postcode)' selection to a NIS5 (ambiguous bare name/postcode never auto-resolves). Regenerate the datalist via scripts/build_form_communes.py."
  },
  "communes": [
   {
@@ -93,7 +93,6 @@
     "en": "Alost"
    },
    "postcodes": [
-    "3800",
     "9300",
     "9308",
     "9310"
@@ -1196,7 +1195,6 @@
     "en": "Brussels"
    },
    "postcodes": [
-    "612",
     "1000",
     "1005",
     "1006",
@@ -1286,7 +1284,6 @@
     "en": "Celles"
    },
    "postcodes": [
-    "4317",
     "5561",
     "7760"
    ]
@@ -2245,8 +2242,7 @@
     "en": "Forest"
    },
    "postcodes": [
-    "1190",
-    "2430"
+    "1190"
    ]
   },
   {
@@ -2700,7 +2696,6 @@
     "en": "Hamme"
    },
    "postcodes": [
-    "1785",
     "9220"
    ]
   },
@@ -3775,6 +3770,7 @@
     "en": "Laakdal"
    },
    "postcodes": [
+    "2430",
     "2431"
    ]
   },
@@ -4752,7 +4748,6 @@
     "en": "Montaigu-Zichem"
    },
    "postcodes": [
-    "9",
     "3270",
     "3271",
     "3272"
@@ -5847,8 +5842,7 @@
     "en": "Saint-Léger"
    },
    "postcodes": [
-    "6747",
-    "7730"
+    "6747"
    ]
   },
   {
@@ -5886,6 +5880,7 @@
     "en": "Saint-Trond"
    },
    "postcodes": [
+    "3800",
     "3803",
     "3806"
    ]
@@ -6404,7 +6399,6 @@
     "en": "Tielt"
    },
    "postcodes": [
-    "3390",
     "8700",
     "8760"
    ]
@@ -6418,6 +6412,7 @@
     "en": "Tielt-Winge"
    },
    "postcodes": [
+    "3390",
     "3391"
    ]
   },

@@ -69,16 +69,20 @@ _SCRIPT = """
         if(!dl||!inp||!hid) return;
         function norm(s){return (s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[\\s\\-'.()]+/g,' ').trim();}
         var idx={}, frag=document.createDocumentFragment();
+        /* Resolution is keyed ONLY on the full "Name (postcode)" option, so a bare
+           name or postcode never auto-resolves — the user must pick a specific combo.
+           That makes shared postcodes (1348) and shared names (Saint-Nicolas) safe by
+           construction. Defensive null on any duplicate key just in case. */
+        function put(k,rec){ if(k in idx){ if(idx[k]&&idx[k].nis5!==rec.nis5) idx[k]=null; } else idx[k]=rec; }
         DATA.forEach(function(row){
           var p=row.split('|'), nis=p[0], name=p[1], pcs=p[2]?p[2].split(','):[], rec={name:name,nis5:nis};
-          idx[norm(name)]=rec;
           if(pcs.length){ pcs.forEach(function(pc){
             var label=name+' ('+pc+')', o=document.createElement('option');
-            o.value=label; frag.appendChild(o); idx[norm(label)]=rec; idx[pc]=rec;
-          }); } else { var o=document.createElement('option'); o.value=name; frag.appendChild(o); }
+            o.value=label; frag.appendChild(o); put(norm(label),rec);
+          }); } else { var o=document.createElement('option'); o.value=name; frag.appendChild(o); put(norm(name),rec); }
         });
         dl.appendChild(frag);
-        function resolve(){ var v=inp.value.trim(), hit=idx[norm(v)]||idx[v]; hid.value=hit?hit.nis5:''; }
+        function resolve(){ var hit=idx[norm(inp.value.trim())]; hid.value=(hit&&hit.nis5)?hit.nis5:''; }
         inp.addEventListener('input',resolve); inp.addEventListener('change',resolve);
       })();
       </script>
