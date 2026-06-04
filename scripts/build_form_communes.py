@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
-"""build_form_communes.py — embed the commune datalist into the onboarding forms.
+"""build_form_communes.py — embed the commune name+postcode picker into the forms.
 
 BUILD-TIME tool (not invoked at runtime). Reads the public Belgian commune list
-(`data/communes.json`, REFNIS) and injects a `<datalist>` of communes into each
-`onboarding.<locale>.html` form, so the Section-1 "Which commune?" field becomes
-a type-to-filter picker over the official list instead of free text.
+(`data/communes.json`: name + postcodes, REFNIS + reconciled postcodes) and
+injects, into each `onboarding.<locale>.html`, a type-to-filter picker for the
+Section-1 "Which commune?" field that matches on BOTH the commune NAME and the
+POSTCODE — because nobody knows their NIS5 code, but everyone knows their commune
+name and their postcode.
 
-Each option's value is `"<Name> · <NIS5>"` — so when the user picks their commune
-the form submits the authoritative NIS5 code directly (e.g. Saint-Gilles → 21013),
-killing the wrong-commune risk without an API call, a JS map, or any agent-side
-name→NIS5 resolution. Communes are public reference data, so they ship in the
-plugin (not behind the corpus API).
+The field stays a plain text input (so free text still works) backed by a
+`<datalist>`. A tiny embedded script builds the datalist options ("Name (postcode)")
+from a compact index and, on every change, resolves whatever the user typed/picked
+(name, "Name (postcode)", or a bare postcode) to the authoritative NIS5, writing it
+to a HIDDEN `commune_nis5` field. So the visible value the user sees is their
+commune name + postcode; the NIS5 is captured invisibly and submitted alongside.
+No API call, no name→code guessing by the agent.
 
-Re-run this whenever `data/communes.json` changes. Idempotent: it strips any
-prior embed first, then re-injects.
+Communes are public reference data, so this ships in the plugin (not behind the
+corpus API). Re-run whenever `data/communes.json` changes. Idempotent.
 
-  python3 scripts/build_form_communes.py            # uses ./data + ./skills/...
-  python3 scripts/build_form_communes.py --root <plugin-root>
+  python3 scripts/build_form_communes.py [--root <plugin-root>]
 
 Runtime: Python 3 stdlib only.
 """
@@ -30,9 +33,9 @@ import sys
 from pathlib import Path
 
 # Shell file → which commune-name locale to display. Belgian commune names are
-# only official in fr/nl/de; uk/ar fall back to the French name.
+# official only in fr/nl/de; uk/ar fall back to French.
 SHELL_LOCALE = {
-    "onboarding.html": "en",        # the EN fallback shell — English commune names
+    "onboarding.html": "en",        # the EN fallback shell
     "onboarding.en.html": "en",
     "onboarding.fr.html": "fr",
     "onboarding.nl.html": "nl",
@@ -41,94 +44,107 @@ SHELL_LOCALE = {
     "onboarding.ar.html": "fr",
 }
 
-DATALIST_ID = "bc-communes"
-# Matches the commune input tag (the only `>` is the tag close — no `>` inside
-# the quoted style), and an already-injected datalist (for idempotent re-runs).
+START = "<!--BC_COMMUNE_PICKER_START-->"
+END = "<!--BC_COMMUNE_PICKER_END-->"
 _INPUT_RE = re.compile(r'<input id="bc-commune"[^>]*>')
-_DATALIST_RE = re.compile(
-    r'\s*<datalist id="' + re.escape(DATALIST_ID) + r'">.*?</datalist>',
-    re.DOTALL,
-)
+_BLOCK_RE = re.compile(r"\s*" + re.escape(START) + r".*?" + re.escape(END), re.DOTALL)
+# Also clears the earlier bare-datalist embed (no markers) on first re-run.
+_BARE_DATALIST_RE = re.compile(r'\s*<datalist id="bc-communes">.*?</datalist>', re.DOTALL)
+_BARE_HIDDEN_RE = re.compile(r'\s*<input id="bc-commune-nis5"[^>]*>')
+
+# The picker script. {DATA} is replaced with the compact index literal. Pure
+# vanilla JS, no deps; builds the datalist + a normalized lookup, resolves on
+# input/change to the hidden NIS5 field. Kept terse to stay within the widget
+# payload budget.
+_SCRIPT = """
+      <datalist id="bc-communes"></datalist>
+      <input id="bc-commune-nis5" data-name="commune_nis5" type="hidden">
+      <script>
+      /* Be Civic commune picker: match on name OR postcode, capture NIS5 invisibly. */
+      (function(){
+        var DATA=%s;
+        var dl=document.getElementById('bc-communes');
+        var inp=document.getElementById('bc-commune');
+        var hid=document.getElementById('bc-commune-nis5');
+        if(!dl||!inp||!hid) return;
+        function norm(s){return (s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[\\s\\-'.()]+/g,' ').trim();}
+        var idx={}, frag=document.createDocumentFragment();
+        DATA.forEach(function(row){
+          var p=row.split('|'), nis=p[0], name=p[1], pcs=p[2]?p[2].split(','):[], rec={name:name,nis5:nis};
+          idx[norm(name)]=rec;
+          if(pcs.length){ pcs.forEach(function(pc){
+            var label=name+' ('+pc+')', o=document.createElement('option');
+            o.value=label; frag.appendChild(o); idx[norm(label)]=rec; idx[pc]=rec;
+          }); } else { var o=document.createElement('option'); o.value=name; frag.appendChild(o); }
+        });
+        dl.appendChild(frag);
+        function resolve(){ var v=inp.value.trim(), hit=idx[norm(v)]||idx[v]; hid.value=hit?hit.nis5:''; }
+        inp.addEventListener('input',resolve); inp.addEventListener('change',resolve);
+      })();
+      </script>
+"""
 
 
 def _display_name(entry: dict, locale: str) -> str:
-    name = entry.get("name", {})
-    return name.get(locale) or name.get("fr") or name.get("en") or ""
+    n = entry.get("name", {})
+    return n.get(locale) or n.get("fr") or n.get("en") or ""
 
 
-def _build_datalist(communes: list[dict], locale: str) -> tuple[str, int]:
-    opts = []
+def _index_literal(communes: list[dict], locale: str) -> tuple[str, int]:
+    rows = []
     for c in communes:
-        nis5 = c.get("nis5")
-        disp = _display_name(c, locale)
-        if not nis5 or not disp:
+        nis = c.get("nis5")
+        name = _display_name(c, locale)
+        if not nis or not name:
             continue
-        # value carries the NIS5 so the existing submit collector captures it
-        # verbatim (commune: <Name> · <NIS5>). HTML-escape the few specials.
-        val = f"{disp} · {nis5}".replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
-        opts.append(f'<option value="{val}">')
-    opts.sort()
-    inner = "".join(opts)
-    return (
-        f'\n      <datalist id="{DATALIST_ID}">{inner}</datalist>',
-        len(opts),
-    )
+        # pipe/comma compact form: "nis5|name|pc,pc". Names have no '|'; postcodes are digits.
+        pcs = ",".join(c.get("postcodes", []))
+        rows.append(f"{nis}|{name}|{pcs}")
+    rows.sort(key=lambda r: r.split("|")[1])
+    return json.dumps(rows, ensure_ascii=False), len(rows)
 
 
-def _inject(html: str, datalist: str) -> tuple[str, str]:
-    """Return (new_html, status). Idempotent: strips any prior embed first."""
-    # 1. Remove a previously injected datalist.
-    html = _DATALIST_RE.sub("", html)
-    # 2. Find the commune input.
+def _inject(html: str, communes: list[dict], locale: str) -> tuple[str, str, int]:
+    html = _BLOCK_RE.sub("", html)                       # idempotent: drop prior marked block
+    html = _BARE_DATALIST_RE.sub("", html)               # migrate: drop the old bare datalist
+    html = _BARE_HIDDEN_RE.sub("", html)                 # and any stray hidden field
+    html = html.replace(' list="bc-communes"', "")       # and the list attr
     m = _INPUT_RE.search(html)
     if not m:
-        return html, "no_commune_input"
-    tag = m.group(0)
-    # 3. Ensure list="bc-communes" on the input (idempotent).
-    if f'list="{DATALIST_ID}"' not in tag:
-        new_tag = tag.replace(
-            '<input id="bc-commune"',
-            f'<input id="bc-commune" list="{DATALIST_ID}"',
-            1,
-        )
-    else:
-        new_tag = tag
-    # 4. Replace the input with input + datalist right after it.
-    html = html[: m.start()] + new_tag + datalist + html[m.end():]
-    return html, "ok"
+        return html, "no_commune_input", 0
+    tag = m.group(0).replace('<input id="bc-commune"', '<input id="bc-commune" list="bc-communes"', 1)
+    literal, n = _index_literal(communes, locale)
+    block = START + (_SCRIPT % literal) + "      " + END
+    html = html[: m.start()] + tag + "\n" + block + html[m.end():]
+    return html, "ok", n
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Embed the commune datalist into the onboarding forms.")
-    p.add_argument("--root", default=None, help="plugin root (default: the script's parent dir)")
+    p = argparse.ArgumentParser(description="Embed the commune name+postcode picker into the onboarding forms.")
+    p.add_argument("--root", default=None)
     args = p.parse_args(argv)
-
     root = Path(args.root) if args.root else Path(__file__).resolve().parent.parent
-    communes_path = root / "data" / "communes.json"
-    refs = root / "skills" / "bc-onboarding" / "references"
-
     try:
-        communes = json.loads(communes_path.read_text(encoding="utf-8"))
+        doc = json.loads((root / "data" / "communes.json").read_text(encoding="utf-8"))
     except OSError as exc:
-        print(f"ERROR: cannot read {communes_path}: {exc}", file=sys.stderr)
+        print(f"ERROR: cannot read communes.json: {exc}", file=sys.stderr)
         return 1
-    print(f"communes source: {communes_path} ({len(communes)} entries)")
-
+    communes = doc["communes"] if isinstance(doc, dict) else doc
+    refs = root / "skills" / "bc-onboarding" / "references"
+    print(f"communes: {len(communes)}")
     rc = 0
     for fname, locale in SHELL_LOCALE.items():
         path = refs / fname
         if not path.exists():
             print(f"  skip {fname} (absent)")
             continue
-        datalist, n = _build_datalist(communes, locale)
-        html = path.read_text(encoding="utf-8")
-        new_html, status = _inject(html, datalist)
+        new_html, status, n = _inject(path.read_text(encoding="utf-8"), communes, locale)
         if status != "ok":
             print(f"  FAIL {fname}: {status}")
             rc = 1
             continue
         path.write_text(new_html, encoding="utf-8", newline="\n")
-        print(f"  ok   {fname} (locale={locale}, {n} options)")
+        print(f"  ok   {fname} (locale={locale}, {n} communes indexed)")
     return rc
 
 
