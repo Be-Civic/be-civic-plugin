@@ -78,6 +78,7 @@
     margin-bottom: 4px;
   }
   .bc-hero__mark .bc-hero__dot { color: var(--brand-red); }
+  .bc-hero__mark .bc-hero__be { color: var(--brand-gold); }  /* gold "be" — matches the bc-landing wordmark */
   .bc-hero__tag {
     font-family: var(--display);
     font-weight: 700;
@@ -234,14 +235,14 @@
         <path fill="#fae042" transform="translate(12.6560 23.5) scale(0.011000 -0.011000)" d="M642 -30Q476 -30 349.5 41.5Q223 113 151.5 238.5Q80 364 80 526Q80 703 150.0 834.0Q220 965 343.0 1037.5Q466 1110 626 1110Q796 1110 915.0 1030.0Q1034 950 1091.0 805.0Q1148 660 1131 464H862V564Q862 729 809.5 801.5Q757 874 638 874Q499 874 433.5 789.5Q368 705 368 540Q368 389 433.5 306.5Q499 224 626 224Q706 224 763.0 259.0Q820 294 850 360L1122 282Q1061 134 929.5 52.0Q798 -30 642 -30ZM284 464V666H1000V464Z"/>
         <path fill="#ed2939" transform="translate(25.1520 23.5) scale(0.011000 -0.011000)" d="M184 0V272H456V0Z"/>
       </svg>
-      <span>be civic<span class="bc-hero__dot">.</span></span>
+      <span><span class="bc-hero__be">be</span> civic<span class="bc-hero__dot">.</span></span>
     </div>
 
     <p class="bc-hero__tag">Бельгійська адміністрація, написана для ШІ, який у вас вже є.</p>
     <p class="bc-hero__welcome">
-      Be Civic надає вашому агенту публічну бібліотеку перевірених бельгійських процедур —
-      громадських, федеральних, регіональних. Розкажіть нам дещо про вашу ситуацію, і ваш агент
-      підбере для вас правильну процедуру.
+      Be Civic надає мені перевірену бібліотеку бельгійських процедур —
+      громадських, федеральних, регіональних. Розкажіть мені дещо про вашу ситуацію, і я
+      підберу для вас правильну.
     </p>
 
     <div class="bc-trust" role="note">
@@ -249,8 +250,8 @@
         <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
       </svg>
       <span>
-        <strong>Усе, що ви повідомляєте Be Civic, залишається у вашій папці проєкту на вашому комп'ютері.</strong>
-        Нічого не залишає вашу машину, крім спостережень, які ви явно схвалюєте при завершенні сесії.
+        <strong>Усе, що ви повідомляєте мені, залишається у вашій папці Be Civic на вашому комп'ютері.</strong>
+        Ваше ім'я, ваші документи та ваші ідентифікаційні номери ніколи не залишають вашу машину. Короткі анонімні нотатки, які ви схвалюєте наприкінці сесії, залишають — вони містять ваш регіон і громаду, щоб допомогти іншим поблизу.
       </span>
     </div>
   </div>
@@ -327,22 +328,22 @@
 
     <!-- residency status -->
     <div class="bc-group">
-      <label class="bc-q">Ваше громадянство / статус проживання</label>
+      <label class="bc-q">Ваш статус проживання в Бельгії</label>
       <div data-pg="residency_status" style="display: flex; flex-wrap: wrap; gap: 7px;">
         <button type="button" data-value="belgian-national" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Громадянин Бельгії</button>
         <button type="button" data-value="EU-citizen" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Громадянин ЄС</button>
-        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Третя країна, з бельгійським дозволом на проживання</button>
-        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Третя країна, подаю заявку з-за кордону</button>
+        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Не з ЄС, із дозволом на проживання</button>
+        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Не з ЄС, ще не резидент</button>
         <button type="button" data-value="asylum" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Шукач притулку</button>
         <button type="button" data-value="undocumented" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Без документів</button>
-        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Я не впевнений / не впевнена</button>
+        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Не впевнений / не впевнена</button>
       </div>
-      <span class="bc-hint">Якщо не впевнені — оберіть цей варіант, разом розберемося за допомогою вашої картки або документів.</span>
+      <span class="bc-hint">Не впевнені? Оберіть цей варіант — разом розберемося за допомогою вашої картки або документів.</span>
     </div>
 
     <!-- conversation language -->
     <div class="bc-group">
-      <label class="bc-q" for="bc-convlang">Ми можемо продовжити розмову <span data-template-fill="detected_language">українською</span>, або вкажіть іншу мову нижче.</label>
+      <label class="bc-q" for="bc-convlang">Ми можемо продовжити розмову <span data-template-fill="detected_language">українською</span>, або вкажіть мені іншу мову нижче.</label>
       <span class="bc-hint">Будь-яка мова, яку розуміє ваш агент — іспанська, словенська, тагальська, будь-яка.</span>
       <input id="bc-convlang" type="text" data-name="conversation_language" value="Українська" placeholder="напр. English, Français, Nederlands"
              style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
@@ -361,7 +362,7 @@
 
     <!-- preferred name -->
     <div class="bc-group">
-      <label class="bc-q" for="bc-name">Як нам вас називати?</label>
+      <label class="bc-q" for="bc-name">Як мені вас називати?</label>
       <span class="bc-hint">Ім'я, ініціал, що вам підходить. Залишається на вашій машині.</span>
       <input id="bc-name" type="text" data-name="preferred_name" placeholder="напр. Майя"
              style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
@@ -380,9 +381,9 @@
 
     <!-- browser driving preference -->
     <div class="bc-group">
-      <label class="bc-q">Коли вашому агенту потрібно використовувати вебсайт (Irisbox, MyMinfin тощо)</label>
+      <label class="bc-q">Коли мені потрібно використовувати вебсайт (Irisbox, MyMinfin тощо)</label>
       <div data-pg="browser_driving_preference" style="display: flex; flex-wrap: wrap; gap: 7px;">
-        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Нехай керує моїм браузером (я слідкуватиму)</button>
+        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Дозвольте мені керувати вашим браузером (ви спостерігаєте)</button>
         <button type="button" data-value="ask-each-time" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Запитуйте мене кожного разу</button>
         <button type="button" data-value="never-drive" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Просто дайте посилання, я зроблю сам / сама</button>
       </div>
@@ -410,23 +411,23 @@
       </svg>
       <div>
         <strong>Ви є учасником альфа-версії Be Civic.</strong> Продовжуючи, ви погоджуєтесь, що
-        анонімна телеметрія сесій та спостереження щодо каталогу є частиною того, як
-        Be Civic навчається на етапі перед запуском. Це необхідно для випуску якісного продукту.
+        анонімна статистика використання та нотатки, які ви схвалюєте, є частиною того, як
+        Be Civic вдосконалюється перед запуском. Це необхідно для випуску якісного продукту.
         <details class="bc-consent__details">
           <summary>Що входить і що можна змінити пізніше?</summary>
           <div class="bc-consent__details-body">
-            <p><strong>Анонімна телеметрія</strong> — тривалість сесії, кількість обмінів, які процедури
-            використовуються, де агент зупиняється. Лише категоріальні поля. Ніколи не ваш текст запиту,
+            <p><strong>Анонімна статистика використання</strong> — тривалість сесії, кількість обмінів, які процедури
+            використовуються, де я зупиняюся. Лише категорії. Ніколи не ваш текст запиту,
             шляхи файлів або вміст документів.</p>
-            <p><strong>Спостереження</strong> — занепокоєння щодо каталогу, поправки, оцінки, відгуки
-            у вільній формі. Кожне показується вам при закритті сесії перед надсиланням; ви можете
-            редагувати або видалити будь-яке.</p>
-            <p><strong>Перевірка джерел шляху</strong> — «ця громада прийняла цей документ у цю дату.»
-            Анонімно за конструкцією; надсилається як підтвердження того, що щось спрацювало.</p>
-            <p><strong>Під час альфа їх неможливо вимкнути окремо</strong> — саме так ми покращуємося
-            достатньо швидко для запуску. Після виходу Be Civic з альфа-версії ви отримаєте детальний
-            контроль над кожним. <strong>Щоб повністю припинити використання Be Civic</strong>, просто
-            скажіть своєму агенту та видаліть папку проєкту.</p>
+            <p><strong>Нотатки, які ви схвалюєте</strong> — те, що стосується процедури (змінилася вартість,
+            документа не було в списку), оцінки, відгуки у вільній формі. Кожна показується вам
+            при закритті сесії перед надсиланням; ви можете редагувати або видалити будь-яку.</p>
+            <p><strong>Підтвердження</strong> — «ця громада прийняла цей документ у цю дату.»
+            Анонімні за конструкцією; надсилаються як підтвердження того, що щось спрацювало.</p>
+            <p><strong>Під час альфа їх неможливо вимкнути окремо</strong> — саме так ми вдосконалюємося
+            достатньо швидко для запуску. Після альфа-версії ви отримаєте детальний
+            контроль над кожним. <strong>Щоб повністю припинити</strong>, скажіть мені
+            видалити ваш обліковий запис та видаліть папку.</p>
           </div>
         </details>
       </div>

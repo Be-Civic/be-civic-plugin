@@ -78,6 +78,7 @@
     margin-bottom: 4px;
   }
   .bc-hero__mark .bc-hero__dot { color: var(--brand-red); }
+  .bc-hero__mark .bc-hero__be { color: var(--brand-gold); }  /* gold "be" — matches the bc-landing wordmark */
   .bc-hero__tag {
     font-family: var(--display);
     font-weight: 700;
@@ -235,13 +236,13 @@
         <path fill="#fae042" transform="translate(12.6560 23.5) scale(0.011000 -0.011000)" d="M642 -30Q476 -30 349.5 41.5Q223 113 151.5 238.5Q80 364 80 526Q80 703 150.0 834.0Q220 965 343.0 1037.5Q466 1110 626 1110Q796 1110 915.0 1030.0Q1034 950 1091.0 805.0Q1148 660 1131 464H862V564Q862 729 809.5 801.5Q757 874 638 874Q499 874 433.5 789.5Q368 705 368 540Q368 389 433.5 306.5Q499 224 626 224Q706 224 763.0 259.0Q820 294 850 360L1122 282Q1061 134 929.5 52.0Q798 -30 642 -30ZM284 464V666H1000V464Z"/>
         <path fill="#ed2939" transform="translate(25.1520 23.5) scale(0.011000 -0.011000)" d="M184 0V272H456V0Z"/>
       </svg>
-      <span>be civic<span class="bc-hero__dot">.</span></span>
+      <span><span class="bc-hero__be">be</span> civic<span class="bc-hero__dot">.</span></span>
     </div>
 
     <p class="bc-hero__tag">الإدارة البلجيكية، مُعدَّة للذكاء الاصطناعي الذي لديك بالفعل.</p>
     <p class="bc-hero__welcome">
-      يمنح Be Civic وكيلك مكتبة عامة من الإجراءات البلجيكية الموثَّقة — البلدية والفيدرالية والإقليمية.
-      أخبرنا ببعض التفاصيل عن وضعك وسيختار وكيلك الإجراء المناسب لك.
+      يمنحني Be Civic مكتبة موثَّقة من الإجراءات البلجيكية — البلدية والفيدرالية والإقليمية.
+      أخبرني ببعض التفاصيل عن وضعك وسأرتّب لك الإجراء المناسب.
     </p>
 
     <div class="bc-trust" role="note">
@@ -249,8 +250,8 @@
         <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
       </svg>
       <span>
-        <strong>كل ما تُخبر به Be Civic يبقى في مجلد مشروعك على جهاز الكمبيوتر الخاص بك.</strong>
-        لا يغادر جهازك أي شيء إلا الملاحظات التي توافق عليها صراحةً عند إغلاق الجلسة.
+        <strong>كل ما تخبرني به يبقى في مجلد Be Civic على جهاز الكمبيوتر الخاص بك.</strong>
+        لا يغادر جهازك اسمك ولا وثائقك ولا أرقام هويتك أبداً. أما الملاحظات القصيرة والمجهولة التي توافق عليها عند نهاية الجلسة فتغادر — وتتضمّن إقليمك وبلديتك حتى تفيد الآخرين القريبين منك.
       </span>
     </div>
   </div>
@@ -327,22 +328,22 @@
 
     <!-- residency status -->
     <div class="bc-group">
-      <label class="bc-q">جنسيتك / وضع إقامتك</label>
+      <label class="bc-q">وضع إقامتك في بلجيكا</label>
       <div data-pg="residency_status" style="display: flex; flex-wrap: wrap; gap: 7px;">
         <button type="button" data-value="belgian-national" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">مواطن بلجيكي</button>
         <button type="button" data-value="EU-citizen" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">مواطن أوروبي</button>
-        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">دولة ثالثة، بتصريح إقامة بلجيكي</button>
-        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">دولة ثالثة، تقديم طلب من الخارج</button>
+        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">من خارج الاتحاد الأوروبي، بتصريح إقامة</button>
+        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">من خارج الاتحاد الأوروبي، ولست مقيماً بعد</button>
         <button type="button" data-value="asylum" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">طالب لجوء</button>
         <button type="button" data-value="undocumented" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">غير موثَّق</button>
         <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">لست متأكداً</button>
       </div>
-      <span class="bc-hint">إذا لم تكن متأكداً، اختر هذا الخيار — سنحدده معاً بناءً على بطاقتك أو وثائقك.</span>
+      <span class="bc-hint">لست متأكداً؟ اختر هذا الخيار — سنحدده معاً انطلاقاً من بطاقتك أو وثائقك.</span>
     </div>
 
     <!-- conversation language -->
     <div class="bc-group">
-      <label class="bc-q" for="bc-convlang">يمكننا الاستمرار بالتحدث بـ <span data-template-fill="detected_language">العربية</span>، أو أخبرنا بلغة أخرى أدناه.</label>
+      <label class="bc-q" for="bc-convlang">يمكننا الاستمرار بالتحدث بـ <span data-template-fill="detected_language">العربية</span>، أو أخبرني بلغة أخرى أدناه.</label>
       <span class="bc-hint">أي لغة يفهمها وكيلك تعمل — الإسبانية، السلوفينية، التغالوغية، أي لغة.</span>
       <input id="bc-convlang" type="text" data-name="conversation_language" value="العربية" placeholder="مثل: English, Français, Nederlands"
              style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px; text-align: right;">
@@ -361,7 +362,7 @@
 
     <!-- preferred name -->
     <div class="bc-group">
-      <label class="bc-q" for="bc-name">ما الاسم الذي تُفضَّل أن نناديك به؟</label>
+      <label class="bc-q" for="bc-name">بأي اسم تُفضِّل أن أناديك؟</label>
       <span class="bc-hint">الاسم الأول، أو حرف أول، أو أي شيء يناسبك. يبقى على جهازك.</span>
       <input id="bc-name" type="text" data-name="preferred_name" placeholder="مثل: مايا"
              style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px; text-align: right;">
@@ -380,9 +381,9 @@
 
     <!-- browser driving preference -->
     <div class="bc-group">
-      <label class="bc-q">عندما يحتاج وكيلك إلى استخدام موقع إلكتروني (Irisbox أو MyMinfin وغيرها)</label>
+      <label class="bc-q">عندما أحتاج إلى استخدام موقع إلكتروني (Irisbox أو MyMinfin وغيرها)</label>
       <div data-pg="browser_driving_preference" style="display: flex; flex-wrap: wrap; gap: 7px;">
-        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">دعه يتحكم في متصفحي (سأراقب)</button>
+        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">دعني أتحكّم في متصفّحك (وأنت تراقب)</button>
         <button type="button" data-value="ask-each-time" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">اسألني في كل مرة</button>
         <button type="button" data-value="never-drive" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">أعطني الرابط فقط، سأقوم بذلك بنفسي</button>
       </div>
@@ -410,20 +411,20 @@
       </svg>
       <div>
         <strong>أنت جزء من نسخة Be Civic التجريبية.</strong> بالمتابعة، توافق على أن
-        قياسات الجلسة المجهولة والملاحظات على الكتالوج جزء من طريقة تعلُّم Be Civic
-        خلال مرحلة ما قبل الإطلاق. نحن بحاجة إلى ذلك لإطلاق منتج جيد.
+        إحصاءات الاستخدام المجهولة والملاحظات التي توافق عليها جزء من طريقة تحسُّن Be Civic
+        قبل الإطلاق. نحتاج إلى ذلك لإطلاق منتج جيد.
         <details class="bc-consent__details">
           <summary>ما الذي يشمله ذلك، وما الذي يمكنني تغييره لاحقاً؟</summary>
           <div class="bc-consent__details-body">
-            <p><strong>قياسات مجهولة</strong> — مدة الجلسة، عدد الأدوار، أي الإجراءات تُستخدم، أين يتوقف الوكيل.
-            حقول تصنيفية فقط. لا نص مدخلاتك ولا مسارات الملفات ولا محتوى الوثائق أبداً.</p>
-            <p><strong>ملاحظات</strong> — مخاوف حول الكتالوج، تعديلات، تقييمات، ملاحظات نصية حرة.
-            تُعرض عليك كل واحدة منها عند إغلاق الجلسة قبل الإرسال؛ يمكنك تحرير أي منها أو حذفها.</p>
-            <p><strong>تحقق من مصادر المسار</strong> — "قبلت هذه البلدية هذه الوثيقة في هذا التاريخ."
-            مجهولة بطبيعتها؛ تُقدَّم كتأكيد على أن شيئاً ما نجح.</p>
-            <p><strong>خلال النسخة التجريبية لا يمكن تعطيل هذه العناصر بشكل فردي</strong> — هكذا نتحسن
-            بسرعة كافية للإطلاق. بعد خروج Be Civic من المرحلة التجريبية، ستحصل على تحكم دقيق في كل منها.
-            <strong>لإيقاف استخدام Be Civic كلياً</strong>، أخبر وكيلك واحذف مجلد المشروع.</p>
+            <p><strong>إحصاءات استخدام مجهولة</strong> — مدة الجلسة، عدد الأدوار، أي الإجراءات تُستخدم، أين أتعثّر.
+            فئات فقط. لا نص مدخلاتك ولا مسارات الملفات ولا محتوى الوثائق أبداً.</p>
+            <p><strong>ملاحظات توافق عليها</strong> — أمور تتعلق بإجراء ما (تغيّرت رسوم، أو وثيقة لم تكن على القائمة)، تقييمات، ملاحظات نصية حرة.
+            تُعرض عليك كل واحدة منها عند إغلاق الجلسة قبل إرسالها؛ يمكنك تحرير أي منها أو حذفها.</p>
+            <p><strong>تأكيدات</strong> — "قبلت هذه البلدية هذه الوثيقة في هذا التاريخ."
+            مجهولة بطبيعتها؛ تُرسَل كتأكيد على أن شيئاً ما نجح.</p>
+            <p><strong>خلال المرحلة التجريبية لا يمكن تعطيل هذه العناصر بشكل فردي</strong> — هكذا نتحسّن
+            بالسرعة الكافية للإطلاق. بعد المرحلة التجريبية ستحصل على تحكُّم دقيق في كل منها.
+            <strong>لإيقاف ذلك كلياً</strong>، اطلب مني محو حسابك واحذف المجلد.</p>
           </div>
         </details>
       </div>
