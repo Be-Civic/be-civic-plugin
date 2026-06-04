@@ -78,6 +78,7 @@
     margin-bottom: 4px;
   }
   .bc-hero__mark .bc-hero__dot { color: var(--brand-red); }
+  .bc-hero__mark .bc-hero__be { color: var(--brand-gold); }  /* gold "be" — matches the bc-landing wordmark */
   .bc-hero__tag {
     font-family: var(--display);
     font-weight: 700;
@@ -234,14 +235,14 @@
         <path fill="#fae042" transform="translate(12.6560 23.5) scale(0.011000 -0.011000)" d="M642 -30Q476 -30 349.5 41.5Q223 113 151.5 238.5Q80 364 80 526Q80 703 150.0 834.0Q220 965 343.0 1037.5Q466 1110 626 1110Q796 1110 915.0 1030.0Q1034 950 1091.0 805.0Q1148 660 1131 464H862V564Q862 729 809.5 801.5Q757 874 638 874Q499 874 433.5 789.5Q368 705 368 540Q368 389 433.5 306.5Q499 224 626 224Q706 224 763.0 259.0Q820 294 850 360L1122 282Q1061 134 929.5 52.0Q798 -30 642 -30ZM284 464V666H1000V464Z"/>
         <path fill="#ed2939" transform="translate(25.1520 23.5) scale(0.011000 -0.011000)" d="M184 0V272H456V0Z"/>
       </svg>
-      <span>be civic<span class="bc-hero__dot">.</span></span>
+      <span><span class="bc-hero__be">be</span> civic<span class="bc-hero__dot">.</span></span>
     </div>
 
     <p class="bc-hero__tag">Belgische administratie, geschreven voor de AI die u al heeft.</p>
     <p class="bc-hero__welcome">
-      Be Civic geeft uw agent een publieke bibliotheek van geverifieerde Belgische procedures —
-      gemeente, federaal, regionaal. Vertel ons wat over uw situatie en uw agent kiest
-      de juiste procedure voor u.
+      Be Civic geeft mij een geverifieerde bibliotheek van Belgische procedures —
+      gemeente, federaal, regionaal. Vertel me wat over uw situatie en ik zoek
+      de juiste voor u uit.
     </p>
 
     <div class="bc-trust" role="note">
@@ -249,8 +250,10 @@
         <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
       </svg>
       <span>
-        <strong>Alles wat u Be Civic vertelt, blijft in uw projectmap op uw computer.</strong>
-        Niets verlaat uw machine, behalve observaties die u expliciet goedkeurt bij het sluiten van de sessie.
+        <strong>Alles wat u me vertelt, blijft in uw Be Civic-map op uw computer.</strong>
+        Uw naam, uw documenten en uw rijksregisternummers verlaten uw machine nooit. De korte,
+        anonieme notities die u aan het einde van een sessie goedkeurt wel — die bevatten uw gewest
+        en gemeente zodat ze anderen in de buurt helpen.
       </span>
     </div>
   </div>
@@ -327,22 +330,22 @@
 
     <!-- residency status -->
     <div class="bc-group">
-      <label class="bc-q">Uw nationaliteit / verblijfssituatie</label>
+      <label class="bc-q">Uw verblijfssituatie in België</label>
       <div data-pg="residency_status" style="display: flex; flex-wrap: wrap; gap: 7px;">
         <button type="button" data-value="belgian-national" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Belgisch staatsburger</button>
         <button type="button" data-value="EU-citizen" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">EU-burger</button>
-        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Derde land, met Belgische verblijfsvergunning</button>
-        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Derde land, aanvraag vanuit het buitenland</button>
+        <button type="button" data-value="non-EU-permit" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Niet-EU met verblijfsvergunning</button>
+        <button type="button" data-value="non-EU-applying" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Niet-EU, nog niet ingeschreven</button>
         <button type="button" data-value="asylum" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Asielzoeker</button>
         <button type="button" data-value="undocumented" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Zonder papieren</button>
-        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Ik weet het niet zeker</button>
+        <button type="button" data-value="not-sure" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Niet zeker</button>
       </div>
-      <span class="bc-hint">Als u het niet zeker weet, kies dat dan — we zoeken het samen uit aan de hand van uw kaart of papieren.</span>
+      <span class="bc-hint">Niet zeker? Kies dat dan — we zoeken het samen uit aan de hand van uw kaart of papieren.</span>
     </div>
 
     <!-- conversation language -->
     <div class="bc-group">
-      <label class="bc-q" for="bc-convlang">We kunnen blijven praten in <span data-template-fill="detected_language">Nederlands</span>, of geef hieronder een andere taal aan.</label>
+      <label class="bc-q" for="bc-convlang">We kunnen blijven praten in <span data-template-fill="detected_language">Nederlands</span>, of geef me hieronder een andere taal aan.</label>
       <span class="bc-hint">Elke taal die uw agent begrijpt werkt — Spaans, Sloveens, Tagalog, wat dan ook.</span>
       <input id="bc-convlang" type="text" data-name="conversation_language" value="Nederlands" placeholder="bijv. English, Français, Nederlands"
              style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
@@ -361,7 +364,7 @@
 
     <!-- preferred name -->
     <div class="bc-group">
-      <label class="bc-q" for="bc-name">Hoe mogen we u noemen?</label>
+      <label class="bc-q" for="bc-name">Hoe mag ik u noemen?</label>
       <span class="bc-hint">Voornaam, een initiaal, wat goed voelt. Blijft op uw machine.</span>
       <input id="bc-name" type="text" data-name="preferred_name" placeholder="bijv. Maya"
              style="all: unset; display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ebe9e3; border-radius: 8px; background: #ffffff; color: #2a2a26; font-size: 14px;">
@@ -380,9 +383,9 @@
 
     <!-- browser driving preference -->
     <div class="bc-group">
-      <label class="bc-q">Wanneer uw agent een website moet gebruiken (Irisbox, MyMinfin, enz.)</label>
+      <label class="bc-q">Wanneer ik een website moet gebruiken (Irisbox, MyMinfin, enz.)</label>
       <div data-pg="browser_driving_preference" style="display: flex; flex-wrap: wrap; gap: 7px;">
-        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Laat het mijn browser besturen (ik kijk mee)</button>
+        <button type="button" data-value="drive-by-default" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Laat mij uw browser besturen (u kijkt mee)</button>
         <button type="button" data-value="ask-each-time" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Vraag het me elke keer</button>
         <button type="button" data-value="never-drive" style="all: unset; padding: 8px 14px; border-radius: 999px; background: #f5f4ee; color: #2a2a26; font-size: 13px; font-weight: 500; cursor: pointer;">Geef me gewoon de link, ik doe het zelf</button>
       </div>
@@ -410,23 +413,24 @@
       </svg>
       <div>
         <strong>U maakt deel uit van de Be Civic alpha.</strong> Door verder te gaan, stemt u ermee in dat
-        anonieme sessietelemetrie en observaties over de catalogus deel uitmaken van hoe
-        Be Civic leert tijdens de pre-lancering. We hebben dit nodig om een goed product te lanceren.
+        anonieme gebruiksstatistieken en de notities die u goedkeurt deel uitmaken van hoe
+        Be Civic verbetert vóór de lancering. We hebben dit nodig om een goed product te lanceren.
         <details class="bc-consent__details">
           <summary>Wat is inbegrepen en wat kan ik later wijzigen?</summary>
           <div class="bc-consent__details-body">
-            <p><strong>Anonieme telemetrie</strong> — sessieduur, aantal beurten, welke procedures
-            worden gebruikt, waar de agent vastloopt. Alleen categorische velden. Nooit uw prompttekst,
+            <p><strong>Anonieme gebruiksstatistieken</strong> — sessieduur, aantal beurten, welke procedures
+            worden gebruikt, waar uw agent vastloopt. Alleen categorieën. Nooit uw prompttekst,
             bestandspaden of documentinhoud.</p>
-            <p><strong>Observaties</strong> — zorgen over de catalogus, amendementen, beoordelingen,
-            vrije-tekstfeedback. Elk ervan wordt u getoond bij het sluiten van de sessie voor verzending;
-            u kunt elk ervan bewerken of verwijderen.</p>
-            <p><strong>Bronvalidaties voor paden</strong> — "deze gemeente accepteerde dit document op
-            deze datum." Anoniem van nature; inline ingediend als bevestiging dat iets werkte.</p>
+            <p><strong>Notities die u goedkeurt</strong> — zaken over een procedure (een tarief is gewijzigd,
+            een document stond niet op de lijst), beoordelingen, vrije-tekstfeedback. Elk ervan wordt u
+            getoond bij het sluiten van de sessie voordat het verzonden wordt; u kunt elk ervan bewerken
+            of weglaten.</p>
+            <p><strong>Bevestigingen</strong> — "deze gemeente accepteerde dit document op
+            deze datum." Anoniem van opzet; verzonden als bevestiging dat iets werkte.</p>
             <p><strong>Tijdens de alpha kunnen deze niet individueel worden uitgeschakeld</strong> — zo
-            verbeteren we snel genoeg om te lanceren. Zodra Be Civic uit de alpha is, krijgt u
-            gedetailleerde controles over elk. <strong>Om Be Civic volledig te stoppen</strong>, vertel
-            het uw agent en verwijder de projectmap.</p>
+            verbeteren we snel genoeg om te lanceren. Na de alpha krijgt u
+            gedetailleerde controles. <strong>Om volledig te stoppen</strong>, vraag me
+            om uw account te wissen en verwijder de map.</p>
           </div>
         </details>
       </div>
