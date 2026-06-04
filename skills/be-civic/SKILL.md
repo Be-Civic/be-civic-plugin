@@ -54,7 +54,7 @@ When the marker is **absent** (new user or outside any project folder), classify
 |---|---|---|
 | `procedure_intent_clear` | User names a specific Belgian administrative goal ("I need to register my address", "apply for nationality") | AskUserQuestion: three MECE options — see §4 |
 | `procedure_intent_vague` | User mentions Belgian admin in a general or uncertain way ("I think I need to do something about my residence?") | Same AskUserQuestion gate as `procedure_intent_clear`; bc-onboarding Section 2 may degrade to discovery if the procedure cannot be matched |
-| `meta` | User asks about Be Civic itself or its data practices ("what does Be Civic do with my data?", "how does this work?") | Answer in chat from the canonical privacy snippet (§6); never paraphrase it; no AskUserQuestion; no folder created |
+| `meta` | User asks about Be Civic itself or its data practices ("what does Be Civic do with my data?", "how does this work?") | Answer in chat from the canonical privacy snippet (§7); never paraphrase it; no AskUserQuestion; no folder created |
 | `off_topic` / `no_intent` | No Belgian admin signal at all, or user typed `/be-civic` without context | 2–3 line tour or polite redirect; no folder created |
 
 **MECE rule:** every AskUserQuestion this skill issues must be Mutually Exclusive + Collectively Exhaustive. The gate's own question (§4) satisfies this by design: the three options cover the full decision space (proceed fully / proceed partially / decline) with no overlap. When designing any additional question in this skill, use two labelled options + a free-text fallback if three clean options cannot be found.
@@ -65,15 +65,15 @@ If the user's message matches a procedure by name, you may use `WebFetch GET htt
 
 Explain Be Civic in plain language, two-three sentences. **When intent is `procedure_intent_clear`, name the procedure the user just mentioned** — don't re-pitch generically or re-ask what they came for; they told you. Acknowledge it and go straight to the one decision that's actually open (set up a project or not):
 
-> "I can help with your **<the procedure they named, e.g. Belgian nationality application>** — Be Civic walks Belgian admin procedures step by step and keeps your notes and documents with you across sessions if you set up a project folder. Want me to set one up now? It takes a minute."
+> "I can help with your **<the procedure they named, e.g. Belgian nationality declaration>**. Be Civic gives me a verified library of Belgian admin procedures I can walk you through step by step, and I can save your progress in a project folder on your computer between sessions. Want me to get you set up? It takes a minute."
 
-(For `procedure_intent_vague`, keep the generic framing: *"Be Civic is a guided walkthrough for Belgian administrative procedures — citizenship declarations, residency, commune registrations, that kind of thing. It works best when you set up a project folder once… Want me to set one up now?"*)
+(For `procedure_intent_vague`, keep the generic framing: *"I can help with that. Be Civic gives me a verified library of Belgian admin procedures — citizenship, residency, commune registrations, driving licences, that kind of thing. Want me to get you set up?"*)
 
 Use AskUserQuestion with three options (MECE: the three options are exhaustive and non-overlapping):
 
-- **A) Yes, set up a Be Civic project** (recommended) — invokes `bc-onboarding` peer skill in `new-project` mode. That skill calls `request_cowork_directory`, creates the project folder (`${SUBSTRATE_DATA}`) as a single git repo, writes the harness CLAUDE.md, initialises empty agent-managed state in the hidden `.be-civic/state` subdir (`${SUBSTRATE_STATE}`), writes the `.be-civic/marker`, runs the intake.
+- **A) Yes, get me set up** (recommended) — invokes `bc-onboarding` peer skill in `new-project` mode. That skill calls `request_cowork_directory`, creates the project folder (`${SUBSTRATE_DATA}`) as a single git repo, writes the harness CLAUDE.md, initialises empty agent-managed state in the hidden `.be-civic/state` subdir (`${SUBSTRATE_STATE}`), writes the `.be-civic/marker`, runs the intake.
 - **B) Just answer this one question** — advice-only mode. Answer the user's immediate question with a brief disclaimer that nothing persists to disk, no observations are buffered, and the harness discipline does not apply. After answering, gently offer the project setup again as a follow-up.
-- **C) Not interested, drop the subject** — close out politely.
+- **C) Not interested** — close out politely.
 
 For `procedure_intent_vague`: route identically. bc-onboarding's Section 2 will attempt to match the procedure; if it cannot, it degrades gracefully to discovery mode.
 
@@ -99,7 +99,7 @@ If an import bundle is detected:
 
 If the user invoked this skill manually without mentioning Belgian admin (e.g., they typed `/be-civic` to see what it does), use a softer opening without launching AskUserQuestion:
 
-> "Be Civic is a guided walkthrough for Belgian administrative procedures — citizenship, residency, commune registrations, and more. I work best inside a project folder where I can keep your notes between sessions. Mention an administrative goal when you're ready and I'll help you get started."
+> "Be Civic is a verified library of Belgian administrative procedures I can draw on — citizenship, residency, commune registrations, and more. Tell me what you're trying to sort out and I'll get you set up."
 
 No folder is created, no onboarding is triggered.
 
@@ -107,7 +107,15 @@ No folder is created, no onboarding is triggered.
 
 When the user's message classifies as `meta` — specifically a question about data handling, privacy, or what Be Civic stores — respond with the following verbatim. Do not paraphrase, summarise, or shorten it:
 
-> "Be Civic stores your administrative notes and documents locally in a folder you choose. Nothing leaves your device unless you explicitly submit a report or observation to the Be Civic knowledge graph, at which point only the content of that submission is sent — never your personal documents or profile data. Your harness key (used to authenticate submissions) is kept in a hidden `.be-civic/state` folder inside your project, and is never committed to git. You can rotate your signing key, or erase your Be Civic account entirely — your email and the link to your past contributions — at any time."
+> Everything you tell me stays in a Be Civic folder on your own computer — your situation, your notes, and any documents you share. Your name, your documents, your ID numbers, and your address never leave your machine.
+>
+> The only things that ever leave your computer are your email, basic routing information to get the right procedural guidance (commune, residency status etc.), and any anonymous feedback you agree to send to Be Civic.
+>
+> Verifying your email creates a Be Civic account to authenticate your access to the service and prevent misuse. Be Civic also receives basic usage stats (which procedures get used, where your agent gets stuck — never anything you typed).
+>
+> At the end of a session I will ask if you want to send feedback — for example, that a fee changed or a document wasn't on the list. Those notes are useful to other people doing the same thing in the same place, each one includes your region, your commune, and the language you're working in — but never anything that identifies you. You see every note before it's sent, and you can cancel it for 48 hours after.
+>
+> To remove everything and cancel Be Civic: delete the folder to wipe what's on your computer, and ask me to erase your Be Civic account, which removes your email and unlinks your past notes.
 
 After delivering this snippet, offer to continue with the user's original goal if there was one.
 

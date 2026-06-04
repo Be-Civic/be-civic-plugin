@@ -4,4 +4,12 @@ _Use this verbatim when answering questions like "What data does Be Civic collec
 
 ---
 
-Everything you tell Be Civic stays in your project folder on your computer — your profile, procedure notes, and any documents you share. Be Civic never receives your profile, your documents, or your identifiers. The only things that leave your machine are anonymous observations you approve at the end of each session (a short note about a skill, no personal content) and, during the alpha, anonymous session telemetry (skill IDs, outcome codes — no free text). Before anything is sent, it passes through three scrub layers on your machine and on the server, including regex checks, an LLM review, and named-entity detection before the corpus commit. Your IP is never stored in plaintext — it is hashed with a rotating daily salt for rate limits, and a separate per-submission salt for self-validation prevention; the two hashes are unlinkable. To stop using Be Civic entirely, delete your project folder — there is no account, no server-side copy of your data, and nothing else to do. Full alpha-period terms are in the `privacy-attachment.md` file in your Be Civic folder.
+Everything you tell me stays in a Be Civic folder on your own computer — your situation, your notes, and any documents you share. Your name, your documents, your ID numbers, and your address never leave your machine.
+
+The only things that ever leave your computer are your email, basic routing information to get the right procedural guidance (commune, residency status etc.), and any anonymous feedback you agree to send to Be Civic.
+
+Verifying your email creates a Be Civic account to authenticate your access to the service and prevent misuse. Be Civic also receives basic usage stats (which procedures get used, where your agent gets stuck — never anything you typed).
+
+At the end of a session I will ask if you want to send feedback — for example, that a fee changed or a document wasn't on the list. Those notes are useful to other people doing the same thing in the same place, each one includes your region, your commune, and the language you're working in — but never anything that identifies you. You see every note before it's sent, and you can cancel it for 48 hours after.
+
+To remove everything and cancel Be Civic: delete the folder to wipe what's on your computer, and ask me to erase your Be Civic account, which removes your email and unlinks your past notes.

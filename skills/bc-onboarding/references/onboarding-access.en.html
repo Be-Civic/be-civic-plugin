@@ -90,6 +90,7 @@
     margin-bottom: 4px;
   }
   .bc-hero__dot { color: var(--brand-red); }
+  .bc-hero__be { color: var(--brand-gold); }  /* gold "be" — matches the bc-landing wordmark */
 
   .bc-hero__tag {
     font-family: var(--display);
@@ -219,13 +220,13 @@
         <path fill="#fae042" transform="translate(12.6560 23.5) scale(0.011000 -0.011000)" d="M642 -30Q476 -30 349.5 41.5Q223 113 151.5 238.5Q80 364 80 526Q80 703 150.0 834.0Q220 965 343.0 1037.5Q466 1110 626 1110Q796 1110 915.0 1030.0Q1034 950 1091.0 805.0Q1148 660 1131 464H862V564Q862 729 809.5 801.5Q757 874 638 874Q499 874 433.5 789.5Q368 705 368 540Q368 389 433.5 306.5Q499 224 626 224Q706 224 763.0 259.0Q820 294 850 360L1122 282Q1061 134 929.5 52.0Q798 -30 642 -30ZM284 464V666H1000V464Z"/>
         <path fill="#ed2939" transform="translate(25.1520 23.5) scale(0.011000 -0.011000)" d="M184 0V272H456V0Z"/>
       </svg>
-      <span>be civic<span class="bc-hero__dot">.</span></span>
+      <span><span class="bc-hero__be">be</span> civic<span class="bc-hero__dot">.</span></span>
     </div>
 
     <p class="bc-hero__tag">Belgian admin, written for the AI you already have.</p>
     <p class="bc-hero__sub">
-      Your email gives your agent access to the Be Civic library of verified Belgian-admin
-      guides — and lets you save progress. It's the key to the service, nothing else.
+      Your email gives your agent access to Be Civic's verified Belgian-admin guides and lets
+      you save your progress. It's the key to the service, nothing else.
     </p>
 
     <div class="bc-trust" role="note">
@@ -233,8 +234,8 @@
         <path d="M10 1a3 3 0 0 0-3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1V4a3 3 0 0 0-3-3zm-2 6V4a2 2 0 1 1 4 0v3H8z"/>
       </svg>
       <span>
-        <strong>One key, one use.</strong>
-        Your email mints a pseudonymous access key — we don't tie it to any profile or share it. We use it only to authorise your agent's requests and remember your progress.
+        <strong>Your email is a key, not a profile.</strong>
+        Be Civic doesn't collect or sell your data. Your email is used only to confirm it's really your agent using the service and to keep it from being abused — nothing else.
       </span>
     </div>
   </div>
@@ -255,6 +256,15 @@
       >
       <span id="bc-email-hint" class="bc-valid-hint" aria-live="polite"></span>
 
+      <!-- Acknowledgement sits ABOVE Continue (intuitive order): tick first, then proceed.
+           Gate logic is unchanged — Continue stays disabled until email valid AND box ticked
+           (wired by id in the script below, so DOM order doesn't affect it). -->
+      <label id="bc-ack" style="display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 0; font-size: 12.5px; line-height: 1.5; color: #2a2a26; cursor: pointer;">
+        <span id="bc-ack-box" role="checkbox" aria-checked="false" tabindex="0"
+              style="all: unset; flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; border: 1.5px solid #c8c7c1; border-radius: 5px; background: #ffffff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 700; font-size: 13px; line-height: 1; color: #1a1a18;"></span>
+        <span>I acknowledge the <a href="https://becivic.be/privacy" target="_blank" rel="noopener">Privacy Statement</a> and <a href="https://becivic.be/terms" target="_blank" rel="noopener">Terms of Use</a>.</span>
+      </label>
+
       <button
         id="bc-continue"
         type="button"
@@ -264,12 +274,6 @@
       >
         Continue →
       </button>
-
-      <label id="bc-ack" style="display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 0; font-size: 12.5px; line-height: 1.5; color: #2a2a26; cursor: pointer;">
-        <span id="bc-ack-box" role="checkbox" aria-checked="false" tabindex="0"
-              style="all: unset; flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; border: 1.5px solid #c8c7c1; border-radius: 5px; background: #ffffff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 700; font-size: 13px; line-height: 1; color: #1a1a18;"></span>
-        <span>I acknowledge the <a href="https://becivic.be/privacy" target="_blank" rel="noopener">Privacy Statement</a> and <a href="https://becivic.be/terms" target="_blank" rel="noopener">Terms of Use</a>.</span>
-      </label>
     </div>
 
     <!-- ── STEP 2: Verification code (hidden until step 1 completes) ── -->
