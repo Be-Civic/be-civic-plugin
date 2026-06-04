@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
 
+# Validation-only workflow — no writes to repo contents needed.
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -12,7 +16,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
+        # Pinned to an exact version (no range) so a compromised newer
+        # release on npm cannot execute in CI. Bump deliberately.
+        run: npm install -g @anthropic-ai/claude-code@2.1.162
 
       - name: Official schema validation
         # Static manifest validation — no API key or prior `claude login` needed.
