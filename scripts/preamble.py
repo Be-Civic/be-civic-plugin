@@ -795,16 +795,20 @@ def emit_profile_json() -> None:
 # §H4a — Session-disposition FACTS (carry-over + profile-captured + active count)
 # ----------------------------------------------------------------------------
 
-def emit_session_facts() -> None:
+def emit_session_facts() -> dict:
     """Emit the four deterministic session-disposition facts the harness §3
     decision table branches on, as trusted KEY: VALUE lines. These are FACTS
     (precomputed from disk), not decisions: `returning` vs `continuing` still
     needs the user's first-message intent, so that verdict stays agent-side.
 
+    Returns the computed facts as a dict so the caller can feed them straight
+    into `emit_session_opening_instruction()` (no second disk read).
+
       CARRYOVER_PROCEDURE   the single seeded carry-over procedure (first working
                             session) — `<slug> | <title>` from the active entry
-                            in procedures.json, mirrored from the CLAUDE.md
-                            `## Carry-over` block. `none` if absent/empty.
+                            in procedures.json. Sourced from procedures.json (the
+                            registry), NOT from any CLAUDE.md block. `none` if
+                            absent/empty.
       CARRYOVER_LANG        conversation_language from preferences.json. `none`
                             if absent — the harness fails-fast and asks (never
                             silently defaults to English).
@@ -843,9 +847,12 @@ def emit_session_facts() -> None:
                 pass
     print(f"PROFILE_CAPTURED: {captured}")
 
-    # procedures.json — active entries: count + the single carry-over procedure.
+    # procedures.json — active entries: count + the single carry-over procedure,
+    # plus the names of the first few active procedures for the multi-active
+    # opening instruction.
     carryover = "none"
     active_count = 0
+    active_titles: list[str] = []
     if SUBSTRATE_STATE is not None:
         reg_path = SUBSTRATE_STATE / "procedures.json"
         if reg_path.exists():
@@ -856,6 +863,13 @@ def emit_session_facts() -> None:
                     active = [p for p in procs if isinstance(p, dict)
                               and p.get("status", "active") == "active"]
                     active_count = len(active)
+                    for entry in active:
+                        slug = str(entry.get("slug", "")).strip()
+                        title = str(entry.get("process_title")
+                                    or entry.get("title") or slug).strip()
+                        display = title or slug
+                        if display:
+                            active_titles.append(display)
                     if active:
                         first = active[0]
                         slug = str(first.get("slug", "")).strip()
@@ -867,6 +881,131 @@ def emit_session_facts() -> None:
                 pass
     print(f"CARRYOVER_PROCEDURE: {carryover}")
     print(f"ACTIVE_PROCEDURE_COUNT: {active_count}")
+
+    return {
+        "lang": lang,
+        "captured": captured,
+        "carryover": carryover,
+        "active_count": active_count,
+        "active_titles": active_titles,
+    }
+
+
+# ----------------------------------------------------------------------------
+# §H4b — Session-opening instruction (disposition-driven, preamble-emitted)
+# ----------------------------------------------------------------------------
+
+def _carryover_title(carryover: str) -> str:
+    """Pull a human title out of the `<slug> | <title>` CARRYOVER_PROCEDURE
+    string for the opening instruction. Falls back to `your procedure` when the
+    carry-over is absent or carries only a placeholder slug (`intake`)."""
+    if not carryover or carryover == "none":
+        return "your procedure"
+    title = carryover.split("|", 1)[-1].strip() if "|" in carryover else carryover.strip()
+    if not title or title in ("intake", "to be routed"):
+        return "your procedure"
+    return title
+
+
+def emit_session_opening_instruction(facts: dict) -> None:
+    """Emit `CANARY_SHAPE: <scenario>` plus the ONE matched opening instruction
+    (the load canary) as a delimited multi-line block. Only the scenario that
+    applies is emitted — the harness no longer carries four verbose shapes.
+
+    The instruction text ports the old harness §3.0b canary shape + §13 framing
+    prose for the matched scenario, INCLUDING its illustrative example greeting.
+    The example is English for illustration only; the model phrases the real
+    greeting in CARRYOVER_LANG, against the user's opening message. `returning`
+    vs `continuing` still depends on the user's first message (a one-active
+    project where the user asks for something else is `returning`), so the
+    `continuing_one` block carries that nuance inline.
+
+    Scenario selection mirrors the harness §3.0 decision table (PENDING_VERIFICATION
+    and first_contact are handled by the table directly — they route into
+    bc-onboarding before any canary, so no opening instruction is emitted for
+    them here):
+
+      first_working   PROFILE_CAPTURED: no  (folder exists, about-you form not run)
+      continuing_one  PROFILE_CAPTURED: yes + ACTIVE_PROCEDURE_COUNT == 1
+      multi_active    PROFILE_CAPTURED: yes + ACTIVE_PROCEDURE_COUNT > 1
+      returning_none  PROFILE_CAPTURED: yes + ACTIVE_PROCEDURE_COUNT == 0
+    """
+    # No durable folder yet → first_contact / dev loop. The decision table routes
+    # to bc-onboarding; there is nothing to greet about, so emit no instruction.
+    if SUBSTRATE_DATA is None:
+        print("CANARY_SHAPE: first_contact")
+        print("SESSION_OPENING_INSTRUCTION: none (decision table routes to bc-onboarding)")
+        return
+
+    captured = facts.get("captured", "no")
+    active_count = facts.get("active_count", 0)
+    carryover = facts.get("carryover", "none")
+    titles = facts.get("active_titles", []) or []
+    proc = _carryover_title(carryover)
+
+    if captured != "yes":
+        shape = "first_working"
+        instruction = (
+            "First working session (the about-you form has not run yet). Your first message is the load canary: greet "
+            "SPECIFICALLY about this project in CARRYOVER_LANG, naming the carried-over procedure — never a generic "
+            '"how can I help?" (indistinguishable from plain Claude). Do NOT say "welcome back"; this is the first time. '
+            f"Name the procedure ({proc}), and say a few quick questions about their situation come next, then you work "
+            "through it together. After this greeting, invoke bc-onboarding (first-working-session mode), which fetches "
+            "the canonical, renders the about-you form, and commits the profile sentinel.\n"
+            f'Example (illustrative English — phrase the real greeting in CARRYOVER_LANG): "Hi — I\'ve loaded Be Civic\'s '
+            f'guide for your {proc}. Since it\'s our first time, I\'ll start with a few quick questions about your '
+            'situation, then we\'ll work through it together."'
+        )
+    elif active_count > 1:
+        shape = "multi_active"
+        if len(titles) >= 2:
+            names = f"**{titles[0]}** and **{titles[1]}**"
+        elif titles:
+            names = f"**{titles[0]}**"
+        else:
+            names = "your procedures"
+        instruction = (
+            "Multi-active project (more than one active procedure). Your first message is the load canary: greet in "
+            "CARRYOVER_LANG, naming the active procedures, then ask which to work on today (let the user pick; once they "
+            'pick, treat it as continuing). Never a generic "how can I help?".\n'
+            f'Example (illustrative English — phrase the real greeting in CARRYOVER_LANG): "Hi again — you\'ve got two '
+            f'things going, {names}. Last time we were further along on one of them. Which would you like to work on '
+            'today?"'
+        )
+    elif active_count == 0:
+        shape = "returning_none"
+        # No active procedure means no carry-over title; the most-recent procedure
+        # (if any) is yours to name from MEMORY.md / the registry's completed
+        # entries. The example below uses a generic phrasing when none is known.
+        recent = (
+            f"Last time we wrapped up your {proc}. " if proc != "your procedure" else ""
+        )
+        instruction = (
+            "Returning project, no active procedure. Your first message is the load canary: greet in CARRYOVER_LANG, "
+            "naming the project and (if you can see it in MEMORY.md / the registry) the most recent procedure, then ask "
+            "what they want to look at today. You have notes on their situation from before — do not re-ask routing "
+            'fields you already hold; if a field changed, confirm and update. Never a generic "how can I help?".\n'
+            f'Example (illustrative English — phrase the real greeting in CARRYOVER_LANG): "Hi again — your Be Civic '
+            f'project\'s loaded. {recent}Has anything changed since we last spoke? What would you like to look at '
+            'today?"'
+        )
+    else:
+        shape = "continuing_one"
+        instruction = (
+            "Continuing project (one active procedure). Your first message is the load canary: greet in CARRYOVER_LANG, "
+            f"naming the procedure ({proc}) and offering to pick up where you left off. Never a generic "
+            '"how can I help?".\n'
+            "NUANCE (yours, not the preamble\'s): if the user\'s first message asks for something ELSE, this is "
+            "`returning`, not `continuing` — acknowledge the in-flight procedure but follow their lead, pivoting per "
+            "bc-path-traversal without losing the in-flight procedure.\n"
+            f'Example (illustrative English — phrase the real greeting in CARRYOVER_LANG): "Hi again — I\'ve got your '
+            f'{proc} loaded and I\'m ready to pick up where we left off."'
+        )
+
+    print(f"CANARY_SHAPE: {shape}")
+    print("SESSION_OPENING_INSTRUCTION<<<")
+    print(instruction)
+    print(">>>")
 
 
 # ----------------------------------------------------------------------------
@@ -980,7 +1119,8 @@ def main(argv: list[str] | None = None) -> int:
             print("VISION_AVAILABLE: unknown")
         emit_mcp_capability()
         emit_submit_observations()
-        emit_session_facts()
+        facts = emit_session_facts()
+        emit_session_opening_instruction(facts)
         emit_profile_json()
         return 0
 
@@ -1054,7 +1194,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # 12a. Session-disposition FACTS (carry-over + profile-captured + active count)
     #      the harness §3 decision table branches on.
-    emit_session_facts()
+    facts = emit_session_facts()
+
+    # 12b. The disposition-driven session-opening instruction (the load canary):
+    #      CANARY_SHAPE + the ONE matched SESSION_OPENING_INSTRUCTION block.
+    emit_session_opening_instruction(facts)
 
     # 13. Profile inline.
     emit_profile_json()
