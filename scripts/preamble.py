@@ -792,6 +792,84 @@ def emit_profile_json() -> None:
 
 
 # ----------------------------------------------------------------------------
+# §H4a — Session-disposition FACTS (carry-over + profile-captured + active count)
+# ----------------------------------------------------------------------------
+
+def emit_session_facts() -> None:
+    """Emit the four deterministic session-disposition facts the harness §3
+    decision table branches on, as trusted KEY: VALUE lines. These are FACTS
+    (precomputed from disk), not decisions: `returning` vs `continuing` still
+    needs the user's first-message intent, so that verdict stays agent-side.
+
+      CARRYOVER_PROCEDURE   the single seeded carry-over procedure (first working
+                            session) — `<slug> | <title>` from the active entry
+                            in procedures.json, mirrored from the CLAUDE.md
+                            `## Carry-over` block. `none` if absent/empty.
+      CARRYOVER_LANG        conversation_language from preferences.json. `none`
+                            if absent — the harness fails-fast and asks (never
+                            silently defaults to English).
+      PROFILE_CAPTURED      the `last_updated_at != null` verdict on profile.json
+                            — `yes` once the about-you form has written it, `no`
+                            while the profile is still the untouched template.
+                            This is the load-bearing first-working-session signal.
+      ACTIVE_PROCEDURE_COUNT  count of `status == active` entries in
+                            procedures.json (0 / 1 / N drives the framing pick).
+    """
+    # CARRYOVER_LANG — preferences.json conversation_language.
+    lang = "none"
+    if SUBSTRATE_STATE is not None:
+        prefs_path = SUBSTRATE_STATE / "preferences.json"
+        if prefs_path.exists():
+            try:
+                prefs = json.loads(prefs_path.read_text(encoding="utf-8"))
+                v = prefs.get("conversation_language")
+                if isinstance(v, str) and v.strip():
+                    lang = v.strip()
+            except (OSError, json.JSONDecodeError):
+                pass
+    print(f"CARRYOVER_LANG: {lang}")
+
+    # PROFILE_CAPTURED — last_updated_at != null on profile.json (state copy only;
+    # the shipped template always has it null, so a missing state file reads `no`).
+    captured = "no"
+    if SUBSTRATE_STATE is not None:
+        profile_path = SUBSTRATE_STATE / "profile.json"
+        if profile_path.exists():
+            try:
+                profile = json.loads(profile_path.read_text(encoding="utf-8"))
+                if profile.get("last_updated_at") not in (None, "", "null"):
+                    captured = "yes"
+            except (OSError, json.JSONDecodeError):
+                pass
+    print(f"PROFILE_CAPTURED: {captured}")
+
+    # procedures.json — active entries: count + the single carry-over procedure.
+    carryover = "none"
+    active_count = 0
+    if SUBSTRATE_STATE is not None:
+        reg_path = SUBSTRATE_STATE / "procedures.json"
+        if reg_path.exists():
+            try:
+                reg = json.loads(reg_path.read_text(encoding="utf-8"))
+                procs = reg.get("procedures", [])
+                if isinstance(procs, list):
+                    active = [p for p in procs if isinstance(p, dict)
+                              and p.get("status", "active") == "active"]
+                    active_count = len(active)
+                    if active:
+                        first = active[0]
+                        slug = str(first.get("slug", "")).strip()
+                        title = str(first.get("process_title")
+                                    or first.get("title") or slug).strip()
+                        if slug:
+                            carryover = f"{slug} | {title}" if title else slug
+            except (OSError, json.JSONDecodeError):
+                pass
+    print(f"CARRYOVER_PROCEDURE: {carryover}")
+    print(f"ACTIVE_PROCEDURE_COUNT: {active_count}")
+
+
+# ----------------------------------------------------------------------------
 # §H5 — Capability probes (BECIVIC_MCP_CONNECTED + scrub-rules freshness)
 # ----------------------------------------------------------------------------
 
@@ -902,6 +980,7 @@ def main(argv: list[str] | None = None) -> int:
             print("VISION_AVAILABLE: unknown")
         emit_mcp_capability()
         emit_submit_observations()
+        emit_session_facts()
         emit_profile_json()
         return 0
 
@@ -972,6 +1051,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # 12. Scrub-rules freshness -> whether observations may be submitted.
     emit_submit_observations()
+
+    # 12a. Session-disposition FACTS (carry-over + profile-captured + active count)
+    #      the harness §3 decision table branches on.
+    emit_session_facts()
 
     # 13. Profile inline.
     emit_profile_json()
