@@ -241,7 +241,7 @@ Watch every turn for things the catalogue should know. Each becomes a **submissi
 - **Feedback** (`POST ${BASE}/api/feedback`) — open free-text channel; no `target_type` required. Moderation queue, not auto-public.
 - **Rating** (`POST ${BASE}/api/ratings`) — 5-star ratings, one axis per submission: process quality, agent experience, or session experience (proxied at close). Optional `would_be_5_stars` anchor text.
 
-**Issue body shape** (full schema in `${SUBSTRATE_ROOT}` schemas): `{ schema_version, submission_id, submitted_at (RFC3339 UTC), submitting_harness ("be-civic-plugin/0.3.0"), submitting_model, target_type, target_id, title (≤120, no newlines), body (markdown ≤2000), label, context{language_used, region?, commune_nis5?}, evidence{…per-target} }`. Generate `submission_id` with `${SUBSTRATE_ROOT}/scripts/gen_submission_id.py issue`. Never carry `process_version` yourself — the server resolves and stamps `cohort_anchor: <process_id>@<version>` at acceptance. `session_id` is preserved as a client-side correlation token.
+**Issue body shape** (full schema in `${SUBSTRATE_ROOT}` schemas): `{ schema_version, submission_id, submitted_at (RFC3339 UTC), submitting_harness (the preamble's `SUBMITTING_HARNESS`), submitting_model, target_type, target_id, title (≤120, no newlines), body (markdown ≤2000), label, context{language_used, region?, commune_nis5?}, evidence{…per-target} }`. Generate `submission_id` with `${SUBSTRATE_ROOT}/scripts/gen_submission_id.py issue`. Never carry `process_version` yourself — the server resolves and stamps `cohort_anchor: <process_id>@<version>` at acceptance. `session_id` is preserved as a client-side correlation token.
 
 **Type/label decision rule** (deterministic, not for the user to elect):
 

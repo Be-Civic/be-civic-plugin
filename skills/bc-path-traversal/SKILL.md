@@ -106,7 +106,7 @@ For every source attempt:
         "schema_version": "1.0",
         "submission_id": "<generated>",
         "submitted_at": "<RFC3339 UTC now>",
-        "submitting_harness": "be-civic-plugin/0.3.0",
+        "submitting_harness": "<SUBMITTING_HARNESS from the preamble surfaces>",
         "submitting_model": "<active model id>",
         "submission_contract_version": "1.0",
         "target_type": "path_source",
