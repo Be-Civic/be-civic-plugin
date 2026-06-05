@@ -2,13 +2,21 @@
 """setup_project.py — Be Civic one-call onboarding project write.
 
 Collapses the entire `bc-onboarding` §6 "state-shape activation" sequence — git
-init, `.gitignore`, the five `.be-civic/state/` files, the marker, `CLAUDE.md`
-(+ carry-over), `MEMORY.md`, and the first commit — into ONE deterministic call
-the onboarding agent makes after the folder picker returns.
+init, `.gitignore`, the five `.be-civic/state/` files, the marker, `CLAUDE.md`,
+`MEMORY.md`, and the first commit — into ONE deterministic call the onboarding
+agent makes after the folder picker returns.
+
+`CLAUDE.md` is written byte-for-byte from the canonical `harness-CLAUDE.md`
+template — NO `## Carry-over` block is appended. The carry-over (chosen procedure
++ conversation language) lives in the state files this script writes — the
+`procedures.json` registry and `preferences.json` — which the preamble reads as
+CARRYOVER_PROCEDURE / CARRYOVER_LANG. The prose block was redundant with that
+state AND mutated the always-on harness, breaking the byte-identical-to-canonical
+fidelity the JIT instruction-surface doctrine depends on.
 
 Why a script instead of ~12 agent tool calls:
   - The agent previously `cp`-copied the read-only `harness-CLAUDE.md` template,
-    which hardlinked it read-only, so the carry-over `cat >>` append failed with
+    which hardlinked it read-only, so writes against the destination failed with
     EPERM/EACCES. Every "copy verbatim" here is `read_text` → `_write` (FRESH
     bytes), so the destination is a new, writable inode — the hardlink bug cannot
     recur.
@@ -141,42 +149,32 @@ def _fill_marker(template: str, user_id: str, plugin_version: str, created_at: s
     return "\n".join(out)
 
 
-def _carryover_block(process_id: str, process_slug: str, process_title: str,
-                     language_name: str, locale: str) -> str:
-    """The §6.4a human-readable carry-over block appended to CLAUDE.md."""
-    if process_id == "intake" or process_slug == "intake":
-        procedure_line = "- Chosen procedure: to be routed (slug `intake`)"
-    else:
-        procedure_line = (
-            f"- Chosen procedure: {process_title} "
-            f"(`{process_id}`, slug `{process_slug}`)"
-        )
-    return (
-        "## Carry-over (written at setup — read on first load, do not re-ask)\n"
-        "\n"
-        f"{procedure_line}\n"
-        f"- Conversation language: {language_name} (`{locale}`)\n"
-        "\n"
-        "The working session greets the user about this procedure in this language on its\n"
-        "first message, then captures the about-you form. It does not re-ask which procedure\n"
-        "or which language.\n"
-    )
-
-
 def _procedures_seed(slug: str, process_id: str, process_version: str,
-                     status: str, now: str) -> str:
+                     status: str, now: str, process_title: str = "") -> str:
+    entry = {
+        "slug": slug,
+        "process_id": process_id,
+        "process_version": process_version,
+        "status": status,
+        "started_at": now,
+        "updated_at": now,
+    }
+    # process_title is OPTIONAL in the registry schema: include it only when a
+    # real title was passed (never an empty string — the schema requires
+    # minLength 1, and a missing field is the valid legacy/`intake` shape that
+    # readers fall back to the slug for). Inserted after process_id to mirror
+    # the schema property order.
+    title = (process_title or "").strip()
+    if title:
+        ordered = {}
+        for k, v in entry.items():
+            ordered[k] = v
+            if k == "process_id":
+                ordered["process_title"] = title
+        entry = ordered
     registry = {
         "schema_version": 1,
-        "procedures": [
-            {
-                "slug": slug,
-                "process_id": process_id,
-                "process_version": process_version,
-                "status": status,
-                "started_at": now,
-                "updated_at": now,
-            }
-        ],
+        "procedures": [entry],
     }
     return json.dumps(registry, indent=2) + "\n"
 
@@ -289,10 +287,23 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
                         "CLAUDE_PLUGIN_ROOT, then the script's parent dir)")
     p.add_argument("--user-id", required=True)
     p.add_argument("--locale", required=True)
-    p.add_argument("--language-name", required=True)
+    # --language-name and --process-title were both consumed only by the prose
+    # `## Carry-over` block that used to be appended to CLAUDE.md. That block is
+    # gone (the carry-over now lives in preferences.json + procedures.json, which
+    # the preamble reads). --process-title is now written into the procedures.json
+    # entry as the optional `process_title` field, so the first-working-session
+    # load canary names the real Process title instead of the kebab-case slug.
+    # --language-name remains accepted-but-unused (the conversation language lives
+    # in preferences.json, keyed by --locale).
+    p.add_argument("--language-name", default="",
+                   help="(accepted but unused — conversation language is written "
+                        "from --locale into preferences.json)")
     p.add_argument("--process-id", required=True)
     p.add_argument("--process-slug", required=True)
-    p.add_argument("--process-title", default="")
+    p.add_argument("--process-title", default="",
+                   help="human-readable Process title; written into procedures.json "
+                        "as the optional `process_title` (omitted when empty) so the "
+                        "load canary names the real title, not the slug")
     p.add_argument("--process-version", default="0")
     p.add_argument("--process-status", default="active")
     p.add_argument("--plugin-version", default=PLUGIN_VERSION_STRING)
@@ -453,11 +464,12 @@ def main(argv: list[str] | None = None) -> int:
     except OSError:
         step("PREFERENCES_WRITTEN", False)
 
-    # procedures.json — seeded registry
+    # procedures.json — seeded registry (process_title written when non-empty)
     try:
         _write(substrate_state / "procedures.json",
                _procedures_seed(args.process_slug, args.process_id,
-                                args.process_version, args.process_status, now))
+                                args.process_version, args.process_status, now,
+                                args.process_title))
         step("PROCEDURES_WRITTEN", True)
         files_written += 1
     except OSError:
@@ -485,20 +497,23 @@ def main(argv: list[str] | None = None) -> int:
     except OSError:
         step("MARKER_WRITTEN", False)
 
-    # CLAUDE.md = harness template + appended carry-over, written as ONE fresh
-    # file (the bug fix — never cp-then-append).
+    # CLAUDE.md = the harness template written VERBATIM as fresh bytes (never
+    # cp-then-append — that hardlinked the read-only template). NO `## Carry-over`
+    # block is appended: the carry-over (chosen procedure + conversation language)
+    # lives in the state files written above — procedures.json (the registry) and
+    # preferences.json (conversation_language) — which the preamble reads as
+    # CARRYOVER_PROCEDURE / CARRYOVER_LANG. Appending a prose block to CLAUDE.md
+    # was pure redundancy AND mutated the always-on harness (breaking the
+    # byte-identical-to-canonical fidelity the JIT instruction-surface doctrine
+    # depends on). So the written CLAUDE.md is now byte-for-byte the canonical
+    # harness.
     try:
         harness = _read_template(substrate_root, HARNESS_TEMPLATE_REL)
-        body = harness.rstrip("\n") + "\n"
-        carryover = _carryover_block(args.process_id, args.process_slug,
-                                     args.process_title, args.language_name, args.locale)
-        _write(substrate_data / "CLAUDE.md", body + "\n" + carryover)
+        _write(substrate_data / "CLAUDE.md", harness)
         step("CLAUDE_MD_WRITTEN", True)
-        print("CARRYOVER_APPENDED: ok")
         files_written += 1
     except OSError:
         step("CLAUDE_MD_WRITTEN", False)
-        print("CARRYOVER_APPENDED: failed")
 
     # MEMORY.md — verbatim
     try:

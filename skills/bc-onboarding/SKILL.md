@@ -1,7 +1,7 @@
 ---
 id: bc-onboarding
 name: bc-onboarding
-description: First-contact onboarding for Be Civic. Runs the verified flow — an email→code access widget (start-verification emails a 6-digit code → verify with the code), then state-shape activation inside the user-picked project folder (one folder, one git repo, with agent-managed state in a hidden .be-civic/state subdir) — and ends with a clean handoff into a fresh chat opened inside the project folder, where the working session begins. Falls back to anonymous read-only mode if the user declines verification. Owns first-contact only; returning and multi-active modes are owned by the harness.
+description: Onboarding for Be Civic. First-contact mode runs the verified flow — an email→code access widget (start-verification emails a 6-digit code → verify with the code), then state-shape activation inside the user-picked project folder (one folder, one git repo, with agent-managed state in a hidden .be-civic/state subdir) — and ends with a clean handoff into a fresh chat opened inside the project folder, where the working session begins. First-working-session mode (the next chat, after the harness loads and greets) fetches the carried-over canonical, renders the about-you form, and commits the profile sentinel. Falls back to anonymous read-only mode if the user declines verification. Returning and multi-active framings are owned by the harness.
 version: 3.4.1
 requires_capabilities:
   - cowork_directory_tool: mcp__cowork__request_cowork_directory
@@ -20,9 +20,14 @@ peer_skills:
 
 Be Civic is a tool for the user's agent, not an agent itself. The user already has an agent (you, running inside Cowork); Be Civic gives that agent a verified library of Belgian administrative procedures. This skill is the "get set up" beat: the user has already said yes, and your job is to get them set up quickly and cleanly.
 
-This skill owns **first-contact only** — the "get set up" conversation (Chat 1). It runs once per Be Civic project: capture and verify the user's email, pick the project folder, mint their pseudonymous identity, write the project state shape (one folder, one git repo), then **end this conversation by moving the user into one fresh chat opened inside their project folder** where the work begins. Returning sessions (marker already exists) and mid-session pivots to a second procedure are handled by the harness `CLAUDE.md`, not here.
+This skill spans two moments in the onboarding lifecycle:
 
-This conversation is **setup only**: email, verification, and writing the project to disk. The procedure interview — the about-you form and the real walk-through — happens in the *next* chat, after the user opens their project folder and the harness loads. Do **not** ask the user about their situation here, and do **not** render the about-you onboarding form here. Setting up the project, then handing the user cleanly into it, is the whole job.
+- **First-contact mode** — the "get set up" conversation (Chat 1), covered by Steps 1–7 below. It runs once per Be Civic project: capture and verify the user's email, pick the project folder, mint their pseudonymous identity, write the project state shape (one folder, one git repo), then **end this conversation by moving the user into one fresh chat opened inside their project folder** where the work begins.
+- **First-working-session mode** — the next chat (Chat 2), after the harness loads and greets the user about their procedure. The harness invokes this skill (because the about-you form has not run yet) to render the about-you form, validate it, and commit the profile sentinel. Covered in its own section below.
+
+Returning sessions (marker already exists) and mid-session pivots to a second procedure are framed by the harness `CLAUDE.md`, not here.
+
+**First-contact (Chat 1) is setup only**: email, verification, and writing the project to disk. The procedure interview — the about-you form and the real walk-through — happens in the *next* chat. So during first-contact (Steps 1–7) do **not** ask the user about their situation, and do **not** render the about-you onboarding form: that is first-working-session mode's job, in Chat 2. Setting up the project, then handing the user cleanly into it, is the whole of first-contact.
 
 ### Substrate surfaces — one folder, one repo
 
@@ -67,7 +72,7 @@ The user has already said yes — they came to be set up. **Do not introduce or 
 First, **silently identify which procedure the user came for** so the rest of setup can seed it correctly. This is internal bookkeeping, not something you narrate to the user. At this point the harness has only the anonymous-read tier (`corpus:read:public`) — no Bearer, no local state. Read the **public manifest** via the **`WebFetch`** tool (no `Authorization` header — anonymous-read tier):
 
 1. `GET https://becivic.be/api/manifest` → `{ version, generated_at, entries }`. The entity graph is in `.entries` (top-level — there is no `.data` wrapper). Search the entries client-side by `title` / `summary` / `applies_to` against the user's intent to find the Process the gate matched (or the closest match).
-2. Hold the matched entry's `title`, its Process `id`, and its `version`. These feed the procedures registry seed (§6.2) and the carry-over the next chat reads (§6.4a). If nothing in the manifest matches the user's intent (or the gate classified `procedure_intent_vague` with zero hits), hold the `intake` slug instead — `bc-discovery` resolves it in the next chat.
+2. Hold the matched entry's `title`, its Process `id`, and its `version`. These feed the procedures registry seed (§6.2) — the active entry in `procedures.json`, which the preamble reads next chat as `CARRYOVER_PROCEDURE`. If nothing in the manifest matches the user's intent (or the gate classified `procedure_intent_vague` with zero hits), hold the `intake` slug instead — `bc-discovery` resolves it in the next chat.
 
 **Do NOT fetch a Process body here** — no Process is public today; an anonymous `GET https://becivic.be/api/processes/<id>` without a Bearer returns `401`. The match runs off the manifest only. **Do not present the procedure's stages, documents, fees, deadlines, or per-step detail** — none of that is introduced in the plugin; it belongs to the working session after verification.
 
@@ -115,16 +120,14 @@ On the `[Be Civic access] email: <addr>` message, validate the address shape loc
 
 **Envelope-mismatch check (do this once, before verifying).** If you can see the user's account email — e.g. the Cowork session envelope exposes one — and it differs from the `<addr>` they typed, ask once, in conversation language, before calling the endpoint: *"You're signed in as `<envelope-email>` but you typed `<typed-email>`. The code goes to whichever address you verify, and that becomes your account — which do you want to use?"* This is cheap and prevents a whole class of typos that mint an identity against an inbox the user can't actually read (so they can never receive the code, or recover the key later). If you have no envelope email to compare against, skip this and proceed.
 
-Then call the start endpoint via **`WebFetch`**. **No auth header** — the user has no key yet.
+Then call the start endpoint via the bundled **`wire.py`** (a POST — `WebFetch` is GET-only and cannot carry a request body, so writes go through `wire.py` over `bash`). **No auth header is needed** — the user has no key yet, and `wire.py` sends none when `${SUBSTRATE_STATE}/.env` has no key (this is the anonymous-tier bootstrap call). `$BC_ROOT` is the install root resolved in the discovery step above:
 
-```
-POST https://becivic.be/api/auth/start-verification
-Content-Type: application/json
-
-{ "email": "<address>" }
+```bash
+python3 "$BC_ROOT/scripts/wire.py" POST /api/auth/start-verification \
+  --json '{"email":"<address>"}'
 ```
 
-**Response is UNWRAPPED** (auth endpoints carry the payload directly, not a `{status,data}` envelope). On HTTP `202`:
+`wire.py` prints `http_status:` then `result: ok|error` plus the parsed `body:`, and exits 0 on a 2xx. **Response is UNWRAPPED** (auth endpoints carry the payload directly, not a `{status,data}` envelope). On HTTP `202` the body is:
 
 ```json
 { "verification_id": "<id>", "expires_at": "<RFC3339>" }
@@ -133,7 +136,7 @@ Content-Type: application/json
 This emails the user a **6-digit code**. The widget is already showing the code field, so just hold the `verification_id` and wait for the `code:` message.
 
 - **`202`** — hold `verification_id`. **Do not write `.pending-verification` yet** — no durable write happens before the folder is picked (Step 6.1), and `${SUBSTRATE_STATE}` does not exist until then. Hold `verification_id`, `email`, and `expires_at` in working memory. Once the folder is picked and state exists, write `${SUBSTRATE_STATE}/.pending-verification` (one line) so a half-finished ceremony resumes on next session; it is transient and never committed (denied by the single `.gitignore` allowlist). (In **verification-only recovery mode** the folder already exists, so write it immediately.)
-- **Network failure / timeout** — retry with exponential backoff (250 ms → 500 ms → 1 s → 2 s). On persistent failure, tell the user the verification service is unreachable and fall to anonymous-read mode (§1.1); offer to retry later.
+- **Network failure / timeout** (`wire.py` exits with `result: network`) — `wire.py` already retried once internally; on a second failure re-run the same command at most once more, then tell the user the verification service is unreachable and fall to anonymous-read mode (§1.1); offer to retry later. If `wire.py` instead prints `result: blocked` (exit 4 — `blocked-by-allowlist`), `becivic.be` is not reachable in this sandbox; surface that the verified library can't be reached right now and fall to anonymous-read mode.
 - **Address rejected** — surface plainly: *"I couldn't send a code to that address — want to try another?"* and re-render the access widget.
 
 On a `[Be Civic access] resend` message, re-run this step for the held email; a fresh `verification_id` + code are issued (replace the held one).
@@ -150,16 +153,14 @@ If a `code:` message arrives but you have no held `verification_id` (e.g. a stal
 
 ## Step 5. Verify the code — `POST /api/auth/verify`
 
-Redeem the code via **`WebFetch`**. **No auth header** — the key is what this call mints.
+Redeem the code via the bundled **`wire.py`** (a POST — not a `WebFetch`, which is GET-only). **No auth header** — the key is what this call mints, and `wire.py` sends none until `.env` has one. Pipe the body on **stdin** so the code is not exposed in the process table / shell history:
 
-```
-POST https://becivic.be/api/auth/verify
-Content-Type: application/json
-
-{ "verification_id": "<held id>", "code": "<6-digit code>" }
+```bash
+printf '%s' '{"verification_id":"<held id>","code":"<6-digit code>"}' \
+  | python3 "$BC_ROOT/scripts/wire.py" POST /api/auth/verify --stdin
 ```
 
-**Response is UNWRAPPED.** On HTTP `200`:
+**Response is UNWRAPPED.** Branch on the `http_status:` line `wire.py` prints. On HTTP `200` the body is:
 
 ```json
 { "user_id": "<id>", "harness_key": "<secret>", "tier": "pseudonymous" }
@@ -171,7 +172,7 @@ Branch on the **HTTP status code first**:
 - **`400` with `detail` "Incorrect code"** — wrong code. Tell the user plainly (*"That code didn't match — what's the 6-digit code from the email?"*) and re-call this step with the **same** `verification_id` and the new code. The server caps attempts at 5.
 - **`400` with `detail` "Verification expired"** — the code timed out. Re-run Step 3 (fresh `verification_id` + code), then ask the user for the new code.
 - **`429` `{ "error": "rate_limit_exceeded" }`** — too many wrong attempts; this verification is burned. Re-run Step 3 to send a fresh code, then ask for it.
-- **Network failure** — retry with the Step 3 backoff; keep `.pending-verification` in place so the next session can resume.
+- **Network failure** (`wire.py` `result: network`, after its internal retry) — re-run the verify command at most once more; keep `.pending-verification` in place so the next session can resume.
 
 **Never echo `harness_key` to chat.** From here it lives only in `.env` (Step 6).
 
@@ -189,7 +190,7 @@ If the user **cancels the picker**, do not write anything. There is no separate 
 
 ### 6.2. Write the whole project in one call — `setup_project.py`
 
-The entire project write — the one git repo, the single `.gitignore`, all of `.be-civic/state/`, the marker, `CLAUDE.md` (+ carry-over), `MEMORY.md`, and the first commit — is performed by **one deterministic script call**, not a sequence of hand-written files. Writing it by hand previously hardlinked the read-only `CLAUDE.md` template (so the carry-over append failed) and risked transcription drift; the script writes fresh bytes and is the single source of truth.
+The entire project write — the one git repo, the single `.gitignore`, all of `.be-civic/state/`, the marker, `CLAUDE.md` (the canonical harness, written verbatim — no carry-over block), `MEMORY.md`, and the first commit — is performed by **one deterministic script call**, not a sequence of hand-written files. Writing it by hand previously hardlinked the read-only `CLAUDE.md` template and risked transcription drift; the script writes fresh bytes and is the single source of truth.
 
 Run it once, **piping the harness key on stdin** — never on the command line (the process table and shell history would expose it):
 
@@ -218,7 +219,7 @@ The script also deletes the now-redundant `.pending-verification` and runs the `
 
 #### What `setup_project.py` writes (reference — the script is authoritative)
 
-The script reproduces §6.2–§6.4a exactly. This is the ground-truth shape, kept for review and for the manual fallback; you do not perform these steps by hand on the happy path.
+The script reproduces §6.2–§6.4 exactly. This is the ground-truth shape, kept for review and for the manual fallback; you do not perform these steps by hand on the happy path.
 
 - **`.gitignore` first** (verbatim from `${SUBSTRATE_ROOT}/data/gitignore.txt`) — the merged allowlist, written before `git init` so the key is never staged. Then `git init`.
 - **`.be-civic/state/`** (in order): **`.env`** = `BECIVIC_HARNESS_KEY=<harness_key>` and nothing else (gitignored; never echoed); **`user-id`** = the raw id; **`profile.json`** = the template **verbatim** (`last_updated_at` stays `null`, every routing field default — this "profile still at defaults" state is the signal the next chat keys the about-you form on; do not pre-fill); **`preferences.json`** = `{ "conversation_language": "<locale>" }`; **`procedures.json`** = the seeded registry:
@@ -227,25 +228,15 @@ The script reproduces §6.2–§6.4a exactly. This is the ground-truth shape, ke
     "schema_version": 1,
     "procedures": [
       { "slug": "<procedure-slug>", "process_id": "<matched id, or slug if discovery-bound>",
+        "process_title": "<human title — OPTIONAL, omitted when no real title>",
         "process_version": "<version, or '0'>", "status": "active",
         "started_at": "<RFC3339 UTC>", "updated_at": "<RFC3339 UTC>" }
     ]
   }
   ```
-  (If the gate matched no Process — `procedure_intent_vague`, zero hits — pass `intake` for id/slug/title; `bc-discovery` renames it after routing.)
+  (`process_title` comes from the matched manifest entry and is what lets the next chat's load canary name the real title; it is OPTIONAL — when `--process-title` is empty the field is omitted and readers fall back to the slug. If the gate matched no Process — `procedure_intent_vague`, zero hits — pass `intake` for id/slug, omit the title; `bc-discovery` renames it after routing.)
 - **`.be-civic/marker`** (template with `user_id` / `plugin_version` / `created_at` filled) — detection-only.
-- **`CLAUDE.md`** = the harness template (`harness-CLAUDE.md`) **plus the carry-over block appended as one fresh file**:
-  ```markdown
-  ## Carry-over (written at setup — read on first load, do not re-ask)
-
-  - Chosen procedure: <procedure title> (`<process_id>`, slug `<procedure-slug>`)
-  - Conversation language: <language name> (`<locale>`)
-
-  The working session greets the user about this procedure in this language on its
-  first message, then captures the about-you form. It does not re-ask which procedure
-  or which language.
-  ```
-  (For the `intake` case the script writes `Chosen procedure: to be routed (slug `intake`)`.) The carry-over is the human-readable mirror of `preferences.json` + `procedures.json` — the next chat reads it on load and does **not** re-ask the procedure or language.
+- **`CLAUDE.md`** = the harness template (`harness-CLAUDE.md`) written **byte-for-byte, with NO `## Carry-over` block appended**. The carry-over (chosen procedure + conversation language) is NOT prose in CLAUDE.md — it lives entirely in the state files above: `procedures.json` (the active entry's `slug` / `process_id`) and `preferences.json` (`conversation_language`). The preamble reads those and surfaces them as `CARRYOVER_PROCEDURE` / `CARRYOVER_LANG`, and emits the matched `SESSION_OPENING_INSTRUCTION` for the next chat's load canary. Appending a prose block was pure redundancy AND mutated the always-on harness (breaking the byte-identical-to-canonical fidelity the JIT instruction-surface doctrine depends on), so it is gone. (`--process-title` is written into the `procedures.json` entry as the optional `process_title` field, so the next chat's load canary names the real Process title rather than the kebab-case slug; the preamble surfaces it as `CARRYOVER_PROCEDURE: <slug> | <title>`. `--language-name` is accepted but unused — the conversation language is written from `--locale` into `preferences.json`.)
 - **`MEMORY.md`** (verbatim template). No empty subdirectories (`documents/`, `sessions/`, per-procedure folders) are pre-created — they are made lazily.
 
 ### 6.5. Acknowledge with the path (JIT trust clause)
@@ -266,9 +257,9 @@ So Chat 1 ends here. Hand the user a clickable link into their project, tell the
 
 ### 7.0. Only hand off if a project folder exists
 
-The handoff below requires a real `${SUBSTRATE_DATA}` folder to open. If the user cancelled the folder picker (the advice-only branch in 6.1), **nothing was written to disk** — no folder, no `CLAUDE.md`, no state — so there is nothing for a fresh chat to auto-load, and a handoff link would point nowhere. In that case **do not run the handoff (7.1–7.3).** Instead, stay in this conversation in advice-only mode: nothing is saved to disk this session (the minted key was held in working memory only). Offer the user the choice again: *"I can keep helping you here, but nothing's being saved yet. Want to pick a folder now so I can save your progress and pick it up cleanly next time?"* If they pick a folder, complete **the full project write — 6.2 (init repo + `.gitignore`), 6.3 (state), and 6.4 (the rest of the folder + carry-over)** — then run the handoff. If they decline, continue in advice-only — no context switch.
+The handoff below requires a real `${SUBSTRATE_DATA}` folder to open. If the user cancelled the folder picker (the advice-only branch in 6.1), **nothing was written to disk** — no folder, no `CLAUDE.md`, no state — so there is nothing for a fresh chat to auto-load, and a handoff link would point nowhere. In that case **do not run the handoff (7.1–7.3).** Instead, stay in this conversation in advice-only mode: nothing is saved to disk this session (the minted key was held in working memory only). Offer the user the choice again: *"I can keep helping you here, but nothing's being saved yet. Want to pick a folder now so I can save your progress and pick it up cleanly next time?"* If they pick a folder, complete **the full project write — 6.2 (init repo + `.gitignore`), 6.3 (state), and 6.4 (the rest of the folder)** — then run the handoff. If they decline, continue in advice-only — no context switch.
 
-Only when `${SUBSTRATE_DATA}` exists (the picker succeeded and 6.2 + 6.3 + 6.4 ran: the `.gitignore`, state, `.be-civic/marker`, `CLAUDE.md`, and the carry-over are all in place) do you run the handoff below.
+Only when `${SUBSTRATE_DATA}` exists (the picker succeeded and 6.2 + 6.3 + 6.4 ran: the `.gitignore`, state, `.be-civic/marker`, and `CLAUDE.md` are all in place, and the carry-over is captured in `procedures.json` + `preferences.json`) do you run the handoff below.
 
 ### 7.1. Tell the user what success looks like (before they switch)
 
@@ -294,9 +285,27 @@ On Cowork, prefer a `claude://` deeplink that opens a new chat in `${SUBSTRATE_D
 
 Once you've delivered 7.1 + 7.2, **stop.** Do not invoke `bc-path-traversal`, do not invoke `bc-discovery`, do not start the situation assessment, do not render the about-you form. Those all belong to the next chat, driven by the harness `CLAUDE.md` you just wrote. This skill's job is finished the moment the user has a clickable way into their project and knows what to look for.
 
-**If `procedure_intent_vague` with zero manifest hits:** the carry-over (6.4a) records the `intake` slug; the next chat's harness routes the user via `bc-discovery` in `process` mode before the about-you form. You still hand off the same way — the routing happens after the switch, not here.
+**If `procedure_intent_vague` with zero manifest hits:** the seeded `procedures.json` records the `intake` slug (surfaced next chat as `CARRYOVER_PROCEDURE: intake`); the next chat's harness routes the user via `bc-discovery` in `process` mode before the about-you form. You still hand off the same way — the routing happens after the switch, not here.
 
-**Exit this skill cleanly. Do not loop.** Subsequent procedure work (the about-you form, path traversal, document handling, observation buffering, session close) runs in the next chat against the harness, not in this conversation and not in this skill.
+**Exit this skill cleanly. Do not loop.** Subsequent procedure work (path traversal, document handling, observation buffering, session close) runs in the next chat against the harness. The about-you form runs in that next chat too — in **first-working-session mode** below, invoked by the harness after its load-canary greeting.
+
+---
+
+## First-working-session mode (the about-you form)
+
+This is the **next chat**, opened inside the project folder, after first-contact set everything up. The harness loads, fires its load canary (greets the user about the carried-over procedure in their language), and then — because `PROFILE_CAPTURED: no` (the about-you form has not run yet) — invokes this skill in **first-working-session mode**. This is the one disposition where the project folder exists *and* the profile is still the untouched template; it fires **once per project**, after the greeting, before the procedure walk.
+
+You are NOT setting up the project here (that already happened). You are not re-minting identity, not picking a folder, not verifying email. You run the about-you form, validate it, commit the profile sentinel, and hand back to the harness for the situation assessment + walk (harness §3.3).
+
+Resolve the install root into `$BC_ROOT` first (the discovery step under "Resolve the install root", above) — `${SUBSTRATE_ROOT}` does not expand in the Cowork VM shell. Then:
+
+1. **Fetch the canonical first.** Fetch the carried-over procedure's body via `GET ${BASE}/api/processes/<id>` over `WebFetch` (Bearer from `${SUBSTRATE_STATE}/.env`; base `${BASE}` = `https://becivic.be`, body at `.data.body`). You need its frontmatter `inputs:` **now** — they decide the form's Section 2 questions and the required-field validation in step 3. The procedure id is the active entry in `${SUBSTRATE_STATE}/procedures.json` (the preamble also surfaces it as `CARRYOVER_PROCEDURE`). If it carried as `intake` (a discovery-bound placeholder), route via `bc-discovery` `process` mode first to resolve a real Process, then come back. Library unreachable → tell the user and retry; do not render the form without the `inputs:`.
+
+2. **Introduce, then render the shipped form.** Tell the user the form is coming and why (a few quick questions about their situation so you pull the right guidance), then render `$BC_ROOT/skills/bc-onboarding/references/onboarding.<locale>.html` (carry-over language from `CARRYOVER_LANG` / `preferences.json`; fall back to `onboarding.en.html` for a locale not yet authored) via `mcp__visualize__show_widget`, passing the whole file as `widget_code`. Read it via `bash` `cat "$BC_ROOT/skills/…"` — it is a plugin-install asset the host `Read` tool can't see. **This is shipped, fully-branded, self-contained HTML — do NOT call `mcp__visualize__read_me` first** (it returns widget-*authoring* guidance for building a form from scratch; this one is already built — calling `read_me` here burns tokens for ignored output). The form's field count, pre-population (uncomment Section 2 from the procedure's `inputs`), commune/NIS5 datalist capture, locale selection, and submit format are all documented in the HTML's own runtime-insertion block — follow it. The form returns one `Be Civic onboarding — <field>: <value> · …` chat message.
+
+3. **Validate, then commit the sentinel.** Map the submitted fields onto `${SUBSTRATE_STATE}/profile.json` (**categorical fields only** — never names, NN/NISS, addresses, document numbers, exact dates of birth), normalise each to its `${SUBSTRATE_ROOT}/schemas/profile.schema.json` enum, and validate. **Set `last_updated_at` only once the profile validates AND the core routing fields are present** (≥ `region`, `civic_status`, `residency_status`, plus the procedure's declared `inputs`). Missing or un-normalising fields → ask for just those in chat (AskUserQuestion), and set `last_updated_at` only when they are filled. **Writing `last_updated_at` is the sentinel that tells future sessions the form is done — NEVER set it on a partial profile** (the form would be skipped forever with gaps; this is a privacy- and routing-critical trip-wire, restated as a safety invariant in the harness §3.2). If the user picks a language differing from the carry-over, mirror it to `${SUBSTRATE_STATE}/preferences.json` (and the profile) so later sessions don't revert. Narrative context (preferred name, soft history, family/work context) → `${SUBSTRATE_DATA}/MEMORY.md`, never the routing stores.
+
+4. **Hand back to the harness.** The canonical is already in hand and the profile is captured → return control for the situation assessment (harness §3.3) and the procedure walk. Do not start the walk inside this skill; the harness owns it.
 
 ---
 
@@ -313,7 +322,7 @@ Do not re-run onboarding. Do not overwrite `profile.json`. Do not re-mint identi
 **Two carve-outs — a marker can exist over a half-written project.** A marker present does not always mean setup finished. Two crash windows leave a marker over an incomplete project, and in BOTH you ARE allowed to write the missing piece (the blanket "don't touch anything" refusal does not apply):
 
 - **Key absent** (`HARNESS_KEY: absent`, or no `BECIVIC_HARNESS_KEY=` line in `.env`) → the keyless half-state. Run the **verification-only mode** below to mint + write the key.
-- **`${SUBSTRATE_DATA}/CLAUDE.md` absent** (setup crashed after the marker but before the harness file — recall 6.4 writes the marker in step 1, then `CLAUDE.md` in step 2) → the harness can never auto-load. Run the **harness-repair mode** below to write the missing harness file (and carry-over) from the state that already exists.
+- **`${SUBSTRATE_DATA}/CLAUDE.md` absent** (setup crashed after the marker but before the harness file — recall 6.4 writes the marker in step 1, then `CLAUDE.md` in step 2) → the harness can never auto-load. Run the **harness-repair mode** below to write the missing harness file (verbatim canonical) from the state that already exists.
 
 If both gaps are present, fix the key first (verification-only mode), then the harness file (harness-repair mode).
 
@@ -335,12 +344,11 @@ If the user declines verification again, fall to anonymous-read mode (§1.1): th
 
 ## Harness-repair mode (missing CLAUDE.md recovery)
 
-The gate routes here when a project marker exists but `${SUBSTRATE_DATA}/CLAUDE.md` does not — setup wrote the marker (6.4 step 1) then crashed before writing the harness file (6.4 step 2). Without `CLAUDE.md` the substrate's ancestor-walk has nothing to load, so no harness comes up and no canary fires. **Do NOT re-run the whole flow and do NOT re-mint identity.** Write only the missing harness file and the carry-over, reusing the state already on disk.
+The gate routes here when a project marker exists but `${SUBSTRATE_DATA}/CLAUDE.md` does not — setup wrote the marker (6.4 step 1) then crashed before writing the harness file (6.4 step 2). Without `CLAUDE.md` the substrate's ancestor-walk has nothing to load, so no harness comes up and no canary fires. **Do NOT re-run the whole flow and do NOT re-mint identity.** Write only the missing harness file, reusing the state already on disk.
 
 1. **Confirm the gap.** A `.be-civic/marker` exists (the project is real) but `${SUBSTRATE_DATA}/CLAUDE.md` is missing. `${SUBSTRATE_DATA}` is the folder holding the marker (the same folder `preamble.py` resolves from the marker). If the key is also absent, do the verification-only mode first, then return here.
-2. **Write the harness file.** First resolve the install root with the discovery step ("Resolve the install root", above) into `$BC_ROOT` — `${SUBSTRATE_ROOT}` does not expand in the Cowork shell. Then **copy** `$BC_ROOT/skills/bc-onboarding/references/harness-CLAUDE.md` to `${SUBSTRATE_DATA}/CLAUDE.md` with `bash cp` (per 6.4 step 2). The canonical template **is** reachable once you have `$BC_ROOT` — copy it verbatim; do **not** reconstruct it from memory. If `$BC_ROOT` resolves empty, tell the user and retry rather than hand-writing the harness. Do not write a CLAUDE.md inside any per-procedure subfolder.
-3. **Re-write the carry-over block** (6.4a) at the end of the new `CLAUDE.md`, reconstructed from the existing state: the chosen procedure from the active entry in `${SUBSTRATE_STATE}/procedures.json`, and the language from `${SUBSTRATE_STATE}/preferences.json`. If `procedures.json` has exactly one active entry, use it; if it has more than one, write the carry-over for whichever the user names when they next pick (or omit the single-procedure line and let the harness's `multi_active` framing choose). If `procedures.json` is empty too (a deeper crash), this is effectively a fresh setup — re-run from Step 6.3.
-4. **Do not touch anything else.** Leave `profile.json`, `preferences.json`, `procedures.json`, `.env`, `user-id`, and the marker as they are. You are filling a single missing file, not rebuilding the project.
+2. **Write the harness file VERBATIM.** First resolve the install root with the discovery step ("Resolve the install root", above) into `$BC_ROOT` — `${SUBSTRATE_ROOT}` does not expand in the Cowork shell. Then **copy** `$BC_ROOT/skills/bc-onboarding/references/harness-CLAUDE.md` to `${SUBSTRATE_DATA}/CLAUDE.md` with `bash cp` (per 6.4 step 2). The canonical template **is** reachable once you have `$BC_ROOT` — copy it byte-for-byte; do **not** reconstruct it from memory, and **do NOT append a `## Carry-over` block** (the carry-over lives in `procedures.json` + `preferences.json`, which are already on disk; the preamble reads them). The written `CLAUDE.md` must be byte-identical to the canonical harness. If `$BC_ROOT` resolves empty, tell the user and retry rather than hand-writing the harness. Do not write a CLAUDE.md inside any per-procedure subfolder.
+3. **Do not touch anything else.** Leave `profile.json`, `preferences.json`, `procedures.json`, `.env`, `user-id`, and the marker as they are. You are filling a single missing file, not rebuilding the project. The carry-over the harness needs is already in the state files (`procedures.json` + `preferences.json`); there is nothing to reconstruct in the harness file. If `procedures.json` is empty too (a deeper crash), this is effectively a fresh setup — re-run from Step 6.3.
 5. **Hand the user into the project.** The harness file now exists, so run the Step 7 handoff: tell the user the canary to expect, give them the clickable open-project link to `${SUBSTRATE_DATA}`, and end. On the next chat the ancestor-walk loads the now-present `CLAUDE.md` and the harness self-check + canary run normally.
 
 ---
@@ -387,4 +395,4 @@ If they want to keep talking about data, hold position. If they decide not to pr
 - Meta-question answering, off-topic redirect, no-intent tour. The `be-civic` gate handles those.
 - The auto-commit monitor (`hooks/auto-commit-monitor.js`) and the recovery sweep (`preamble.py`). This skill writes the markers and `.gitignore` files they depend on, then gets out of the way.
 
-This skill exists for one thing: take a user who said yes at the gate → match the procedure they came for → verify their email → pick the project folder → mint their pseudonymous identity → write the project state shape (one folder, one git repo) with the carry-over → hand the user cleanly into a fresh chat inside their project folder, where the harness takes over. It does not introduce the plan, it does not run the procedure, and it does not render the about-you form — those are not this conversation's job.
+**First-contact (Chat 1)** exists for one thing: take a user who said yes at the gate → match the procedure they came for → verify their email → pick the project folder → mint their pseudonymous identity → write the project state shape (one folder, one git repo) with the carry-over → hand the user cleanly into a fresh chat inside their project folder, where the harness takes over. First-contact does not introduce the plan, does not run the procedure, and does not render the about-you form — the about-you form belongs to **first-working-session mode** (Chat 2), and the procedure walk belongs to the harness + `bc-path-traversal`.

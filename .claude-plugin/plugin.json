@@ -1,6 +1,6 @@
 {
   "name": "be-civic",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "A verified library of Belgian administrative procedures for your AI agent. Your agent walks you through citizenship, residency, commune registration, mutualité enrolment, address change, residence card renewal, BIPL/inburgering integration, apostille, EU multilingual forms, and dossier compilation — and keeps your notes and documents with you between sessions. Library updates live via becivic.be.",
   "author": {
     "name": "Be Civic"
