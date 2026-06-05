@@ -71,8 +71,9 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 # Bump this whenever a new migration step is added below.
 CURRENT_SCHEMA_VERSION = 1
 
-# Plugin version string for provenance in version.json (matches plugin.json).
-PLUGIN_VERSION_STRING = "0.8.0"
+# PLUGIN_NAME / PLUGIN_VERSION_STRING / SUBMITTING_HARNESS are derived from the
+# plugin manifest just after SUBSTRATE_ROOT resolves (see below), so the
+# provenance string can never drift from .claude-plugin/plugin.json.
 
 # How far up the directory tree the ancestor-walk looks for `.be-civic/marker`.
 MARKER_WALK_CAP = 12
@@ -146,6 +147,37 @@ def _resolve_substrate_state(substrate_data: Path | None) -> Path | None:
 SUBSTRATE_ROOT = _resolve_substrate_root()
 SUBSTRATE_DATA: Path | None = None
 SUBSTRATE_STATE: Path | None = None
+
+
+# Plugin provenance — read from the manifest so it can never drift from
+# .claude-plugin/plugin.json. SUBSTRATE_ROOT resolves via CLAUDE_PLUGIN_ROOT
+# with a fallback to the install dir, so the manifest is reachable even when the
+# env var is unset (a known Cowork failure mode). The fallback constants apply
+# only if the manifest is missing/unparseable, so the preamble never hard-fails;
+# the "0.0.0" sentinel surfaces a broken install rather than masquerading as a
+# real version (and still satisfies the API's <name>/<version> wire pattern).
+_FALLBACK_PLUGIN_NAME = "be-civic"
+_FALLBACK_PLUGIN_VERSION = "0.0.0"
+
+
+def _read_plugin_manifest() -> tuple[str, str]:
+    """Return (name, version) from ${SUBSTRATE_ROOT}/.claude-plugin/plugin.json."""
+    manifest = SUBSTRATE_ROOT / ".claude-plugin" / "plugin.json"
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return _FALLBACK_PLUGIN_NAME, _FALLBACK_PLUGIN_VERSION
+    name = data.get("name") or _FALLBACK_PLUGIN_NAME
+    version = data.get("version") or _FALLBACK_PLUGIN_VERSION
+    return str(name), str(version)
+
+
+PLUGIN_NAME, PLUGIN_VERSION_STRING = _read_plugin_manifest()
+# The `submitting_harness` wire field (33-submission-contract.md §5.1): the
+# plugin name + version as `<name>/<version>`. Surfaced to the harness by
+# emit_surfaces() and persisted in version.json, so every submission envelope
+# stamps the live plugin version with no literal for the agent to copy stale.
+SUBMITTING_HARNESS = f"{PLUGIN_NAME}/{PLUGIN_VERSION_STRING}"
 
 # Back-compat aliases for any reader still importing the old names. PLUGIN_ROOT
 # / BUNDLE_ROOT are stable; USER_DATA_DIR now tracks SUBSTRATE_STATE and is
@@ -344,10 +376,13 @@ def _commit_all(repo: Path, message_template: str) -> int:
 # ----------------------------------------------------------------------------
 
 def emit_surfaces() -> None:
-    """Emit the three substrate surface paths for the harness.
+    """Emit the substrate surface paths + plugin provenance for the harness.
 
     SUBSTRATE_ROOT is always present (env / install dir). SUBSTRATE_DATA and its
     child SUBSTRATE_STATE are `absent` pre-onboarding / in the dev loop.
+    SUBMITTING_HARNESS is the manifest-derived wire field stamped on every
+    submission; emitting it here (called on both code paths) means the harness
+    never hardcodes a version.
     """
     print(f"SUBSTRATE_ROOT: {SUBSTRATE_ROOT}")
     if SUBSTRATE_DATA is not None:
@@ -359,6 +394,10 @@ def emit_surfaces() -> None:
     # Back-compat aliases consumed by the current CLAUDE.md guidance.
     print(f"PLUGIN_ROOT: {SUBSTRATE_ROOT}")
     print(f"USER_DATA_DIR: {SUBSTRATE_STATE if SUBSTRATE_STATE is not None else 'absent'}")
+    # Provenance — the `submitting_harness` wire field, used verbatim on every
+    # submission envelope. Derived from the manifest, so it tracks the live
+    # plugin version with no literal to go stale.
+    print(f"SUBMITTING_HARNESS: {SUBMITTING_HARNESS}")
 
 
 def write_session_data_root(session_id: str) -> None:
@@ -416,6 +455,7 @@ def write_version_stamp(state_version: int) -> None:
     stamp = {
         "state_version": state_version,
         "plugin_version": PLUGIN_VERSION_STRING,
+        "submitting_harness": SUBMITTING_HARNESS,
         "migrated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     try:
