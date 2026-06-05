@@ -115,16 +115,14 @@ On the `[Be Civic access] email: <addr>` message, validate the address shape loc
 
 **Envelope-mismatch check (do this once, before verifying).** If you can see the user's account email — e.g. the Cowork session envelope exposes one — and it differs from the `<addr>` they typed, ask once, in conversation language, before calling the endpoint: *"You're signed in as `<envelope-email>` but you typed `<typed-email>`. The code goes to whichever address you verify, and that becomes your account — which do you want to use?"* This is cheap and prevents a whole class of typos that mint an identity against an inbox the user can't actually read (so they can never receive the code, or recover the key later). If you have no envelope email to compare against, skip this and proceed.
 
-Then call the start endpoint via **`WebFetch`**. **No auth header** — the user has no key yet.
+Then call the start endpoint via the bundled **`wire.py`** (a POST — `WebFetch` is GET-only and cannot carry a request body, so writes go through `wire.py` over `bash`). **No auth header is needed** — the user has no key yet, and `wire.py` sends none when `${SUBSTRATE_STATE}/.env` has no key (this is the anonymous-tier bootstrap call). `$BC_ROOT` is the install root resolved in the discovery step above:
 
-```
-POST https://becivic.be/api/auth/start-verification
-Content-Type: application/json
-
-{ "email": "<address>" }
+```bash
+python3 "$BC_ROOT/scripts/wire.py" POST /api/auth/start-verification \
+  --json '{"email":"<address>"}'
 ```
 
-**Response is UNWRAPPED** (auth endpoints carry the payload directly, not a `{status,data}` envelope). On HTTP `202`:
+`wire.py` prints `http_status:` then `result: ok|error` plus the parsed `body:`, and exits 0 on a 2xx. **Response is UNWRAPPED** (auth endpoints carry the payload directly, not a `{status,data}` envelope). On HTTP `202` the body is:
 
 ```json
 { "verification_id": "<id>", "expires_at": "<RFC3339>" }
@@ -133,7 +131,7 @@ Content-Type: application/json
 This emails the user a **6-digit code**. The widget is already showing the code field, so just hold the `verification_id` and wait for the `code:` message.
 
 - **`202`** — hold `verification_id`. **Do not write `.pending-verification` yet** — no durable write happens before the folder is picked (Step 6.1), and `${SUBSTRATE_STATE}` does not exist until then. Hold `verification_id`, `email`, and `expires_at` in working memory. Once the folder is picked and state exists, write `${SUBSTRATE_STATE}/.pending-verification` (one line) so a half-finished ceremony resumes on next session; it is transient and never committed (denied by the single `.gitignore` allowlist). (In **verification-only recovery mode** the folder already exists, so write it immediately.)
-- **Network failure / timeout** — retry with exponential backoff (250 ms → 500 ms → 1 s → 2 s). On persistent failure, tell the user the verification service is unreachable and fall to anonymous-read mode (§1.1); offer to retry later.
+- **Network failure / timeout** (`wire.py` exits with `result: network`) — `wire.py` already retried once internally; on a second failure re-run the same command at most once more, then tell the user the verification service is unreachable and fall to anonymous-read mode (§1.1); offer to retry later. If `wire.py` instead prints `result: blocked` (exit 4 — `blocked-by-allowlist`), `becivic.be` is not reachable in this sandbox; surface that the verified library can't be reached right now and fall to anonymous-read mode.
 - **Address rejected** — surface plainly: *"I couldn't send a code to that address — want to try another?"* and re-render the access widget.
 
 On a `[Be Civic access] resend` message, re-run this step for the held email; a fresh `verification_id` + code are issued (replace the held one).
@@ -150,16 +148,14 @@ If a `code:` message arrives but you have no held `verification_id` (e.g. a stal
 
 ## Step 5. Verify the code — `POST /api/auth/verify`
 
-Redeem the code via **`WebFetch`**. **No auth header** — the key is what this call mints.
+Redeem the code via the bundled **`wire.py`** (a POST — not a `WebFetch`, which is GET-only). **No auth header** — the key is what this call mints, and `wire.py` sends none until `.env` has one. Pipe the body on **stdin** so the code is not exposed in the process table / shell history:
 
-```
-POST https://becivic.be/api/auth/verify
-Content-Type: application/json
-
-{ "verification_id": "<held id>", "code": "<6-digit code>" }
+```bash
+printf '%s' '{"verification_id":"<held id>","code":"<6-digit code>"}' \
+  | python3 "$BC_ROOT/scripts/wire.py" POST /api/auth/verify --stdin
 ```
 
-**Response is UNWRAPPED.** On HTTP `200`:
+**Response is UNWRAPPED.** Branch on the `http_status:` line `wire.py` prints. On HTTP `200` the body is:
 
 ```json
 { "user_id": "<id>", "harness_key": "<secret>", "tier": "pseudonymous" }
@@ -171,7 +167,7 @@ Branch on the **HTTP status code first**:
 - **`400` with `detail` "Incorrect code"** — wrong code. Tell the user plainly (*"That code didn't match — what's the 6-digit code from the email?"*) and re-call this step with the **same** `verification_id` and the new code. The server caps attempts at 5.
 - **`400` with `detail` "Verification expired"** — the code timed out. Re-run Step 3 (fresh `verification_id` + code), then ask the user for the new code.
 - **`429` `{ "error": "rate_limit_exceeded" }`** — too many wrong attempts; this verification is burned. Re-run Step 3 to send a fresh code, then ask for it.
-- **Network failure** — retry with the Step 3 backoff; keep `.pending-verification` in place so the next session can resume.
+- **Network failure** (`wire.py` `result: network`, after its internal retry) — re-run the verify command at most once more; keep `.pending-verification` in place so the next session can resume.
 
 **Never echo `harness_key` to chat.** From here it lives only in `.env` (Step 6).
 

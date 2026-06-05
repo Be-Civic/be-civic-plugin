@@ -14,16 +14,18 @@ The customer-facing language for the observation buffer is **list** or **notes**
 
 ## Wire basics (read once)
 
-All submissions are **direct typed POSTs** over `WebFetch` against the REST surface at `https://becivic.be/api`. The per-item user review below IS the gate — it is harness behaviour, not an API call. Once the user approves an item, exactly one POST leaves the machine.
+All submissions are **direct typed POSTs** through the bundled **`wire.py`** over `bash` — **not** `WebFetch`, which is GET-only and cannot carry a request body (so it cannot do a single write). `wire.py` is the documented "provide a utility script" write path; it sends the request to the REST surface at `https://becivic.be/api`, handles auth internally, and retries once on a transient network failure. The per-item user review below IS the gate — it is harness behaviour, not an API call. Once the user approves an item, exactly one POST leaves the machine.
 
-- **Auth.** Read `BECIVIC_HARNESS_KEY` from `${SUBSTRATE_STATE}/.env` and send `Authorization: Bearer <harness_key>` on every submission. Never echo or log the key. If the session is in anonymous-read mode (no key — user declined verification), **no submissions are possible**: tell the customer plainly that their notes can't be sent without verification, offer to verify (hand back to onboarding) or to hold the notes locally (step 6 fallback), and do not POST.
+`$BC_ROOT` below is the **resolved** install root the preamble emitted as `SUBSTRATE_ROOT:` at session start (harness §3) — `$CLAUDE_PLUGIN_ROOT` is unset in the Cowork VM shell, so never use a bare `${SUBSTRATE_ROOT}`/`${CLAUDE_PLUGIN_ROOT}` literal in a bash command; use the resolved `$BC_ROOT`.
+
+- **Auth — handled inside `wire.py`.** `wire.py` reads `BECIVIC_HARNESS_KEY` from `${SUBSTRATE_STATE}/.env` itself and sends `Authorization: Bearer <harness_key>`; you never touch the key here and it is never echoed or logged. If the session is in anonymous-read mode (no key — user declined verification), **no submissions are possible**: `wire.py` would post anonymously and the worker 401s. So do **not** call it — tell the customer plainly that their notes can't be sent without verification, offer to verify (hand back to onboarding) or to hold the notes locally (step 6 fallback).
 - **submission_id.** Generate client-side before each POST:
-  `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_submission_id.py <issue|validation|feedback|rating>`
+  `python3 "$BC_ROOT/scripts/gen_submission_id.py" <issue|validation|feedback|rating>`
   → prints `<iss|val|fbk|rat>_<uuidv7>`. One id per submission; the worker echoes it back.
 - **submitting_harness** = the `SUBMITTING_HARNESS` value the preamble surfaces (form `be-civic/<version>`; also persisted at `${SUBSTRATE_STATE}/version.json`). Use it verbatim — never hardcode a version, it tracks the plugin manifest. **submitting_model** = the model running this session with optional effort suffix (e.g. `claude-opus-4-7/xhigh`), per the preamble's model context.
 - **NEVER send worker-set fields.** The worker stamps and rejects-if-present: `user_id`, `accepted_at`, `cohort_anchor`, `regex_passes`, `ner_status`, `cancel_token`. Build envelopes from submitter fields only.
-- **Accept response.** `202 { "status": 202, "data": { "submission_id", "accepted_at", "cancel_token"[, "cohort_anchor"] } }`. **Persist `cancel_token`** (and the `submission_id` + type) — it is the only handle for the 48-hour cancellation window and cannot be reissued if lost. Branch on the HTTP status first; a non-202 with `{ "error": "<category>", ... }` means the item did not land (handle per step 6).
-- **Cancellation (48h).** `DELETE /api/submissions/<type>/<submission_id>` with headers `Authorization: Bearer <harness_key>` + `X-Cancel-Token: <token>`, where `<type>` ∈ `issue|validation|feedback|rating`. Surface the cancel handle to the customer at goodbye (step 7).
+- **Accept response.** `wire.py` prints `http_status:`, `result: ok|error`, the `data:` object (when present), and the full `body:`, and exits 0 on a 2xx. The accept body is `202 { "status": 202, "data": { "submission_id", "accepted_at", "cancel_token"[, "cohort_anchor"] } }`. **Persist `cancel_token`** (and the `submission_id` + type) — it is the only handle for the 48-hour cancellation window and cannot be reissued if lost. Branch on the `http_status:` line first; a non-202 (`result: error`) with `{ "error": "<category>", ... }` in the body means the item did not land (handle per step 6).
+- **Cancellation (48h).** A `DELETE` (also via `wire.py`): `python3 "$BC_ROOT/scripts/wire.py" DELETE /api/submissions/<type>/<submission_id> --cancel-token <token>` (the Bearer is read from `.env` inside the script; `--cancel-token` sets the `X-Cancel-Token` header), where `<type>` ∈ `issue|validation|feedback|rating`. Surface the cancel handle to the customer at goodbye (step 7).
 
 ## The 9 steps
 
@@ -87,9 +89,14 @@ For each item the customer commits to, map to the right submission shape (concer
 
 ### 6. Submission — single direct typed POST, with local-buffer fallback
 
-Submit each approved item — observations from step 3, drafter Issue envelopes from step 4, contribution Issues from step 5. **One POST per item**, no staging round-trip.
+Submit each approved item — observations from step 3, drafter Issue envelopes from step 4, contribution Issues from step 5. **One POST per item**, no staging round-trip. Each POST goes through `wire.py` (per Wire basics above), piping the envelope on stdin so nothing sensitive hits the process table:
 
-**Build the envelope** for the item's type and POST it:
+```bash
+printf '%s' '<the JSON envelope>' \
+  | python3 "$BC_ROOT/scripts/wire.py" POST /api/<issues|validations|feedback|ratings> --stdin
+```
+
+**Build the envelope** for the item's type — the path each one POSTs to:
 
 - **Issue** → `POST /api/issues`. Body: `{ schema_version, submission_id (iss_…), submitted_at (RFC3339 UTC), submitting_harness (the preamble's `SUBMITTING_HARNESS`), submitting_model, submission_contract_version, target_type (process|path|path_source|tool|provider|volatile_value|reference|resource|knowledge_graph), target_id, title (≤120, no newline), body (markdown ≤2000), label (bug|missing|rotted|divergence|gap), context { language_used, region?, commune_nis5? }, evidence { …per-target } }`. Per-target `evidence`: graph entities + `path_source` → `{ evidence_date, evidence_source: customer-report|citation|corroboration, scope?, specifier? }`; `knowledge_graph` → `{ proposed_process_id? }`; `volatile_value` → `{ observed_value, evidence_date }`; `reference` → `{ evidence_date, evidence_source }`; `resource` → `{ evidence_date, observed_path_id? }`.
 - **Validation** → `POST /api/validations`. Body: `{ schema_version, submission_id (val_…), submitted_at, submitting_harness, submitting_model, submission_contract_version, target_type, target_id, outcome (positive|negative), signal_class }`. No body/rationale field. (Most Validations are inline-committed at traversal time; a Validation only reaches close if it was buffered.)
@@ -98,9 +105,9 @@ Submit each approved item — observations from step 3, drafter Issue envelopes 
 
 **On `202`:** parse `data.{submission_id, accepted_at, cancel_token}` and persist `cancel_token` + `submission_id` + type (carry into step 7). Mark the item submitted.
 
-**On a non-202 / error envelope (`{ "error": "<category>", … }`):** do NOT silently retry.
+**On a non-202 / error envelope (`result: error` with `{ "error": "<category>", … }` in `body:`):** do NOT silently retry.
 - A scrub / field rejection (e.g. `worker_field_supplied_by_submitter`, a scrub-detector category) names what tripped — tell the customer plainly which field, offer rewrite-or-drop, and re-submit only after they fix it.
-- A transport failure (network down, 5xx, timeout) → **local-buffer fallback (don't lose the contribution).** Append the approved item to `${SUBSTRATE_STATE}/sessions/<session_id>/pending-submissions.jsonl` (same JSONL line shape, plus a `staged_at` timestamp; Layer-1 scrub already ran at step 3 so resubmit goes straight to the POST). Tell the customer plainly: "I couldn't reach Be Civic right now — your contribution is saved locally and I'll try again next session." The next session's preamble surfaces it via `PENDING_STATE: pending_submissions` for the resume-submit branch.
+- A transport failure (`wire.py` exits non-zero with `result: network` — it already retried once internally — or `result: blocked` / exit 4 = `blocked-by-allowlist`, `becivic.be` unreachable in this sandbox) → **local-buffer fallback (don't lose the contribution).** Append the approved item to `${SUBSTRATE_STATE}/sessions/<session_id>/pending-submissions.jsonl` (same JSONL line shape, plus a `staged_at` timestamp; Layer-1 scrub already ran at step 3 so resubmit goes straight to the POST). Tell the customer plainly: "I couldn't reach Be Civic right now — your contribution is saved locally and I'll try again next session." The next session's preamble surfaces it via `PENDING_STATE: pending_submissions` for the resume-submit branch.
 
 If the preamble set `SUBMIT_OBSERVATIONS_THIS_SESSION: no` (scrub-rules couldn't be confirmed), do NOT submit. Tell the customer: "I'm holding back submissions this session — Be Civic's scrub rules couldn't be confirmed. We'll send next time," and write approved items to `pending-submissions.jsonl` instead.
 
@@ -125,13 +132,15 @@ One sentence. Warm, specific to what the customer worked through. No "great chat
 If the customer asks "how do I back up my Be Civic data?" or "can I use this on another machine?", run the export script at session close (after cleanup in step 8):
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/bc_export.py --cowork --out ~/Desktop
+python3 "$BC_ROOT/scripts/bc_export.py" --cowork --out ~/Desktop
 ```
 
-The script bundles the project folder into a single `bc-export-<timestamp>.tar.gz` and prints the mandatory Identity warning. The harness key is gitignored (never in git history), but when a key is present the export carries it as a loose `identity/env` member — so the bundle is **credential-bearing** (treat it like a passport scan). On the destination machine the user runs:
+(`$BC_ROOT` is the resolved install root from Wire basics above — `$CLAUDE_PLUGIN_ROOT` is unset in the Cowork VM shell.)
+
+The script bundles the project folder into a single `bc-export-<timestamp>.tar.gz` and prints the mandatory Identity warning. The harness key is gitignored (never in git history), but when a key is present the export carries it as a loose `identity/env` member — so the bundle is **credential-bearing** (treat it like a passport scan). On the destination machine the user runs (resolving the install root there the same way the harness does, since `$BC_ROOT` from this session won't carry over):
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/bc_import.py <bundle.tar.gz> --cowork --data-parent <parent>
+python3 "$BC_ROOT/scripts/bc_import.py" <bundle.tar.gz> --cowork --data-parent <parent>
 ```
 
 then continues as a returning user — re-verifying via the onboarding flow only if the bundle carried no key (identity-preserving: re-verifying the same email restores the same identity). See `skills/be-civic/SKILL.md §5` for import detection in the gate skill.
