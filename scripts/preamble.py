@@ -47,6 +47,7 @@ Total time budget: <500ms (all local; no network).
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import os
 import re
@@ -203,24 +204,42 @@ def _bind_surfaces(substrate_data: Path | None) -> None:
 # §M1 — Writable probe (non-fatal — emits SUBSTRATE_WRITABLE: yes|no)
 # ----------------------------------------------------------------------------
 
-def verify_writable() -> bool:
-    """Quick write test against ${SUBSTRATE_DATA}/.be-civic/state. True if
-    writable. Non-fatal: a `no` result downgrades the session (emit
-    SUBSTRATE_WRITABLE: no) but never hard-fails. Only called when
-    SUBSTRATE_STATE is resolved."""
+def verify_writable() -> tuple[bool, str]:
+    """Quick write test against ${SUBSTRATE_DATA}/.be-civic/state. Returns
+    (writable, detail). Writable iff a file can be *created and written* in the
+    state dir — the operation that actually matters for persisting state.
+
+    A failed **unlink** does NOT count as non-writable: some Cowork VM mounts
+    allow writes but reject delete (the same FUSE quirk that makes `git` fail to
+    unlink its temp objects). Bundling write+unlink in one try/except — as the
+    original did — let an undeletable probe masquerade as a read-only folder and
+    silently downgraded the whole session to advice-only. So write and unlink are
+    now separate: only a write/mkdir failure flips the verdict; cleanup is
+    best-effort. Non-fatal; only called when SUBSTRATE_STATE is resolved.
+
+    `detail` carries the failure reason on a `no` (for SUBSTRATE_WRITABLE_DETAIL).
+    """
     if SUBSTRATE_STATE is None:
-        return False
+        return False, "state_unresolved"
     try:
         SUBSTRATE_STATE.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        return False
+    except OSError as e:
+        return False, f"mkdir_failed:{errno.errorcode.get(e.errno, e.errno)}"
     probe = SUBSTRATE_STATE / f".preamble-probe-{uuid.uuid4().hex[:8]}"
     try:
         probe.write_text("ok", encoding="utf-8")
-        probe.unlink(missing_ok=True)
-        return True
-    except OSError:
-        return False
+    except OSError as e:
+        return False, f"write_failed:{errno.errorcode.get(e.errno, e.errno)}"
+    # Cleanup is best-effort and tolerated. Also sweep any stale probes left by
+    # earlier runs on an unlink-rejecting mount (a no-op where unlink works keeps
+    # the dir clean; where unlink is rejected, the leftover 2-byte files are
+    # gitignored and harmless). A delete failure here never flips the verdict.
+    for stale in list(SUBSTRATE_STATE.glob(".preamble-probe-*")):
+        try:
+            stale.unlink(missing_ok=True)
+        except OSError:
+            pass
+    return True, "ok"
 
 
 # ----------------------------------------------------------------------------
@@ -852,8 +871,10 @@ def main(argv: list[str] | None = None) -> int:
     # 2a. Writable probe (NON-FATAL). When the state dir is not writable, emit a
     #     downgrade marker instead of a hard-fail and continue with the read
     #     surfaces still useful for the harness.
-    writable = verify_writable()
+    writable, writable_detail = verify_writable()
     print(f"SUBSTRATE_WRITABLE: {'yes' if writable else 'no'}")
+    if not writable:
+        print(f"SUBSTRATE_WRITABLE_DETAIL: {writable_detail}")
 
     # 3. Schema-migration runner (compare on-disk state_version to current;
     #    apply ordered steps; restore-on-failure + operator alert).
