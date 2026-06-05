@@ -98,8 +98,8 @@ For every source attempt:
 
 4. **Validate against `validation_path`.** Apply the success and failure signals the source declared. For a tier-1 deeplink, this is a content-type and PDF-magic check on the downloaded artefact. For a sitemap page, the user's verbal confirmation. For a federal form, a success-page signature. Use the source's signals, not general knowledge.
 
-5. **Submit the validation, inline.** Path-source validations bypass the observation buffer and POST directly. On success or failure:
-   a. Generate a `submission_id` by running `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gen_submission_id.py validation` (yields `val_<uuidv7>`).
+5. **Submit the validation, inline.** Path-source validations bypass the observation buffer and POST directly. Writes go through the bundled **`wire.py`** over `bash`, **not** `WebFetch` (which is GET-only and cannot carry a request body). `$BC_ROOT` is the **resolved** install root the preamble emitted as `SUBSTRATE_ROOT:` at session start (harness §3) — `$CLAUDE_PLUGIN_ROOT` is unset in the Cowork VM shell, so never use a bare `${SUBSTRATE_ROOT}`/`${CLAUDE_PLUGIN_ROOT}` literal in a bash command. On success or failure:
+   a. Generate a `submission_id` by running `python3 "$BC_ROOT/scripts/gen_submission_id.py" validation` (yields `val_<uuidv7>`).
    b. Build the submission body:
       ```json
       {
@@ -116,10 +116,15 @@ For every source attempt:
         "context": { "language_used": "<profile.conversation_language>" }
       }
       ```
-   c. `WebFetch POST https://becivic.be/api/validations` with `Authorization: Bearer <harness_key>` and the body above. Expected response: `202 { "status": 202, "data": { "submission_id", "accepted_at", "cancel_token" } }`. Persist `cancel_token` in the session buffer for 48h cancellation.
+   c. POST it with `wire.py` (the Bearer is read from `${SUBSTRATE_STATE}/.env` inside the script — do not handle the key here). Pipe the body on stdin:
+      ```bash
+      printf '%s' '<the JSON body above>' \
+        | python3 "$BC_ROOT/scripts/wire.py" POST /api/validations --stdin
+      ```
+      `wire.py` prints `http_status:`, `result:`, and the parsed `body:`, and exits 0 on a 2xx. Expected response: `202`, body `{ "status": 202, "data": { "submission_id", "accepted_at", "cancel_token" } }` — read `data.cancel_token` and persist it in the session buffer for 48h cancellation.
    d. Frame once per session: "I'm noting that this source worked / didn't work for you, so the next person filing this sees the same."
 
-   If the POST itself fails (network error), retry once. If still failing, append the unsent validation as a JSONL line to `${SUBSTRATE_STATE}/sessions/<session_id>/observations-buffer.jsonl` and continue — do not block the user on a telemetry hiccup. The fallback chain in Step 13 governs this case in full.
+   If the POST fails transiently (`wire.py` exits non-zero with `result: network` — it already retried once internally), append the unsent validation as a JSONL line to `${SUBSTRATE_STATE}/sessions/<session_id>/observations-buffer.jsonl` and continue — do not block the user on a telemetry hiccup. (`result: blocked` / exit 4 = `blocked-by-allowlist`: `becivic.be` is unreachable in this sandbox; buffer the same way.) The fallback chain in Step 13 governs this case in full.
 
 ## Step 7 — Mini-header rotation
 
