@@ -31,7 +31,7 @@ If `profile.json` is absent, do not improvise; route the user back to `bc-onboar
 
 ## Step 2 — Fetch the procedure canonical
 
-Call `WebFetch GET https://becivic.be/api/processes/<id>` with header `Authorization: Bearer <harness_key>` (read from `${SUBSTRATE_STATE}/.env` as `BECIVIC_HARNESS_KEY`; omit the header if the key is absent and operate at the public tier). On success the response envelope is `{ "status": 200, "data": { ... } }`; the canonical markdown body is at `.data.body`. The body also carries frontmatter — `inputs`, `requires`, `requires_paths`, `applies_to` — and the `[Process]` body with inline `<Path>` and `<Process>` tags.
+Call `WebFetch GET ${BASE}/api/processes/<id>` with header `Authorization: Bearer <harness_key>` (read from `${SUBSTRATE_STATE}/.env` as `BECIVIC_HARNESS_KEY`; omit the header if the key is absent and operate at the public tier). On success the response envelope is `{ "status": 200, "data": { ... } }`; the canonical markdown body is at `.data.body`. The body also carries frontmatter — `inputs`, `requires`, `requires_paths`, `applies_to` — and the `[Process]` body with inline `<Path>` and `<Process>` tags.
 
 Read the body to extract the phase structure. Procedure canonicals are organised as named phases (eligibility check, document collection, filing, post-filing). The `requires_paths:` frontmatter lists every path the procedure needs across all phases; the inline `<Path id="…" />` tags inside `[Process]` steps anchor each path to the phase where it is consumed. Use the inline tags as the phase markers — the position of a `<Path>` tag determines when it is fetched, not the order in `requires_paths:`.
 
@@ -45,7 +45,7 @@ Two surfaces inform path discovery, in order:
 
 2. **Browser-driven site discovery — only when needed.** Some path sources gate on commune-specific or region-specific portal behaviour the canonical cannot enumerate (a Brussels-only deeplink, a Wallonia population-register sitemap page, a federal CSAM auth wall that re-clicks differently per portal). When the user's profile points at a region or commune whose path source is not deterministic from the catalogue, call `mcp__Claude_in_Chrome__list_connected_browsers` to confirm the user has a paired browser. If paired, use the browser automation tool to navigate the portal and confirm the deeplink the catalogue cites still resolves before walking the user to it. Site-discovery probes are read-only: navigate, read page text, screenshot if needed, never submit a form.
 
-3. **`GET /api/paths/<id>` for surface enumeration.** When the procedure references a path id whose entry the catalogue has multiple sources for, call `WebFetch GET https://becivic.be/api/paths/<id>` (Bearer when present) to enumerate the catalogued sources and their source list. To fetch a single source, call `WebFetch GET https://becivic.be/api/path-sources/<path_id>:<source_id>`. Filter by the user's profile fields (region, residency_status) before presenting any source to the user — eligibility-first invariant applies at discovery, not just execution.
+3. **`GET /api/paths/<id>` for surface enumeration.** When the procedure references a path id whose entry the catalogue has multiple sources for, call `WebFetch GET ${BASE}/api/paths/<id>` (Bearer when present) to enumerate the catalogued sources and their source list. To fetch a single source, call `WebFetch GET ${BASE}/api/path-sources/<path_id>:<source_id>`. Filter by the user's profile fields (region, residency_status) before presenting any source to the user — eligibility-first invariant applies at discovery, not just execution.
 
 Do not probe an audited source (`audited_document_delivery: true`) during discovery. Probing is a real document delivery; the user has not consented yet.
 
@@ -71,7 +71,7 @@ For each step in the phase, in canonical order:
 
 2. **Resolve inline tags.** If the step contains `<Path id="…" />`, the path is the step. Move to step 3. If the step contains `<Process id="…" />`, peer-invoke that procedure skill via `Skill` and return here when it exits. If the step is prose only, present it to the user, take their answer, and move on.
 
-3. **Fetch the path entry.** Call `WebFetch GET https://becivic.be/api/paths/<id>` (Bearer when present) for the cited path id if the catalogue has not already been fetched this session. Filter the source list by the user's profile (eligibility-first invariant). Sort: non-fallback before fallback; within each, by `priority` descending. `source_class: offline` sources are always last (commune-last invariant).
+3. **Fetch the path entry.** Call `WebFetch GET ${BASE}/api/paths/<id>` (Bearer when present) for the cited path id if the catalogue has not already been fetched this session. Filter the source list by the user's profile (eligibility-first invariant). Sort: non-fallback before fallback; within each, by `priority` descending. `source_class: offline` sources are always last (commune-last invariant).
 
 4. **Validate path source per attempt.** Execute Step 6 below for each source attempt in turn until one succeeds or all are exhausted.
 
@@ -197,7 +197,7 @@ Three failure surfaces, in order of escalation:
 
 2. **Every source for a required path is exhausted** — surface the all-sources-exhausted prompt at the end of the phase. Three choices for the user: search online for another route (agent emits authoritative-source URLs and closes the path), prepare a commune visit (agent emits a NIS5-specific checklist and closes the path), pause the procedure (agent writes pause state and exits). The fourth option — discovery mode — fires only if the user volunteers willingness to walk through the procedure and document what they find. Route to `bc-discovery` in `path` mode in that case.
 
-3. **REST API unreachable** — fall back per the harness CLAUDE.md §6 fetch chain. First attempt: `WebFetch GET https://becivic.be/api/paths/<id>` (and `/api/processes/<id>`). On persistent failure: `WebFetch GET https://becivic.be/paths/index.json` (static catalogue fallback). If all layers fail, surface the catalogue-unreachable state plainly: "My full Be Civic library isn't reachable right now. I can describe what I know about the procedure, but I can't walk you through getting the documents until the library is back." Continue advice-only; do not invent paths from general knowledge. Append a `process_surface` issue to the observation buffer at session close noting the unreachable window so the operator sees the outage.
+3. **REST API unreachable** — fall back per the harness CLAUDE.md §6 fetch chain. First attempt: `WebFetch GET ${BASE}/api/paths/<id>` (and `/api/processes/<id>`). On persistent failure: `WebFetch GET https://becivic.be/paths/index.json` (static catalogue fallback). If all layers fail, surface the catalogue-unreachable state plainly: "My full Be Civic library isn't reachable right now. I can describe what I know about the procedure, but I can't walk you through getting the documents until the library is back." Continue advice-only; do not invent paths from general knowledge. Append a `process_surface` issue to the observation buffer at session close noting the unreachable window so the operator sees the outage.
 
 User-facing message for catalogue unreachable: do not pretend the agent is working at full capacity. Name the degraded state, offer to continue with what is locally available (the canonical body cached in memory, profile.json) and to defer document-fetching steps until the library is back, or to pause the session entirely. The user picks.
 
@@ -217,5 +217,5 @@ To start a brand-new procedure mid-session, route back to `bc-onboarding` in `re
 - Document handling once delivered (extraction of routing fields from the artefact) — `bc-document-handler`.
 - The unknown-path or all-sources-failed escalation walkthrough — `bc-discovery` in `path` mode.
 - Session-close review and submission of buffered concerns and amendments — `bc-session-close`.
-- The path catalogue itself — read via `WebFetch GET https://becivic.be/api/paths/<id>`.
+- The path catalogue itself — read via `WebFetch GET ${BASE}/api/paths/<id>`.
 

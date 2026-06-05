@@ -3,7 +3,7 @@ name: Plugin validation
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, dev]
 
 # Validation-only workflow — no writes to repo contents needed.
 permissions:
@@ -14,6 +14,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Configurable read base — ban becivic.be/api literals in skill bodies
+        # The plugin resolves the API base via ${BASE} (the preamble-emitted
+        # BECIVIC_BASE, default prod) so dev-parity tests can repoint reads at the
+        # dev API by exporting BECIVIC_BASE_URL. A hardcoded becivic.be/api literal
+        # in a skill body reintroduces read/write split-brain (writes already honour
+        # the override via wire.py) — fail the build if one reappears. Non-/api
+        # references (logo, privacy/terms, /agents, the static /paths/index.json
+        # fallback) are intentionally left as prod literals and not matched here.
+        run: |
+          if grep -rn --include='*.md' 'becivic\.be/api' skills/; then
+            echo "::error::Hardcoded becivic.be/api literal in a skill body — use \${BASE}/api (resolves to the preamble BECIVIC_BASE). See harness-CLAUDE.md §6."
+            exit 1
+          fi
+          echo "OK — no becivic.be/api literals in skill bodies."
 
       - name: Install Claude Code CLI
         # Pinned to an exact version (no range) so a compromised newer

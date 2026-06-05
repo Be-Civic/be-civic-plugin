@@ -29,7 +29,7 @@ Don't preamble the contribution framing every turn after that — once is enough
 Before declaring a zero-match, fetch the full entity graph and search client-side:
 
 ```
-GET https://becivic.be/api/manifest
+GET ${BASE}/api/manifest
 Authorization: Bearer <harness_key>   # omit if no key yet; public read still works
 ```
 

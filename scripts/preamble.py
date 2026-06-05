@@ -179,6 +179,15 @@ PLUGIN_NAME, PLUGIN_VERSION_STRING = _read_plugin_manifest()
 # stamps the live plugin version with no literal for the agent to copy stale.
 SUBMITTING_HARNESS = f"{PLUGIN_NAME}/{PLUGIN_VERSION_STRING}"
 
+# Read base URL surfaced to the harness as BECIVIC_BASE. `${BASE}` in the harness
+# CLAUDE.md and the skill bodies resolves to this value for every read (manifest,
+# process/path bodies); writes honour the same override inside wire.py. Default is
+# prod; tests point reads at the dev API by exporting BECIVIC_BASE_URL (e.g. the
+# becivic-api-dev.* workers.dev host). This is the read-side mirror of wire.py's
+# `base = $BECIVIC_BASE_URL or <prod>`, so reads and writes can never split-brain.
+DEFAULT_BASE_URL = "https://becivic.be"
+BECIVIC_BASE = os.environ.get("BECIVIC_BASE_URL") or DEFAULT_BASE_URL
+
 # Back-compat aliases for any reader still importing the old names. PLUGIN_ROOT
 # / BUNDLE_ROOT are stable; USER_DATA_DIR now tracks SUBSTRATE_STATE and is
 # re-bound alongside it in main().
@@ -398,6 +407,10 @@ def emit_surfaces() -> None:
     # submission envelope. Derived from the manifest, so it tracks the live
     # plugin version with no literal to go stale.
     print(f"SUBMITTING_HARNESS: {SUBMITTING_HARNESS}")
+    # Read base URL. `${BASE}` in the harness/skill bodies resolves to this;
+    # wire.py honours the same BECIVIC_BASE_URL override on writes. Default prod;
+    # tests set BECIVIC_BASE_URL to the dev API host for dev-parity reads.
+    print(f"BECIVIC_BASE: {BECIVIC_BASE}")
 
 
 def write_session_data_root(session_id: str) -> None:

@@ -21,7 +21,7 @@ Handle inline. Don't context-switch back to the procedure skill for every drop â
 When the procedure body references a resource by UID to provide document metadata, fetch it via:
 
 ```
-GET https://becivic.be/api/resources/<uid>
+GET ${BASE}/api/resources/<uid>
 Authorization: Bearer <harness_key>   # omit if absent; public read works
 ```
 

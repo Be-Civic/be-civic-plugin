@@ -98,7 +98,7 @@ Per-procedure machinery state goes in `${SUBSTRATE_STATE}/procedures.json` (sche
 
 ## 6. Wire transport
 
-Base URL `${BASE}` = `https://becivic.be`. **Reads** (GET) go over the **`WebFetch`** tool: `${BASE}/api/manifest` (full Process+Path graph, search client-side), `${BASE}/api/processes/<id>` (the canonical, body at `.data.body`, slots composed inline), `${BASE}/api/paths/<id>`. Send `Authorization: Bearer <harness_key>` whenever a key is present (reads also succeed anonymously on `corpus:read:public`).
+Base URL `${BASE}` is the preamble-emitted `BECIVIC_BASE` (default `https://becivic.be`; tests override it via the `BECIVIC_BASE_URL` env var, which `wire.py` honours for writes too — reads and writes share one base, never split-brain). **Reads** (GET) go over the **`WebFetch`** tool: `${BASE}/api/manifest` (full Process+Path graph, search client-side), `${BASE}/api/processes/<id>` (the canonical, body at `.data.body`, slots composed inline), `${BASE}/api/paths/<id>`. Send `Authorization: Bearer <harness_key>` whenever a key is present (reads also succeed anonymously on `corpus:read:public`).
 
 **Writes** (POST/DELETE — `WebFetch` is GET-only) go through `python3 "$BC_ROOT/scripts/wire.py" <POST|GET|DELETE> <path> [--json '<json>' | --stdin]`, which handles the Bearer (read from `${SUBSTRATE_STATE}/.env`), the two response envelopes, retry-once, and surfaces `blocked-by-allowlist`. `$BC_ROOT` is the resolved install root from §3. The first wire call is `bc-onboarding`'s start-verification, which runs before any working-session skill loads — hence this stub.
 

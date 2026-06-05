@@ -59,7 +59,7 @@ When the marker is **absent** (new user or outside any project folder), classify
 
 **MECE rule:** every AskUserQuestion this skill issues must be Mutually Exclusive + Collectively Exhaustive. The gate's own question (§4) satisfies this by design: the three options cover the full decision space (proceed fully / proceed partially / decline) with no overlap. When designing any additional question in this skill, use two labelled options + a free-text fallback if three clean options cannot be found.
 
-If the user's message matches a procedure by name, you may use `WebFetch GET https://becivic.be/api/manifest` to confirm the process ID before routing — search client-side over the returned entries by title / summary / applies_to.
+If the user's message matches a procedure by name, you may use `WebFetch GET ${BASE}/api/manifest` to confirm the process ID before routing — search client-side over the returned entries by title / summary / applies_to.
 
 ## 4. Project NOT found, user has procedure intent (clear or vague)
 

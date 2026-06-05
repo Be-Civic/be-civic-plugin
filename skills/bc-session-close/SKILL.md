@@ -14,7 +14,7 @@ The customer-facing language for the observation buffer is **list** or **notes**
 
 ## Wire basics (read once)
 
-All submissions are **direct typed POSTs** through the bundled **`wire.py`** over `bash` — **not** `WebFetch`, which is GET-only and cannot carry a request body (so it cannot do a single write). `wire.py` is the documented "provide a utility script" write path; it sends the request to the REST surface at `https://becivic.be/api`, handles auth internally, and retries once on a transient network failure. The per-item user review below IS the gate — it is harness behaviour, not an API call. Once the user approves an item, exactly one POST leaves the machine.
+All submissions are **direct typed POSTs** through the bundled **`wire.py`** over `bash` — **not** `WebFetch`, which is GET-only and cannot carry a request body (so it cannot do a single write). `wire.py` is the documented "provide a utility script" write path; it sends the request to the REST surface at `${BASE}/api`, handles auth internally, and retries once on a transient network failure. The per-item user review below IS the gate — it is harness behaviour, not an API call. Once the user approves an item, exactly one POST leaves the machine.
 
 `$BC_ROOT` below is the **resolved** install root the preamble emitted as `SUBSTRATE_ROOT:` at session start (harness §3) — `$CLAUDE_PLUGIN_ROOT` is unset in the Cowork VM shell, so never use a bare `${SUBSTRATE_ROOT}`/`${CLAUDE_PLUGIN_ROOT}` literal in a bash command; use the resolved `$BC_ROOT`.
 
