@@ -228,14 +228,15 @@ The script reproduces §6.2–§6.4 exactly. This is the ground-truth shape, kep
     "schema_version": 1,
     "procedures": [
       { "slug": "<procedure-slug>", "process_id": "<matched id, or slug if discovery-bound>",
+        "process_title": "<human title — OPTIONAL, omitted when no real title>",
         "process_version": "<version, or '0'>", "status": "active",
         "started_at": "<RFC3339 UTC>", "updated_at": "<RFC3339 UTC>" }
     ]
   }
   ```
-  (If the gate matched no Process — `procedure_intent_vague`, zero hits — pass `intake` for id/slug/title; `bc-discovery` renames it after routing.)
+  (`process_title` comes from the matched manifest entry and is what lets the next chat's load canary name the real title; it is OPTIONAL — when `--process-title` is empty the field is omitted and readers fall back to the slug. If the gate matched no Process — `procedure_intent_vague`, zero hits — pass `intake` for id/slug, omit the title; `bc-discovery` renames it after routing.)
 - **`.be-civic/marker`** (template with `user_id` / `plugin_version` / `created_at` filled) — detection-only.
-- **`CLAUDE.md`** = the harness template (`harness-CLAUDE.md`) written **byte-for-byte, with NO `## Carry-over` block appended**. The carry-over (chosen procedure + conversation language) is NOT prose in CLAUDE.md — it lives entirely in the state files above: `procedures.json` (the active entry's `slug` / `process_id`) and `preferences.json` (`conversation_language`). The preamble reads those and surfaces them as `CARRYOVER_PROCEDURE` / `CARRYOVER_LANG`, and emits the matched `SESSION_OPENING_INSTRUCTION` for the next chat's load canary. Appending a prose block was pure redundancy AND mutated the always-on harness (breaking the byte-identical-to-canonical fidelity the JIT instruction-surface doctrine depends on), so it is gone. (The `--language-name` / `--process-title` flags on the command above are accepted but no longer written — the registry schema carries no title field; the canary names the procedure from the slug, then the real title from the canonical body fetched in first-working-session mode.)
+- **`CLAUDE.md`** = the harness template (`harness-CLAUDE.md`) written **byte-for-byte, with NO `## Carry-over` block appended**. The carry-over (chosen procedure + conversation language) is NOT prose in CLAUDE.md — it lives entirely in the state files above: `procedures.json` (the active entry's `slug` / `process_id`) and `preferences.json` (`conversation_language`). The preamble reads those and surfaces them as `CARRYOVER_PROCEDURE` / `CARRYOVER_LANG`, and emits the matched `SESSION_OPENING_INSTRUCTION` for the next chat's load canary. Appending a prose block was pure redundancy AND mutated the always-on harness (breaking the byte-identical-to-canonical fidelity the JIT instruction-surface doctrine depends on), so it is gone. (`--process-title` is written into the `procedures.json` entry as the optional `process_title` field, so the next chat's load canary names the real Process title rather than the kebab-case slug; the preamble surfaces it as `CARRYOVER_PROCEDURE: <slug> | <title>`. `--language-name` is accepted but unused — the conversation language is written from `--locale` into `preferences.json`.)
 - **`MEMORY.md`** (verbatim template). No empty subdirectories (`documents/`, `sessions/`, per-procedure folders) are pre-created — they are made lazily.
 
 ### 6.5. Acknowledge with the path (JIT trust clause)

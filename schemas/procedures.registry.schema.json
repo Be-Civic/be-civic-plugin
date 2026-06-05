@@ -35,6 +35,12 @@
           "description": "Canonical Be Civic Process id this procedure instantiates (V2 entity; renamed from V1 skill_id). Matches a process in /api/manifest.",
           "minLength": 1
         },
+        "process_title": {
+          "type": "string",
+          "description": "Human-readable Process title (from the matched /api/manifest entry), used to name the procedure in the first-working-session load canary so the greeting reads as the real title rather than the kebab-case slug. OPTIONAL: legacy entries written before this field, and the `intake` placeholder, omit it — readers fall back to the slug.",
+          "minLength": 1,
+          "maxLength": 160
+        },
         "process_version": {
           "type": "string",
           "description": "Pinned Process version at the time the procedure was started (renamed from V1 skill_version). Lets the harness detect when the canonical Process has moved on.",
