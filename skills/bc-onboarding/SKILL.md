@@ -2,7 +2,7 @@
 id: bc-onboarding
 name: bc-onboarding
 description: First-contact onboarding for Be Civic. Runs the verified flow — an email→code access widget (start-verification emails a 6-digit code → verify with the code), then state-shape activation inside the user-picked project folder (one folder, one git repo, with agent-managed state in a hidden .be-civic/state subdir) — and ends with a clean handoff into a fresh chat opened inside the project folder, where the working session begins. Falls back to anonymous read-only mode if the user declines verification. Owns first-contact only; returning and multi-active modes are owned by the harness.
-version: 3.4.0
+version: 3.4.1
 requires_capabilities:
   - cowork_directory_tool: mcp__cowork__request_cowork_directory
   - cowork_widget_tool: mcp__visualize__show_widget
@@ -32,11 +32,29 @@ Everything this skill writes lands inside the user-picked project folder. There 
 |---|---|---|
 | Project folder (user-picked) | `${SUBSTRATE_DATA}` (= `<picked-parent>/BeCivic/`) | `CLAUDE.md`, `MEMORY.md`, the single `.gitignore`, `.be-civic/marker` (detection), `documents/`, `<procedure-slug>/` |
 | Agent-managed state | `${SUBSTRATE_STATE}` (= `${SUBSTRATE_DATA}/.be-civic/state`) | `.env` (harness_key only — at `.be-civic/state/.env`), `user-id`, `profile.json`, `preferences.json`, `procedures.json`, `version.json`, `sessions/`, `.pending-verification` (transient) |
-| Read-only install | `${SUBSTRATE_ROOT}` (= `${CLAUDE_PLUGIN_ROOT}`) | the shipped plugin (templates, schemas, data, scripts) |
+| Read-only install | `${SUBSTRATE_ROOT}` (resolve via the discovery step below — `$CLAUDE_PLUGIN_ROOT` is unset in the Cowork VM shell) | the shipped plugin (templates, schemas, data, scripts) |
 
 `${SUBSTRATE_STATE}` is a pure child of `${SUBSTRATE_DATA}` — the hidden `.be-civic/state/` folder inside the user's project. The harness key file lives at `${SUBSTRATE_STATE}/.env` = `${SUBSTRATE_DATA}/.be-civic/state/.env`.
 
 **Identity rule.** The harness key in `${SUBSTRATE_STATE}/.env` is NEVER committed, echoed to chat, or logged. It is excluded from git structurally — the project's single `.gitignore` allowlist does not list `.be-civic/state/.env`, and a belt-and-braces `.env` deny line covers it too. Do not print it back to the user, ever.
+
+### Resolve the install root — do this before any plugin-asset read
+
+This skill reads shipped assets (the access widget, `setup_project.py`, `gitignore.txt`, `harness-CLAUDE.md`) from `${SUBSTRATE_ROOT}`. **You cannot assume `${SUBSTRATE_ROOT}`/`$CLAUDE_PLUGIN_ROOT` expands in bash** — on the CLI it is set, but **in the Cowork VM shell it is unset**, so a literal `${SUBSTRATE_ROOT}/…` collapses to `/…` and fails with "No such file." Resolve it **once**, at the start of setup, and reuse the value (the plugin is mounted in the VM — it *is* reachable via bash once you have the path; the `/var/folders/…` path you may see as a skill "Base directory" is a host path the VM bash can't see):
+
+```bash
+# Locate the Be Civic plugin install by its manifest (the Cowork mount dir is
+# plugin_<hash>/, which does NOT contain "be-civic" — match the manifest, not the path).
+BC_ROOT="$CLAUDE_PLUGIN_ROOT"
+if [ ! -f "$BC_ROOT/scripts/setup_project.py" ]; then
+  m="$(find /sessions "$HOME/.claude/plugins" /root/.claude/plugins -maxdepth 8 \
+    -path '*/.claude-plugin/plugin.json' -exec grep -l '"name": "be-civic"' {} + 2>/dev/null | head -1)"
+  BC_ROOT="$(dirname "$(dirname "$m")")"
+fi
+echo "$BC_ROOT"   # sanity: a non-empty path ending in the plugin dir
+```
+
+Use `$BC_ROOT` wherever the steps below write `${SUBSTRATE_ROOT}` in a bash command. (If `$BC_ROOT` comes back empty, the install couldn't be located — tell the user setup can't proceed and retry; do **not** silently reconstruct shipped files from memory.)
 
 ---
 
@@ -68,7 +86,7 @@ If at any point the user declines to verify by email — "I don't want to give m
 
 ## Step 2. Email + code — the access widget
 
-After the Step 1 framing (or on a direct "yes, set me up"), render the **shipped access widget** via `mcp__visualize__show_widget`, passing the contents of `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/onboarding-access.<locale>.html` as `widget_code`. (EN ships today; for a locale not yet authored, fall back to the EN file.) Read the file via `bash` (`cat`) — it is a plugin-install asset, reachable only on the bash side, not the host `Read` tool.
+After the Step 1 framing (or on a direct "yes, set me up"), render the **shipped access widget** via `mcp__visualize__show_widget`, passing the contents of `$BC_ROOT/skills/bc-onboarding/references/onboarding-access.<locale>.html` as `widget_code` (where `$BC_ROOT` is the install root resolved above). (EN ships today; for a locale not yet authored, fall back to the EN file.) Read the file via `bash` `cat "$BC_ROOT/skills/…"` — it is a plugin-install asset; the host `Read` tool can't see it, and `${SUBSTRATE_ROOT}` is not a live shell variable, so use the resolved `$BC_ROOT`.
 
 **This is shipped, fully-branded HTML — do NOT call `mcp__visualize__read_me` first.** `read_me` returns widget-*authoring* design guidance (palette, icons, spacing) for building a widget from scratch; this widget is already built and self-contained. Pass its contents verbatim as `widget_code` and render. Calling `read_me` here is wasted work (one run loaded the wrong module and burned ~7k tokens for output that is ignored). The same rule holds for every shipped Be Civic widget (this access widget and the Chat-2 about-you form).
 
@@ -176,9 +194,9 @@ The entire project write — the one git repo, the single `.gitignore`, all of `
 Run it once, **piping the harness key on stdin** — never on the command line (the process table and shell history would expose it):
 
 ```bash
-printf '%s' "<harness_key>" | python3 "${SUBSTRATE_ROOT}/scripts/setup_project.py" \
+printf '%s' "<harness_key>" | python3 "$BC_ROOT/scripts/setup_project.py" \
   --data-root      "<picked-parent>" \
-  --substrate-root "${SUBSTRATE_ROOT}" \
+  --substrate-root "$BC_ROOT" \
   --user-id        "<user_id>" \
   --locale         "<locale>" \
   --language-name  "<language display name, e.g. French>" \
@@ -190,7 +208,7 @@ printf '%s' "<harness_key>" | python3 "${SUBSTRATE_ROOT}/scripts/setup_project.p
   --key-stdin
 ```
 
-`<picked-parent>` is the folder the user picked in 6.1; the script creates `<picked-parent>/BeCivic/` as `${SUBSTRATE_DATA}`. (`${SUBSTRATE_ROOT}` is a plugin-install path — pass it through; the script reads its own templates from there. Run this via `bash`, since the install dir is only reachable on the bash side, not the host `Read` tool.)
+`<picked-parent>` is the folder the user picked in 6.1; the script creates `<picked-parent>/BeCivic/` as `${SUBSTRATE_DATA}`. (`$BC_ROOT` is the resolved plugin-install path from the discovery step — pass it through; the script reads its own templates from there. Run this via `bash`; the install dir is reachable from bash at the resolved path, not via the host `Read` tool.)
 
 **Nested-repo guard.** If the script exits non-zero with `SETUP_ERROR: nested_repo_needs_confirmation`, the picked parent sits inside another git project and nothing was written. Warn the user plainly: *"The folder you picked sits inside another project folder that has git enabled. I'd normally give your Be Civic files their own space so your progress is saved cleanly. Want me to set it up here anyway, or pick a different folder?"* On confirmation, re-run the **same** command with `--allow-nested`; if they repick, re-run with the new `--data-root`.
 
@@ -320,7 +338,7 @@ If the user declines verification again, fall to anonymous-read mode (§1.1): th
 The gate routes here when a project marker exists but `${SUBSTRATE_DATA}/CLAUDE.md` does not — setup wrote the marker (6.4 step 1) then crashed before writing the harness file (6.4 step 2). Without `CLAUDE.md` the substrate's ancestor-walk has nothing to load, so no harness comes up and no canary fires. **Do NOT re-run the whole flow and do NOT re-mint identity.** Write only the missing harness file and the carry-over, reusing the state already on disk.
 
 1. **Confirm the gap.** A `.be-civic/marker` exists (the project is real) but `${SUBSTRATE_DATA}/CLAUDE.md` is missing. `${SUBSTRATE_DATA}` is the folder holding the marker (the same folder `preamble.py` resolves from the marker). If the key is also absent, do the verification-only mode first, then return here.
-2. **Write the harness file.** Copy `${SUBSTRATE_ROOT}/skills/bc-onboarding/references/harness-CLAUDE.md` to `${SUBSTRATE_DATA}/CLAUDE.md` (per 6.4 step 2). Do not write a CLAUDE.md inside any per-procedure subfolder.
+2. **Write the harness file.** First resolve the install root with the discovery step ("Resolve the install root", above) into `$BC_ROOT` — `${SUBSTRATE_ROOT}` does not expand in the Cowork shell. Then **copy** `$BC_ROOT/skills/bc-onboarding/references/harness-CLAUDE.md` to `${SUBSTRATE_DATA}/CLAUDE.md` with `bash cp` (per 6.4 step 2). The canonical template **is** reachable once you have `$BC_ROOT` — copy it verbatim; do **not** reconstruct it from memory. If `$BC_ROOT` resolves empty, tell the user and retry rather than hand-writing the harness. Do not write a CLAUDE.md inside any per-procedure subfolder.
 3. **Re-write the carry-over block** (6.4a) at the end of the new `CLAUDE.md`, reconstructed from the existing state: the chosen procedure from the active entry in `${SUBSTRATE_STATE}/procedures.json`, and the language from `${SUBSTRATE_STATE}/preferences.json`. If `procedures.json` has exactly one active entry, use it; if it has more than one, write the carry-over for whichever the user names when they next pick (or omit the single-procedure line and let the harness's `multi_active` framing choose). If `procedures.json` is empty too (a deeper crash), this is effectively a fresh setup — re-run from Step 6.3.
 4. **Do not touch anything else.** Leave `profile.json`, `preferences.json`, `procedures.json`, `.env`, `user-id`, and the marker as they are. You are filling a single missing file, not rebuilding the project.
 5. **Hand the user into the project.** The harness file now exists, so run the Step 7 handoff: tell the user the canary to expect, give them the clickable open-project link to `${SUBSTRATE_DATA}`, and end. On the next chat the ancestor-walk loads the now-present `CLAUDE.md` and the harness self-check + canary run normally.
