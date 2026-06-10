@@ -12,7 +12,7 @@ Pre-launch. Public repo for early testers; not yet listed on the official Anthro
 - **Peer skills** — `onboarding`, `discovery`, `document-handler`, `path-traversal`, `session-close`, `dossier-compilation`. Each is a focused mode that the harness invokes.
 - **Drafter sub-agents** — `be-civic-path-drafter`, `be-civic-process-drafter`. Spawned by `session-close` to draft amendments and new entries from session research-notes.
 - **API wiring** — connects to `becivic.be/api` for the live process graph, procedure canonicals, path directory, and submission endpoints.
-- **State schemas** — `profile.schema.json`, `observation.v3.schema.json`. Stable contracts the harness writes against.
+- **State schemas** — `profile.schema.json`, `procedures.registry.schema.json`. Stable contracts the harness writes against.
 - **Layer-1 scrub rules** — local PII scrub before any submission leaves the machine.
 
 ## What lives in the user's project folder, NOT here

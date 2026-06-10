@@ -14,7 +14,7 @@ model: opus
 
 **Input:** path to `<USER_DATA_DIR>/memory/research-notes-<slug>.md` plus any cited canonicals.
 
-**Output:** structured payload per the drafter-subagent output contract (see `agents.mdx`).
+**Output:** structured payload per the drafter-subagent output contract — the Issue/payload shape `bc-session-close` builds the wire envelope from (see `bc-session-close` step 4).
 
 ---
 
@@ -37,7 +37,7 @@ Submodes:
 - `body_diff` — unified-diff against `canonical.md`.
 - `frontmatter_edit` — dot-notation field path + typed value.
 
-Workflow: read canonical and research-notes → identify the specific delta → produce diff or field-edit → preflight (cross-ref resolution; predicate validity; type validity per `schemas/types.json`) → return payload bundled with `provenance.research_notes_markdown`.
+Workflow: read canonical and research-notes → identify the specific delta → produce diff or field-edit → preflight (cross-ref resolution; predicate validity; type validity against the submission contract the Worker enforces — no local type schema ships) → return payload bundled with `provenance.research_notes_markdown`.
 
 ---
 

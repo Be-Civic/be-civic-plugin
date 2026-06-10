@@ -14,7 +14,7 @@ model: opus
 
 **Input:** path to `<USER_DATA_DIR>/memory/research-notes-<path-slug>.md` plus the target path's existing entry from `paths/index.json` (for amendments).
 
-**Output:** structured payload per the drafter-subagent output contract (see `agents.mdx`).
+**Output:** structured payload per the drafter-subagent output contract — the Issue/payload shape `bc-session-close` builds the wire envelope from (see `bc-session-close` step 4).
 
 ---
 
@@ -38,11 +38,11 @@ Dot-notation field path against the path's JSON structure. Examples:
 - `applies_to.civil_status`
 - `sources[id=<source_id>].validation_path.failure_signals[2]`
 
-Carries `field_path` and `proposed_value`. Validate `proposed_value` type against `schemas/types.json`.
+Carries `field_path` and `proposed_value`. Validate `proposed_value` against the field's type as declared in the path/path-source submission contract (the wire schemas the Worker enforces at ingress); the drafter does not ship a local type schema.
 
 ### Submode: `source_add`
 
-Adds a full new source object to the path's `sources[]` array. Validate against `path-source.schema.json` with all per-`source_class` template branches applied.
+Adds a full new source object to the path's `sources[]` array. Validate the source object against the path-source submission contract (the wire schema the Worker enforces), with all per-`source_class` template branches applied.
 
 ### Submode: `observation` (path-targeted accuracy_concern)
 
@@ -75,13 +75,13 @@ Path-draft protocol (mirrors the process-drafter proposal protocol with path-spe
 1. **Define `purpose`** (enum: submission / preparation / check-only / handoff / informational / tool) and `applies_to` block. The `tool` purpose is for live online tools — e.g. commune appointment booker, federal MyMinfin form. The harness handles tool-purpose paths differently: offers live-tool navigation, doesn't try to handle the data itself.
 2. **Identify candidate sources** from research-notes (each tagged with provenance class — citation / corroboration / customer-report).
 3. **Determine `source_class`** (9-value enum) per source; enforce `offline` → `fallback_only: true` invariant.
-4. **Construct `audience.predicates`** from eligibility evidence in research-notes; resolve field names against `schemas/types.json`.
+4. **Construct `audience.predicates`** from eligibility evidence in research-notes; resolve field names against the predicate field vocabulary the submission contract defines (the drafter ships no local type schema).
 5. **Construct `validation_path`** per the `source_class`-driven template.
 6. **Construct `actor` block**: `actor.primary`, `actor.handoff.when` per 6-value enum, `agent_responsibility` / `user_responsibility` / `resumption` text.
 7. **Mark `audited_document_delivery: true`** for sources producing real audited deliveries on each call. Audited-delivery sources require explicit per-call consent at runtime — flag in the source's `agent_responsibility` text.
 8. **Mark `post_handoff_observed: false`** (researcher-authored entries default to false; validation cohort flips it once confirmed).
 9. **Order sources** by `priority` within fallback/non-fallback partitions.
-10. **Preflight**: JSON-Schema against `path.schema.json` and `path-source.schema.json`; per-class `if/then` branch conformance; `actor.handoff.when` discriminator conformance; PII guard (scan for ≥8-digit strings).
+10. **Preflight**: validate the draft against the path and path-source submission contracts (the wire schemas the Worker enforces at ingress); per-class `if/then` branch conformance; `actor.handoff.when` discriminator conformance; PII guard (scan for ≥8-digit strings).
 11. **Self-review**:
     - Every source's `audience.predicates` justified by a research-notes citation.
     - Every `validation_path.success_signals` value is a real observable signal (not a guess).
