@@ -12,7 +12,31 @@ Two modes:
 
 The framing matters: **this is "discovery mode," not "no-process fallback."** First use of the term in a session MUST carry a gloss; the bare phrase is fine thereafter.
 
-## 1. Opening
+## 1. Corpus search — confirm the miss BEFORE you speak
+
+You may have been routed here on a vague intent or a stale miss signal. Before saying anything about coverage — and strictly before the gap-framing opening in §2 — verify the miss **for your mode**.
+
+**Process mode** — fetch the full entity graph and search client-side:
+
+```
+GET https://becivic.be/api/manifest
+Authorization: Bearer <harness_key>   # omit if no key yet; public read still works
+```
+
+Response: `{ "status": 200, "data": { "entries": [...] } }`. Search `entries` by `title`, `summary`, and `applies_to` fields for the customer's intent. Only declare zero-match when no entry matches after a genuine client-side scan.
+
+Read the harness key from `${SUBSTRATE_STATE}/.env` (`BECIVIC_HARNESS_KEY=<value>`). If the file is absent or the key is not set, send the request without the `Authorization` header — anonymous reads succeed against `corpus:read:public`.
+
+**If the search DOES match the customer's intent, Be Civic has it — never tell the customer it's missing.** Do not speak the §2 opening at all: hand back to `bc-path-traversal` with the matched entry (or proceed with the verified entry directly) and exit discovery. Telling a customer "Be Civic doesn't have a verified procedure for X" when the corpus covers X betrays the authoritative-confirmation move; the gap line is earned only by a confirmed zero-match.
+
+**Path mode** — the miss arrived as a structured signal from `bc-path-traversal`, so the *procedure* is covered by construction; do **not** re-litigate the customer's intent against the manifest (an intent match is guaranteed here and is NOT a reason to route back — that would loop discovery and traversal forever). Verify the path-level miss instead:
+
+- `unknown-path-id` → search the manifest's **Path entries** for the missing path id. Only if a matching Path entry exists was the miss stale — hand back to `bc-path-traversal` with that entry and exit discovery. No matching Path entry = the miss is confirmed; proceed to §2.
+- `all-sources-failed-with-alternative` → the Path entry exists and its sources failed at runtime; the miss is already verified. Skip the manifest re-check and go straight to the §2 path-mode opening.
+
+## 2. Opening — only after §1 verified the miss
+
+Speak this only once §1 verified the miss for your mode: a confirmed zero-match (process mode), a confirmed missing Path entry (`unknown-path-id`), or the runtime-verified source failure (`all-sources-failed-with-alternative`).
 
 **Process mode:**
 
@@ -23,19 +47,6 @@ The framing matters: **this is "discovery mode," not "no-process fallback."** Fi
 > "We needed [path name / source] for this step, and Be Civic doesn't have a verified path entry yet. Let's switch to discovery mode (same idea — we walk it together and document what works). I'll log every source I can verify and we'll see where it lands."
 
 Don't preamble the contribution framing every turn after that — once is enough.
-
-## 2. Corpus search
-
-Before declaring a zero-match, fetch the full entity graph and search client-side:
-
-```
-GET https://becivic.be/api/manifest
-Authorization: Bearer <harness_key>   # omit if no key yet; public read still works
-```
-
-Response: `{ "status": 200, "data": { "entries": [...] } }`. Search `entries` by `title`, `summary`, and `applies_to` fields for the customer's intent. Only declare zero-match when no entry matches after a genuine client-side scan.
-
-Read the harness key from `${SUBSTRATE_STATE}/.env` (`BECIVIC_HARNESS_KEY=<value>`). If the file is absent or the key is not set, send the request without the `Authorization` header — anonymous reads succeed against `corpus:read:public`.
 
 ## 3. Source-quality discipline
 
