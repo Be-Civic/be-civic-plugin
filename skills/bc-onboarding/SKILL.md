@@ -180,7 +180,7 @@ Branch on the **HTTP status code first**:
 
 ## Step 6. State-shape activation
 
-A confirmed verification with absent marker triggers the full project write. **The folder picker fires FIRST — strictly before any durable write.** No key, no `.env`, no identity, no profile, no marker, no file of any kind lands on disk until the user has picked the folder and `${SUBSTRATE_DATA}` exists. Pick the folder (6.1) → init the one repo and write the single `.gitignore` (6.2) → then write state and the rest (6.3–6.4).
+A confirmed verification with absent marker triggers the full project write. **The folder picker fires FIRST — strictly before any durable write.** No key, no `.env`, no identity, no profile, no marker, no file of any kind lands on disk until the user has picked the folder and `${SUBSTRATE_DATA}` exists. Pick the folder (6.1) → run the `setup_project.py` call (6.2), which inits the one repo and writes the single `.gitignore` first, then the state and the rest of the folder (per the Step 6.2 reference).
 
 ### 6.1. Pick the project folder (before any durable write)
 
@@ -219,7 +219,7 @@ The script also deletes the now-redundant `.pending-verification` and runs the `
 
 #### What `setup_project.py` writes (reference — the script is authoritative)
 
-The script reproduces §6.2–§6.4 exactly. This is the ground-truth shape, kept for review and for the manual fallback; you do not perform these steps by hand on the happy path.
+The script reproduces the full project write below exactly. This is the ground-truth shape, kept for review and for the manual fallback; you do not perform these steps by hand on the happy path.
 
 - **`.gitignore` first** (verbatim from `${SUBSTRATE_ROOT}/data/gitignore.txt`) — the merged allowlist, written before `git init` so the key is never staged. Then `git init`.
 - **`.be-civic/state/`** (in order): **`.env`** = `BECIVIC_HARNESS_KEY=<harness_key>` and nothing else (gitignored; never echoed); **`user-id`** = the raw id; **`profile.json`** = the template **verbatim** (`last_updated_at` stays `null`, every routing field default — this "profile still at defaults" state is the signal the next chat keys the about-you form on; do not pre-fill); **`preferences.json`** = `{ "conversation_language": "<locale>" }`; **`procedures.json`** = the seeded registry:
@@ -257,9 +257,9 @@ So Chat 1 ends here. Hand the user a clickable link into their project, tell the
 
 ### 7.0. Only hand off if a project folder exists
 
-The handoff below requires a real `${SUBSTRATE_DATA}` folder to open. If the user cancelled the folder picker (the advice-only branch in 6.1), **nothing was written to disk** — no folder, no `CLAUDE.md`, no state — so there is nothing for a fresh chat to auto-load, and a handoff link would point nowhere. In that case **do not run the handoff (7.1–7.3).** Instead, stay in this conversation in advice-only mode: nothing is saved to disk this session (the minted key was held in working memory only). Offer the user the choice again: *"I can keep helping you here, but nothing's being saved yet. Want to pick a folder now so I can save your progress and pick it up cleanly next time?"* If they pick a folder, complete **the full project write — 6.2 (init repo + `.gitignore`), 6.3 (state), and 6.4 (the rest of the folder)** — then run the handoff. If they decline, continue in advice-only — no context switch.
+The handoff below requires a real `${SUBSTRATE_DATA}` folder to open. If the user cancelled the folder picker (the advice-only branch in 6.1), **nothing was written to disk** — no folder, no `CLAUDE.md`, no state — so there is nothing for a fresh chat to auto-load, and a handoff link would point nowhere. In that case **do not run the handoff (7.1–7.3).** Instead, stay in this conversation in advice-only mode: nothing is saved to disk this session (the minted key was held in working memory only). Offer the user the choice again: *"I can keep helping you here, but nothing's being saved yet. Want to pick a folder now so I can save your progress and pick it up cleanly next time?"* If they pick a folder, complete **the full project write — the `setup_project.py` call in 6.2 (init repo + `.gitignore`, then state and the rest of the folder, per the Step 6.2 reference)** — then run the handoff. If they decline, continue in advice-only — no context switch.
 
-Only when `${SUBSTRATE_DATA}` exists (the picker succeeded and 6.2 + 6.3 + 6.4 ran: the `.gitignore`, state, `.be-civic/marker`, and `CLAUDE.md` are all in place, and the carry-over is captured in `procedures.json` + `preferences.json`) do you run the handoff below.
+Only when `${SUBSTRATE_DATA}` exists (the picker succeeded and the 6.2 project write ran: the `.gitignore`, state, `.be-civic/marker`, and `CLAUDE.md` are all in place, and the carry-over is captured in `procedures.json` + `preferences.json`) do you run the handoff below.
 
 ### 7.1. Tell the user what success looks like (before they switch)
 
@@ -277,7 +277,7 @@ The recovery sentence is mandatory, not optional. It is the only safety net if t
 
 ### 7.2. Make the link clickable
 
-Render the open-project action as a **markdown link**, never a bare path or a code block. The link must point at the **BeCivic root** (`${SUBSTRATE_DATA}`), not a per-procedure subfolder — you did not create a `<procedure-slug>/` folder during setup (§6.4 leaves it for the relevant skill to create lazily), and Cowork's ancestor-walk loads the harness `CLAUDE.md` from the BeCivic root, so the root is the correct target.
+Render the open-project action as a **markdown link**, never a bare path or a code block. The link must point at the **BeCivic root** (`${SUBSTRATE_DATA}`), not a per-procedure subfolder — you did not create a `<procedure-slug>/` folder during setup (the Step 6.2 reference leaves it for the relevant skill to create lazily), and Cowork's ancestor-walk loads the harness `CLAUDE.md` from the BeCivic root, so the root is the correct target.
 
 On Cowork, prefer a `claude://` deeplink that opens a new chat in `${SUBSTRATE_DATA}` if you can construct one (try the `claude://cowork/new?folder=<url-encoded-absolute-path>` form). **If no deeplink form works, still render a clickable link, not prose** — link the absolute folder path itself (e.g. `[Open your BeCivic folder](file://<absolute path to BeCivic/>)`) so the user has one thing to click, with the copy-paste path alongside as backup. The verdict's "handoff fell back to prose" failure mode is exactly what to avoid: never hand the user a bare path in a sentence when a link will do.
 
@@ -322,7 +322,7 @@ Do not re-run onboarding. Do not overwrite `profile.json`. Do not re-mint identi
 **Two carve-outs — a marker can exist over a half-written project.** A marker present does not always mean setup finished. Two crash windows leave a marker over an incomplete project, and in BOTH you ARE allowed to write the missing piece (the blanket "don't touch anything" refusal does not apply):
 
 - **Key absent** (`HARNESS_KEY: absent`, or no `BECIVIC_HARNESS_KEY=` line in `.env`) → the keyless half-state. Run the **verification-only mode** below to mint + write the key.
-- **`${SUBSTRATE_DATA}/CLAUDE.md` absent** (setup crashed after the marker but before the harness file — recall 6.4 writes the marker in step 1, then `CLAUDE.md` in step 2) → the harness can never auto-load. Run the **harness-repair mode** below to write the missing harness file (verbatim canonical) from the state that already exists.
+- **`${SUBSTRATE_DATA}/CLAUDE.md` absent** (setup crashed after the marker but before the harness file — recall the marker is written before `CLAUDE.md`, per the Step 6.2 reference write order) → the harness can never auto-load. Run the **harness-repair mode** below to write the missing harness file (verbatim canonical) from the state that already exists.
 
 If both gaps are present, fix the key first (verification-only mode), then the harness file (harness-repair mode).
 
@@ -335,7 +335,21 @@ The harness routes here when a project folder exists (marker present) but verifi
 1. **Confirm the gap.** A marker exists (so the project is real) but the key is absent (presence check on `${SUBSTRATE_STATE}/.env` — never read the value). If a `${SUBSTRATE_STATE}/.pending-verification` file is present, read its `email` / `verification_id` / `expires_at` to resume mid-ceremony.
 2. **Re-open the access widget at the right step.** Render the shipped access widget (Step 2) so the user can complete verification. If `.pending-verification` is still valid, you can go straight to the code step (tell the user a code was already emailed; offer resend). If it is expired or absent, start fresh from the email step. Frame it plainly: *"Your project's here, but your access wasn't finished setting up. Let's finish that now so I can open your guide."*
 3. **Run Steps 3 → 5** (start-verification → receive code → verify) exactly as in first-contact. On `verify` success you get `{ user_id, harness_key, tier }`.
-4. **Write the key (and only what's missing).** Write `harness_key` to `${SUBSTRATE_STATE}/.env` per Step 6.3 item 1 (the folder already exists, so the single `.gitignore` from 6.2 is already in place and the key is never staged — confirm `git check-ignore -q -- .be-civic/state/.env` passes if in doubt). Write `user-id` if it is absent. **Do NOT overwrite an existing `profile.json`, `preferences.json`, `procedures.json`, the marker, `CLAUDE.md`, or anything else in the folder** — those were already written when the folder was set up. Delete `.pending-verification` once `verify` succeeds.
+4. **Write the key (and only what's missing) — key on stdin, never on a command line.** Write `harness_key` to `${SUBSTRATE_STATE}/.env` (`BECIVIC_HARNESS_KEY=<harness_key>` and nothing else, per the Step 6.2 reference) by **piping the key on stdin** to the process that writes the file — the same discipline as Step 6.2, and for the same reason (an argv-interpolated key is exposed in the process table and shell history). Do **not** improvise a write that interpolates the key value into the command text of an external process — no `printf '…=%s' "<key>" > .env`-style write, no `echo`/`tee` carrying the key. Use exactly this shape, substituting `<resolved-substrate-state>` with the absolute path from the preamble's `SUBSTRATE_STATE` session-state line (it is NOT a shell variable — like `${SUBSTRATE_ROOT}`, it does not expand in the Cowork VM shell, and an unset-var expansion would silently target `/.env`):
+
+   ```bash
+   printf '%s' "<harness_key>" | python3 -c '
+   import sys, pathlib
+   p = pathlib.Path(sys.argv[1])
+   assert str(p).endswith(".be-civic/state/.env"), "refusing: not a .be-civic/state/.env path"
+   key = sys.stdin.read().strip()
+   p.parent.mkdir(parents=True, exist_ok=True)
+   p.write_text("BECIVIC_HARNESS_KEY=%s\n" % key)
+   p.chmod(0o600)
+   ' "<resolved-substrate-state>/.env"
+   ```
+
+   (The folder already exists, so the single `.gitignore` from 6.2 is already in place and the key is never staged — confirm `git check-ignore -q -- .be-civic/state/.env` passes if in doubt.) Write `user-id` if it is absent. **Do NOT overwrite an existing `profile.json`, `preferences.json`, `procedures.json`, the marker, `CLAUDE.md`, or anything else in the folder** — those were already written when the folder was set up. Delete `.pending-verification` once `verify` succeeds.
 5. **Return control to the harness.** The key is now present; the harness self-check (its §3.0) passes and it proceeds with the carry-over it already has. Do not run the about-you form here — that is the harness's job in the working session.
 
 If the user declines verification again, fall to anonymous-read mode (§1.1): the project stays on disk, but wire-gated work (full Process bodies, submissions) stays unavailable until they verify.
@@ -344,11 +358,11 @@ If the user declines verification again, fall to anonymous-read mode (§1.1): th
 
 ## Harness-repair mode (missing CLAUDE.md recovery)
 
-The gate routes here when a project marker exists but `${SUBSTRATE_DATA}/CLAUDE.md` does not — setup wrote the marker (6.4 step 1) then crashed before writing the harness file (6.4 step 2). Without `CLAUDE.md` the substrate's ancestor-walk has nothing to load, so no harness comes up and no canary fires. **Do NOT re-run the whole flow and do NOT re-mint identity.** Write only the missing harness file, reusing the state already on disk.
+The gate routes here when a project marker exists but `${SUBSTRATE_DATA}/CLAUDE.md` does not — setup wrote the marker then crashed before writing the harness file (the marker lands before `CLAUDE.md`, per the Step 6.2 reference write order). Without `CLAUDE.md` the substrate's ancestor-walk has nothing to load, so no harness comes up and no canary fires. **Do NOT re-run the whole flow and do NOT re-mint identity.** Write only the missing harness file, reusing the state already on disk.
 
 1. **Confirm the gap.** A `.be-civic/marker` exists (the project is real) but `${SUBSTRATE_DATA}/CLAUDE.md` is missing. `${SUBSTRATE_DATA}` is the folder holding the marker (the same folder `preamble.py` resolves from the marker). If the key is also absent, do the verification-only mode first, then return here.
-2. **Write the harness file VERBATIM.** First resolve the install root with the discovery step ("Resolve the install root", above) into `$BC_ROOT` — `${SUBSTRATE_ROOT}` does not expand in the Cowork shell. Then **copy** `$BC_ROOT/skills/bc-onboarding/references/harness-CLAUDE.md` to `${SUBSTRATE_DATA}/CLAUDE.md` with `bash cp` (per 6.4 step 2). The canonical template **is** reachable once you have `$BC_ROOT` — copy it byte-for-byte; do **not** reconstruct it from memory, and **do NOT append a `## Carry-over` block** (the carry-over lives in `procedures.json` + `preferences.json`, which are already on disk; the preamble reads them). The written `CLAUDE.md` must be byte-identical to the canonical harness. If `$BC_ROOT` resolves empty, tell the user and retry rather than hand-writing the harness. Do not write a CLAUDE.md inside any per-procedure subfolder.
-3. **Do not touch anything else.** Leave `profile.json`, `preferences.json`, `procedures.json`, `.env`, `user-id`, and the marker as they are. You are filling a single missing file, not rebuilding the project. The carry-over the harness needs is already in the state files (`procedures.json` + `preferences.json`); there is nothing to reconstruct in the harness file. If `procedures.json` is empty too (a deeper crash), this is effectively a fresh setup — re-run from Step 6.3.
+2. **Write the harness file VERBATIM.** First resolve the install root with the discovery step ("Resolve the install root", above) into `$BC_ROOT` — `${SUBSTRATE_ROOT}` does not expand in the Cowork shell. Then **copy** `$BC_ROOT/skills/bc-onboarding/references/harness-CLAUDE.md` to `${SUBSTRATE_DATA}/CLAUDE.md` with `bash cp` (the `CLAUDE.md` write per the Step 6.2 reference). The canonical template **is** reachable once you have `$BC_ROOT` — copy it byte-for-byte; do **not** reconstruct it from memory, and **do NOT append a `## Carry-over` block** (the carry-over lives in `procedures.json` + `preferences.json`, which are already on disk; the preamble reads them). The written `CLAUDE.md` must be byte-identical to the canonical harness. If `$BC_ROOT` resolves empty, tell the user and retry rather than hand-writing the harness. Do not write a CLAUDE.md inside any per-procedure subfolder.
+3. **Do not touch anything else.** Leave `profile.json`, `preferences.json`, `procedures.json`, `.env`, `user-id`, and the marker as they are. You are filling a single missing file, not rebuilding the project. The carry-over the harness needs is already in the state files (`procedures.json` + `preferences.json`); there is nothing to reconstruct in the harness file. If `procedures.json` is empty too (a deeper crash), this is effectively a fresh setup — re-run the Step 6.2 project write (`setup_project.py`, or the manual fallback per the Step 6.2 reference).
 5. **Hand the user into the project.** The harness file now exists, so run the Step 7 handoff: tell the user the canary to expect, give them the clickable open-project link to `${SUBSTRATE_DATA}`, and end. On the next chat the ancestor-walk loads the now-present `CLAUDE.md` and the harness self-check + canary run normally.
 
 ---
