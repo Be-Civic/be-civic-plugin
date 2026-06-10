@@ -403,6 +403,14 @@ def emit_surfaces() -> None:
     # Back-compat aliases consumed by the current CLAUDE.md guidance.
     print(f"PLUGIN_ROOT: {SUBSTRATE_ROOT}")
     print(f"USER_DATA_DIR: {SUBSTRATE_STATE if SUBSTRATE_STATE is not None else 'absent'}")
+    # BC_ROOT — the resolved install root the skill bodies cite by name. It is
+    # the single authoritative value for "where the plugin is mounted"; surfaces
+    # that need an install-relative bash path read it from here rather than
+    # re-running the bootstrap `find … plugin.json` discovery. Emitted on both
+    # code paths (pre-onboarding too), so the fact is always available; the
+    # bootstrap find-block (harness §3) and the recovery copy remain only for the
+    # case where this preamble could not run at all.
+    print(f"BC_ROOT: {SUBSTRATE_ROOT}")
     # Provenance — the `submitting_harness` wire field, used verbatim on every
     # submission envelope. Derived from the manifest, so it tracks the live
     # plugin version with no literal to go stale.
