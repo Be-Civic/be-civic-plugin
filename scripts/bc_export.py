@@ -50,10 +50,16 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+# The harness-key guard lives in the single guard module (scripts/env_guard.py).
+# Ensure that dir is importable when this runs as a standalone script
+# (`python3 scripts/bc_export.py`).
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+import env_guard
+from env_guard import ENV_REL_PATH
+
 
 # ── Identity-exclusion verification ─────────────────────────────────────────
-
-ENV_REL_PATH = ".be-civic/state/.env"
 
 
 def _verify_env_excluded_from_git(repo_root: Path, label: str) -> None:
@@ -62,22 +68,15 @@ def _verify_env_excluded_from_git(repo_root: Path, label: str) -> None:
     inside the single project repo.
 
     This is a safety-net assertion, not a configuration choice. If it ever
-    fires it means the folder's .gitignore allowlist was corrupted.
+    fires it means the folder's .gitignore allowlist was corrupted. The
+    tracked-check is the single guard primitive env_guard.is_env_tracked: a
+    `git bundle --all` of committed history naturally excludes an
+    untracked-but-present key, so only the *tracked* case is fatal here.
     """
-    git_dir = repo_root / ".git"
-    if not git_dir.exists():
+    if not (repo_root / ".git").exists():
         return  # no git repo; not a problem at verification stage
 
-    env_path = repo_root / ".be-civic" / "state" / ".env"
-    if not env_path.exists():
-        return  # no .env present at all
-
-    result = subprocess.run(
-        ["git", "-C", str(repo_root), "ls-files", "--", ENV_REL_PATH],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode == 0 and result.stdout.strip():
+    if env_guard.is_env_tracked(repo_root):
         print(
             f"FATAL: {ENV_REL_PATH} is tracked by git in the {label} repo.\n"
             "This means Identity (the harness key) is in version-control history\n"

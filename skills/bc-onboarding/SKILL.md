@@ -41,7 +41,7 @@ Everything this skill writes lands inside the user-picked project folder. There 
 
 `${SUBSTRATE_STATE}` is a pure child of `${SUBSTRATE_DATA}` — the hidden `.be-civic/state/` folder inside the user's project. The harness key file lives at `${SUBSTRATE_STATE}/.env` = `${SUBSTRATE_DATA}/.be-civic/state/.env`.
 
-**Identity rule.** The harness key in `${SUBSTRATE_STATE}/.env` is NEVER committed, echoed to chat, or logged. It is excluded from git structurally — the project's single `.gitignore` allowlist does not list `.be-civic/state/.env`, and a belt-and-braces `.env` deny line covers it too. Do not print it back to the user, ever.
+**Identity rule.** The harness key in `${SUBSTRATE_STATE}/.env` is NEVER committed, echoed to chat, or logged. It is excluded from git structurally — the project's single `.gitignore` allowlist does not list `.be-civic/state/.env`, and a belt-and-braces `.env` deny line covers it too. Every writer that commits the project (preamble, setup_project, bc_export, the auto-commit monitor) enforces this through one guard module, `scripts/env_guard.py`, which refuses-and-alerts if the key is ever present-but-unignored or already tracked. Do not print it back to the user, ever.
 
 ### Resolve the install root — do this before any plugin-asset read
 

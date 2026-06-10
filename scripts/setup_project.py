@@ -41,10 +41,22 @@ import argparse
 import hashlib
 import json
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
+
+# The harness-key commit guard + commit identity live in ONE module beside this
+# script (scripts/env_guard.py). Ensure that dir is importable when this runs as
+# a standalone script (`python3 scripts/setup_project.py`).
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+import env_guard
+from env_guard import (
+    GuardVerdict,
+    count_staged as _count_staged,
+    git_in as _git,
+    is_git_repo as _is_git_repo,
+)
 
 
 # ============================================================================
@@ -73,40 +85,10 @@ def _now() -> str:
 
 
 # ============================================================================
-# git helpers (mirror of preamble.py — kept in sync deliberately; these scripts
-# are run standalone, never imported, so duplication is cheaper than a shared
-# module + packaging both)
+# git helpers + the harness-key guard now live in the single guard module
+# (scripts/env_guard.py): _git / _is_git_repo / _count_staged are imported at
+# the top of this file, and _commit_project calls env_guard.check_env_guard.
 # ============================================================================
-
-def _git(repo: Path, args: list[str], timeout: float = 10.0) -> subprocess.CompletedProcess | None:
-    """Run a git command inside `repo`. Returns the CompletedProcess, or None if
-    the git binary is missing / the call times out. Never raises. `git` is
-    resolved via PATH so `git.exe` works natively on Windows."""
-    try:
-        return subprocess.run(
-            ["git", "-C", str(repo), *args],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            check=False,
-        )
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
-        return None
-
-
-def _is_git_repo(repo: Path) -> bool:
-    res = _git(repo, ["rev-parse", "--is-inside-work-tree"])
-    return bool(res and res.returncode == 0 and res.stdout.strip() == "true")
-
-
-def _count_staged(porcelain: str) -> int:
-    n = 0
-    for line in porcelain.splitlines():
-        if not line:
-            continue
-        if line[0] not in (" ", "?"):
-            n += 1
-    return n
 
 
 # ============================================================================
@@ -180,7 +162,7 @@ def _procedures_seed(slug: str, process_id: str, process_version: str,
 
 
 # ============================================================================
-# The .env identity guard + commit (mirror of preamble.py:_commit_all guard)
+# The project-write commit (the harness-key guard is env_guard.check_env_guard)
 # ============================================================================
 
 def _commit_project(repo: Path) -> tuple[str | None, int]:
@@ -190,19 +172,18 @@ def _commit_project(repo: Path) -> tuple[str | None, int]:
     harness key, exactly as preamble.py does. Never raises."""
     if not _is_git_repo(repo):
         return None, 0
-    env_rel = ".be-civic/state/.env"
-    if (repo / ".be-civic" / "state" / ".env").exists():
-        chk = _git(repo, ["check-ignore", "-q", "--", env_rel])
-        if not chk or chk.returncode != 0:
-            print(
-                f"OPERATOR_ALERT: {env_rel} present but not gitignored in {repo}; "
-                "refusing commit to protect Identity. Write the .gitignore allowlist first."
-            )
-            return None, 0
-    tracked = _git(repo, ["ls-files", "--", env_rel])
-    if tracked and tracked.returncode == 0 and tracked.stdout.strip():
+    # Harness-key guard — single source of truth: env_guard.check_env_guard.
+    verdict = env_guard.check_env_guard(repo)
+    if verdict is GuardVerdict.NOT_IGNORED:
         print(
-            f"OPERATOR_ALERT: {env_rel} is tracked by git in {repo}; "
+            f"OPERATOR_ALERT: {env_guard.ENV_REL_PATH} present but not gitignored "
+            f"in {repo}; refusing commit to protect Identity. "
+            "Write the .gitignore allowlist first."
+        )
+        return None, 0
+    if verdict is GuardVerdict.TRACKED:
+        print(
+            f"OPERATOR_ALERT: {env_guard.ENV_REL_PATH} is tracked by git in {repo}; "
             "refusing commit to protect Identity."
         )
         return None, 0
@@ -222,10 +203,9 @@ def _commit_project(repo: Path) -> tuple[str | None, int]:
     commit = _git(
         repo,
         [
-            "-c", "user.name=Be Civic",
-            "-c", "user.email=noreply@becivic.be",
+            *env_guard.commit_identity_args(),
             "commit",
-            "--author", "Be Civic <noreply@becivic.be>",
+            "--author", env_guard.author_arg(),
             "-m", COMMIT_MESSAGE,
         ],
     )
