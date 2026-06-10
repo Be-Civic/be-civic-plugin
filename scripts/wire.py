@@ -31,7 +31,7 @@ raw traceback. See bc-operations/docs/agent-ux/cowork-sandbox-network-model.md.
 CLI
 ---
     python3 wire.py <METHOD> <path> [--json '<body>'] [--stdin]
-                    [--cancel-token <tok>] [--base <url>]
+                    [--cancel-token <tok>] [--base <url>] [--inspect]
 
   <METHOD>   POST | GET | DELETE  (case-insensitive)
   <path>     API path beginning with '/', e.g. /api/auth/verify  (a full
@@ -49,13 +49,22 @@ CLI
   --base <url>           override the base URL (default https://becivic.be;
                          also overridable via the BECIVIC_BASE_URL env var,
                          for the dev track).
+  --inspect              report how auth/state resolved (presence-only; never
+                         the key) and exit 0 WITHOUT sending the request.
 
 AUTH
 ----
 The Bearer is read from `${SUBSTRATE_STATE}/.env` (the `BECIVIC_HARNESS_KEY=`
 line) and sent as `Authorization: Bearer <key>` WHEN PRESENT. SUBSTRATE_STATE
 is taken from the `BC_SUBSTRATE_STATE` env var (the preamble's resolved
-`.be-civic/state` child) or `SUBSTRATE_STATE`. Anonymous-tier calls
+`.be-civic/state` child) or `SUBSTRATE_STATE`; when neither is PRESENT in the
+environment, the script resolves it itself by the same marker-gated
+ancestor-walk `preamble.py` uses (walk up from cwd looking for
+`.be-civic/marker`, cap 12 levels) — so a bare keyed read works from anywhere
+inside a project with no env handoff. Setting either var to the EMPTY string
+forces anonymous (the explicit opt-out — the walk is skipped; pre-onboarding
+flows that must not present a Bearer can use it). Use `--inspect` to see how
+resolution happened (presence-only; no request is sent). Anonymous-tier calls
 (`/api/auth/start-verification`, `/api/auth/verify`) work fine with no key —
 the header is simply omitted when no key is found. The key value is NEVER
 printed, logged, or echoed; only its presence is reported (`auth: bearer`
@@ -78,9 +87,16 @@ HTTP status and prints whichever of data/error/raw-body is present:
     error: <category>     # present iff the body had an `error` field
     body: {...}           # the parsed body (or raw text if not JSON)
 
+With `--inspect` the block is instead (no request is sent):
+
+    state_source: env | ancestor-walk | none
+    state_dir: <path or 'absent'>
+    auth: bearer | anonymous
+    result: inspect
+
 EXIT CODES
 ----------
-  0   HTTP 2xx (the write/read landed)
+  0   HTTP 2xx (the write/read landed); also: --inspect completed
   1   HTTP non-2xx (4xx/5xx — the API rejected it; see `error:` / `body:`)
   2   usage error (bad args)
   3   transport failure (network unreachable after one retry, or DNS, etc.)
@@ -119,18 +135,46 @@ USER_AGENT = "be-civic-plugin-wire/1"
 # never printed. We report `bearer` / `anonymous`, never the key.
 # ---------------------------------------------------------------------------
 
-def _state_dir() -> Path | None:
-    """Resolve ${SUBSTRATE_STATE} from the preamble handoff env var.
+# How far up the directory tree the ancestor-walk looks for `.be-civic/marker`.
+# Mirrors preamble.py's MARKER_WALK_CAP — keep the two in step.
+MARKER_WALK_CAP = 12
 
-    Prefer BC_SUBSTRATE_STATE (the name preamble.py passes to sub-scripts);
-    fall back to SUBSTRATE_STATE. Returns None when neither is set (the
-    anonymous-tier / pre-onboarding case — the call simply goes keyless).
+
+def _state_dir() -> tuple[Path | None, str]:
+    """Resolve ${SUBSTRATE_STATE}; return (path, source).
+
+    Resolution order:
+      1. BC_SUBSTRATE_STATE / SUBSTRATE_STATE env vars (the preamble handoff)
+         -> source "env". A var PRESENT but EMPTY forces anonymous (the
+         explicit opt-out — the walk is skipped, preserving the pre-walk
+         behaviour where set-but-empty meant keyless).
+      2. Ancestor-walk from cwd for `.be-civic/marker` (cap MARKER_WALK_CAP
+         levels — the same detection gate preamble.py uses); the state dir is
+         `<project>/.be-civic/state` -> source "ancestor-walk". This makes a
+         bare keyed read work from inside a project with no env handoff.
+      3. Neither -> (None, "none") (the anonymous-tier / pre-onboarding case —
+         the call simply goes keyless).
     """
-    raw = os.environ.get("BC_SUBSTRATE_STATE") or os.environ.get("SUBSTRATE_STATE")
-    return Path(raw) if raw else None
+    if "BC_SUBSTRATE_STATE" in os.environ or "SUBSTRATE_STATE" in os.environ:
+        raw = os.environ.get("BC_SUBSTRATE_STATE") or os.environ.get("SUBSTRATE_STATE")
+        return (Path(raw), "env") if raw else (None, "env")
+    try:
+        current = Path.cwd().resolve()
+    except OSError:
+        return None, "none"
+    for _ in range(MARKER_WALK_CAP + 1):
+        try:
+            if (current / ".be-civic" / "marker").is_file():
+                return current / ".be-civic" / "state", "ancestor-walk"
+        except OSError:
+            pass
+        if current.parent == current:
+            break
+        current = current.parent
+    return None, "none"
 
 
-def _read_bearer() -> str | None:
+def _read_bearer(state: Path | None) -> str | None:
     """Return the harness key from ${SUBSTRATE_STATE}/.env, or None.
 
     Parses the single `BECIVIC_HARNESS_KEY=<value>` line. Never prints the
@@ -138,7 +182,6 @@ def _read_bearer() -> str | None:
     so the call falls back to anonymous rather than crashing — a wrong tier
     surfaces as a clean 401 the agent can interpret, not a traceback here.
     """
-    state = _state_dir()
     if state is None:
         return None
     env_path = state / ".env"
@@ -320,6 +363,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
                         help="sets X-Cancel-Token (for DELETE /api/submissions/...)")
     parser.add_argument("--base", dest="base", default=None,
                         help="base URL override (default https://becivic.be or $BECIVIC_BASE_URL)")
+    parser.add_argument("--inspect", dest="inspect", action="store_true",
+                        help="report how auth/state resolved (presence-only; never the key) and exit without sending the request")
     return parser.parse_args(argv)
 
 
@@ -363,7 +408,18 @@ def main(argv: list[str]) -> int:
     base = args.base or os.environ.get("BECIVIC_BASE_URL") or DEFAULT_BASE_URL
     url = _resolve_url(base, args.path)
 
-    bearer = _read_bearer()
+    state, state_source = _state_dir()
+    bearer = _read_bearer(state)
+
+    if args.inspect:
+        # Presence-only resolution report — no request leaves the machine and
+        # the key value is never printed.
+        print(f"state_source: {state_source}")
+        print(f"state_dir: {state if state is not None else 'absent'}")
+        print(f"auth: {'bearer' if bearer else 'anonymous'}")
+        print("result: inspect")
+        return 0
+
     print(f"auth: {'bearer' if bearer else 'anonymous'}")
 
     return send(method, url, body_bytes, bearer, args.cancel_token)
