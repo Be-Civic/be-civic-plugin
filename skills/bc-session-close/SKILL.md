@@ -16,7 +16,7 @@ The customer-facing language for the observation buffer is **list** or **notes**
 
 All submissions are **direct typed POSTs** through the bundled **`wire.py`** over `bash` — **not** `WebFetch`, which is GET-only and cannot carry a request body (so it cannot do a single write). `wire.py` is the documented "provide a utility script" write path; it sends the request to the REST surface at `${BASE}/api`, handles auth internally, and retries once on a transient network failure. The per-item user review below IS the gate — it is harness behaviour, not an API call. Once the user approves an item, exactly one POST leaves the machine.
 
-`$BC_ROOT` below is the **resolved** install root the preamble emitted as `SUBSTRATE_ROOT:` at session start (harness §3) — `$CLAUDE_PLUGIN_ROOT` is unset in the Cowork VM shell, so never use a bare `${SUBSTRATE_ROOT}`/`${CLAUDE_PLUGIN_ROOT}` literal in a bash command; use the resolved `$BC_ROOT`.
+`$BC_ROOT` below is the resolved install root the preamble emits as the `BC_ROOT:` session fact at session start (harness §3) — use that value, never a bare `${SUBSTRATE_ROOT}`/`${CLAUDE_PLUGIN_ROOT}` literal in a bash command.
 
 - **Auth — handled inside `wire.py`.** `wire.py` reads `BECIVIC_HARNESS_KEY` from `${SUBSTRATE_STATE}/.env` itself and sends `Authorization: Bearer <harness_key>`; you never touch the key here and it is never echoed or logged. If the session is in anonymous-read mode (no key — user declined verification), **no submissions are possible**: `wire.py` would post anonymously and the worker 401s. So do **not** call it — tell the customer plainly that their notes can't be sent without verification, offer to verify (hand back to onboarding) or to hold the notes locally (step 6 fallback).
 - **submission_id.** Generate client-side before each POST:
@@ -137,7 +137,7 @@ If the customer asks "how do I back up my Be Civic data?" or "can I use this on 
 python3 "$BC_ROOT/scripts/bc_export.py" --cowork --out ~/Desktop
 ```
 
-(`$BC_ROOT` is the resolved install root from Wire basics above — `$CLAUDE_PLUGIN_ROOT` is unset in the Cowork VM shell.)
+(`$BC_ROOT` is the resolved install root from the preamble-emitted `BC_ROOT:` session fact, per Wire basics above.)
 
 The script bundles the project folder into a single `bc-export-<timestamp>.tar.gz` and prints the mandatory Identity warning. The harness key is gitignored (never in git history), but when a key is present the export carries it as a loose `identity/env` member — so the bundle is **credential-bearing** (treat it like a passport scan). On the destination machine the user runs (resolving the install root there the same way the harness does, since `$BC_ROOT` from this session won't carry over):
 
