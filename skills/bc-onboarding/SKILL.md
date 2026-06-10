@@ -335,7 +335,21 @@ The harness routes here when a project folder exists (marker present) but verifi
 1. **Confirm the gap.** A marker exists (so the project is real) but the key is absent (presence check on `${SUBSTRATE_STATE}/.env` — never read the value). If a `${SUBSTRATE_STATE}/.pending-verification` file is present, read its `email` / `verification_id` / `expires_at` to resume mid-ceremony.
 2. **Re-open the access widget at the right step.** Render the shipped access widget (Step 2) so the user can complete verification. If `.pending-verification` is still valid, you can go straight to the code step (tell the user a code was already emailed; offer resend). If it is expired or absent, start fresh from the email step. Frame it plainly: *"Your project's here, but your access wasn't finished setting up. Let's finish that now so I can open your guide."*
 3. **Run Steps 3 → 5** (start-verification → receive code → verify) exactly as in first-contact. On `verify` success you get `{ user_id, harness_key, tier }`.
-4. **Write the key (and only what's missing).** Write `harness_key` to `${SUBSTRATE_STATE}/.env` per Step 6.3 item 1 (the folder already exists, so the single `.gitignore` from 6.2 is already in place and the key is never staged — confirm `git check-ignore -q -- .be-civic/state/.env` passes if in doubt). Write `user-id` if it is absent. **Do NOT overwrite an existing `profile.json`, `preferences.json`, `procedures.json`, the marker, `CLAUDE.md`, or anything else in the folder** — those were already written when the folder was set up. Delete `.pending-verification` once `verify` succeeds.
+4. **Write the key (and only what's missing) — key on stdin, never on a command line.** Write `harness_key` to `${SUBSTRATE_STATE}/.env` (`BECIVIC_HARNESS_KEY=<harness_key>` and nothing else, per the Step 6.2 reference) by **piping the key on stdin** to the process that writes the file — the same discipline as Step 6.2, and for the same reason (an argv-interpolated key is exposed in the process table and shell history). Do **not** improvise a write that interpolates the key value into the command text of an external process — no `printf '…=%s' "<key>" > .env`-style write, no `echo`/`tee` carrying the key. Use exactly this shape, substituting `<resolved-substrate-state>` with the absolute path from the preamble's `SUBSTRATE_STATE` session-state line (it is NOT a shell variable — like `${SUBSTRATE_ROOT}`, it does not expand in the Cowork VM shell, and an unset-var expansion would silently target `/.env`):
+
+   ```bash
+   printf '%s' "<harness_key>" | python3 -c '
+   import sys, pathlib
+   p = pathlib.Path(sys.argv[1])
+   assert str(p).endswith(".be-civic/state/.env"), "refusing: not a .be-civic/state/.env path"
+   key = sys.stdin.read().strip()
+   p.parent.mkdir(parents=True, exist_ok=True)
+   p.write_text("BECIVIC_HARNESS_KEY=%s\n" % key)
+   p.chmod(0o600)
+   ' "<resolved-substrate-state>/.env"
+   ```
+
+   (The folder already exists, so the single `.gitignore` from 6.2 is already in place and the key is never staged — confirm `git check-ignore -q -- .be-civic/state/.env` passes if in doubt.) Write `user-id` if it is absent. **Do NOT overwrite an existing `profile.json`, `preferences.json`, `procedures.json`, the marker, `CLAUDE.md`, or anything else in the folder** — those were already written when the folder was set up. Delete `.pending-verification` once `verify` succeeds.
 5. **Return control to the harness.** The key is now present; the harness self-check (its §3.0) passes and it proceeds with the carry-over it already has. Do not run the about-you form here — that is the harness's job in the working session.
 
 If the user declines verification again, fall to anonymous-read mode (§1.1): the project stays on disk, but wire-gated work (full Process bodies, submissions) stays unavailable until they verify.
