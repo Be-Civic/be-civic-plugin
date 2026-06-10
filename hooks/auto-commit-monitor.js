@@ -31,9 +31,14 @@
  *   - Defensive: never explicitly `git add` the harness-key .env (we only ever
  *     run `add -A`, which respects .gitignore; we additionally hard-refuse any
  *     path arg that resolves to a .env file, and refuse the whole commit if
- *     .be-civic/state/.env is present-but-unignored or already tracked).
+ *     .be-civic/state/.env is present-but-unignored or already tracked). That
+ *     refuse-and-alert guard is NOT re-implemented here — it is the single
+ *     Python module scripts/env_guard.py, invoked via a python3 subprocess
+ *     (envGuardVerdict). If python3 cannot be spawned the commit fails SAFE
+ *     (refused), never committed with the guard skipped.
  *
- * Pure Node built-ins only (no third-party deps).
+ * Pure Node built-ins only (no third-party deps); the guard is delegated to
+ * python3 (the same runtime assumption preamble.py makes).
  */
 
 "use strict";
@@ -52,13 +57,23 @@ const LOCK_BACKOFFS_MS = parseBackoffs(
   [250, 500, 1000, 2000]
 );
 const GIT_BIN = process.env.BC_MONITOR_GIT_BIN || "git";
+// The harness-key guard + commit identity are owned by the single Python guard
+// module (scripts/env_guard.py). This monitor does NOT re-implement the guard
+// in JS; it invokes the module via a python3 subprocess (same Cowork VM as the
+// Python scripts — python3 availability is the same assumption preamble makes).
+const PYTHON_BIN = process.env.BC_MONITOR_PYTHON_BIN || "python3";
+const ENV_GUARD_SCRIPT =
+  process.env.BC_MONITOR_ENV_GUARD_SCRIPT ||
+  path.join(__dirname, "..", "scripts", "env_guard.py");
 const COMMIT_AUTHOR_NAME = "Be Civic";
 const COMMIT_AUTHOR_EMAIL = "noreply@becivic.be";
 // Re-resolve the .session-data-root pointer on this cadence when it was absent
 // at start (preamble writes it at session-start; the monitor may boot first).
 const MARKER_REPOLL_MS = numEnv("BC_MONITOR_MARKER_REPOLL_MS", 5000);
 // The harness key lives at this exact nested path inside the single user-owned
-// repo. Both guards (check-ignore + ls-files) test THIS path, not root `.env`.
+// repo. The guard that tests it (present-but-unignored / already-tracked) is the
+// Python module scripts/env_guard.py, invoked via envGuardVerdict; this constant
+// is kept for log messages and the exported test surface.
 const ENV_REL_PATH = path.join(".be-civic", "state", ".env");
 
 function numEnv(name, fallback) {
@@ -117,6 +132,41 @@ async function isGitRepo(repoRoot) {
   const res = await git(repoRoot, ["rev-parse", "--is-inside-work-tree"]);
   if (res.spawnError) throw res.spawnError; // git binary missing — surface up.
   return res.code === 0 && res.stdout.trim() === "true";
+}
+
+// Bound the guard subprocess so a wedged python3 fails safe (refused) rather
+// than stalling the debounced committer forever. A timeout kill surfaces as a
+// non-ENOENT `error` → the caller treats it as a guard failure and refuses.
+const GUARD_TIMEOUT_MS = numEnv("BC_MONITOR_GUARD_TIMEOUT_MS", 10000);
+
+/**
+ * Invoke the single Python guard module (scripts/env_guard.py) via a python3
+ * subprocess and return its verdict token:
+ *   "ok" | "not-a-repo" | "not-ignored" | "tracked"
+ * On a spawn failure (python3 unavailable) returns { spawnError } so the caller
+ * can fail safe (refuse the commit) rather than silently skipping the guard.
+ */
+function envGuardVerdict(repoRoot) {
+  return new Promise((resolve) => {
+    execFile(
+      PYTHON_BIN,
+      [ENV_GUARD_SCRIPT, "guard", repoRoot],
+      { encoding: "utf8", maxBuffer: 1 * 1024 * 1024, timeout: GUARD_TIMEOUT_MS },
+      (error, stdout, stderr) => {
+        if (error && error.code === "ENOENT") {
+          resolve({ spawnError: error, verdict: null });
+          return;
+        }
+        if (error) {
+          // The module ran but exited non-zero (unexpected). Treat as a guard
+          // failure and fail safe.
+          resolve({ spawnError: null, verdict: null, error, stderr: stderr || "" });
+          return;
+        }
+        resolve({ spawnError: null, verdict: (stdout || "").trim() });
+      }
+    );
+  });
 }
 
 function indexLockPath(repoRoot) {
@@ -195,24 +245,36 @@ async function commitOnce(repoRoot, messageFor) {
     return "skipped:not-a-repo";
   }
 
-  // Identity guard (single-surface contract §"`.env` guard"): `add -A` relies
-  // on the .gitignore allowlist to exclude the Identity slot. The harness key
-  // now lives at the EXACT nested path `.be-civic/state/.env` inside this single
-  // user-owned repo. Guard that exact path, not root `.env`:
-  //   - If it exists but is NOT gitignored (allowlist not written yet),
-  //     committing would leak the key → refuse. `check-ignore -q -- <path>`
-  //     exits 0 iff ignored; any non-zero (not-ignored OR error) → refuse.
-  //   - If `ls-files -- <path>` returns anything it is already tracked (a prior
-  //     leak) → refuse regardless of check-ignore.
-  if (fs.existsSync(path.join(repoRoot, ENV_REL_PATH))) {
-    const chk = await git(repoRoot, ["check-ignore", "-q", "--", ENV_REL_PATH]);
-    if (chk.spawnError || chk.code !== 0) {
-      logErr(`${ENV_REL_PATH} present but not gitignored in ${repoRoot}; refusing commit to protect Identity`);
-      return "skipped:env-not-ignored";
-    }
+  // Identity guard (single-surface contract §"`.env` guard"): the guard is owned
+  // by the single Python module (scripts/env_guard.py), invoked here via a
+  // python3 subprocess — NOT re-implemented in JS. The module classifies the
+  // harness key at `.be-civic/state/.env`:
+  //   - "not-ignored" → present but NOT gitignored (allowlist not written yet);
+  //     a plain `add -A` would leak it → refuse.
+  //   - "tracked"     → already tracked (a prior leak) → refuse.
+  //   - "ok"/"not-a-repo" → proceed (not-a-repo is already handled above).
+  // If python3 cannot be spawned we fail SAFE — refuse rather than commit with
+  // the guard skipped (a leaked key is the catastrophic failure mode).
+  const guard = await envGuardVerdict(repoRoot);
+  if (guard.spawnError) {
+    logErr(
+      `cannot spawn ${PYTHON_BIN} to run the env-guard (${ENV_GUARD_SCRIPT}); ` +
+        `refusing commit to protect Identity in ${repoRoot}`
+    );
+    return "skipped:guard-unavailable";
   }
-  const tracked = await git(repoRoot, ["ls-files", "--", ENV_REL_PATH]);
-  if (!tracked.spawnError && tracked.code === 0 && tracked.stdout.trim()) {
+  if (guard.verdict === null) {
+    logErr(
+      `env-guard (${ENV_GUARD_SCRIPT}) failed unexpectedly in ${repoRoot}; ` +
+        `refusing commit to protect Identity${guard.stderr ? ": " + guard.stderr.trim() : ""}`
+    );
+    return "skipped:guard-error";
+  }
+  if (guard.verdict === "not-ignored") {
+    logErr(`${ENV_REL_PATH} present but not gitignored in ${repoRoot}; refusing commit to protect Identity`);
+    return "skipped:env-not-ignored";
+  }
+  if (guard.verdict === "tracked") {
     logErr(`${ENV_REL_PATH} is tracked by git in ${repoRoot}; refusing commit to protect Identity`);
     return "skipped:env-tracked";
   }
@@ -489,9 +551,11 @@ module.exports = {
   readSessionDataRoot,
   countStaged,
   refusesEnvPaths,
+  envGuardVerdict,
   monitorMessage,
   recoveryMessage,
   ENV_REL_PATH,
+  ENV_GUARD_SCRIPT,
   COMMIT_AUTHOR_NAME,
   COMMIT_AUTHOR_EMAIL,
 };
