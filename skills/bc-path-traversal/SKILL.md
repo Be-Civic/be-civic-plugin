@@ -23,7 +23,7 @@ Trust posture is conservative. The skill never invents a path that is not in the
 
 The skill enters with three artefacts already on disk from `bc-onboarding`:
 
-- `profile.json` at the BeCivic root — region, commune, civic_status, residency_status, conversation_language, administration_language, preferred_name, `has_id_card`, `browser_driving_preference`, and the `consent` block.
+- `profile.json` in the hidden state subdir (`${SUBSTRATE_STATE}`, i.e. `.be-civic/state/`) — region, commune, civic_status, residency_status, `has_id_card`, `browser_driving_preference`, and the `consent` block. The conversation and administration languages and `preferred_name` live in `preferences.json` (same state subdir), not in `profile.json`.
 - `procedure_progress.md` inside the project subfolder — empty on first entry, accumulated narrative on returning entries.
 - A procedure id resolved by the harness during onboarding (the `process_id` returned by the manifest lookup). The id is the only thing the harness needs to hand over — everything else is read from the artefacts above.
 
@@ -113,9 +113,10 @@ For every source attempt:
         "target_id": "<source-id>",
         "verdict": "confirm|reject",
         "rationale": "<structured failure signal if reject, e.g. '404 on quicklink URL'>",
-        "context": { "language_used": "<profile.conversation_language>" }
+        "context": { "language_used": "<preferences.json conversation_language>" }
       }
       ```
+      This body uses the V1-compat aliases `verdict`/`rationale`, which the Worker converts to the V2 wire shape: `verdict: confirm` → `outcome: positive`, `verdict: reject` → `outcome: negative`, and `rationale` → the V2 rationale field. Both forms are accepted (the aliases are deprecated but still honoured); this is the V1 form and carries no behaviour change.
    c. POST it with `wire.py` (the Bearer is read from `${SUBSTRATE_STATE}/.env` inside the script — do not handle the key here). Pipe the body on stdin:
       ```bash
       printf '%s' '<the JSON body above>' \
@@ -152,7 +153,7 @@ The mini-header signals to the user that the procedure work that follows is grou
 
 ## Step 8 — Mid-session new-procedure trigger
 
-When the user signals an intent that does not fit the current procedure mid-traversal — "I also need to update my address," "actually first my mum just arrived from Tunisia and needs residency" — stop the current step, name the pivot, and hand back to `bc-onboarding` in `returning` mode with the new procedure id. The handover passes the existing `profile.json` snapshot; `bc-onboarding` runs the new procedure's Section-2 routing form without re-asking Section 1, creates a new project subfolder under the existing BeCivic root, and returns control to a fresh invocation of this skill for the new procedure.
+When the user signals an intent that does not fit the current procedure mid-traversal — "I also need to update my address," "actually first my mum just arrived from Tunisia and needs residency" — stop the current step, name the pivot, and hand back to the harness for the new-procedure routing. `bc-onboarding` does not handle returning users with a complete setup; the harness (and the `be-civic` gate) own returning- and multi-active-mode routing — they resolve the new procedure id, set up its project subfolder under the existing BeCivic root reusing the existing `profile.json`, and hand control to a fresh invocation of this skill for the new procedure. Do not re-run first-contact onboarding or re-capture the profile.
 
 The original procedure is parked, not abandoned. Write the current phase and the last completed step to `${SUBSTRATE_DATA}/<procedure-slug>/procedure_progress.md` and update the status in `${SUBSTRATE_STATE}/procedures.json` before pivoting. When the user wants to resume the original procedure later, the harness reads `procedure_progress.md` and `procedures.json` and re-enters this skill at the parked phase.
 
@@ -185,7 +186,7 @@ Two channels for feedback against path-step quality:
 
 When every phase of the procedure has completed and every required artefact is in the project's `documents/` folder, summarise the procedure end-to-end for the user in plain language: what was filed, what is in the folder, what the user is waiting on from the authority, and what the user should do next outside the agent (an appointment, a postal acknowledgement, a follow-up after a statutory delay).
 
-Write a closing entry to `${SUBSTRATE_DATA}/<procedure-slug>/procedure_progress.md` naming the completion date and the final artefact set. Update `${SUBSTRATE_STATE}/procedures.json` to remove the completed procedure id from `active_procedures`. Hand back to the harness — there is no automatic exit to a next procedure; the user may close the session here, or continue with a different procedure via the harness's normal routing.
+Write a closing entry to `${SUBSTRATE_DATA}/<procedure-slug>/procedure_progress.md` naming the completion date and the final artefact set. Mark the procedure's entry `status: completed` in `${SUBSTRATE_STATE}/procedures.json` (the registry tracks per-procedure state by `status`, not an active-list array) and remove the completed procedure id from the `active_procedures` array in `profile.json` (that array lives in `profile.json`, not the registry). Hand back to the harness — there is no automatic exit to a next procedure; the user may close the session here, or continue with a different procedure via the harness's normal routing.
 
 If the procedure does not complete in this session (user paused, awaiting an external step like a commune appointment, awaiting a postal acknowledgement), do not synthesise completion. Write the pause reason and the next concrete user action to `${SUBSTRATE_DATA}/<procedure-slug>/procedure_progress.md` and update the status in `${SUBSTRATE_STATE}/procedures.json`. Exit cleanly. The next session's harness reads `procedure_progress.md` and `procedures.json` and re-enters this skill at the parked phase.
 
@@ -209,7 +210,7 @@ If the user signals a switch to a different active project mid-session ("can we 
 
 Project switching always crosses through the harness, never directly between two invocations of this skill. The harness owns project-focus; this skill owns the active procedure's traversal.
 
-To start a brand-new procedure mid-session, route back to `bc-onboarding` in `returning` mode per Step 8 — the harness handles `returning` and `multi-active` modes, not this skill.
+To start a brand-new procedure mid-session, hand back to the harness per Step 8 — the harness (and the `be-civic` gate) handle `returning` and `multi-active` routing, not this skill and not `bc-onboarding`.
 
 ## What this skill does not own
 

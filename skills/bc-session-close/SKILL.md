@@ -35,11 +35,11 @@ One short paragraph in plain English. What you covered today, what's done, what'
 
 ### 2. Save state
 
-Update each procedure walked this session: write its visible progress at `${SUBSTRATE_DATA}/<procedure-slug>/progress.md` (last step reached, what's pending, anything the user said worth holding) and refresh that procedure's entry `status` / `updated_at` in `${SUBSTRATE_STATE}/procedures.json`. Skip on resume-submit.
+Update each procedure walked this session: write its visible progress at `${SUBSTRATE_DATA}/<procedure-slug>/procedure_progress.md` (last step reached, what's pending, anything the user said worth holding) and refresh that procedure's entry `status` / `updated_at` in `${SUBSTRATE_STATE}/procedures.json`. Skip on resume-submit.
 
 ### 3. Per-item observation review (consume the buffer)
 
-Read this session's observation list at `${SUBSTRATE_STATE}/sessions/<session_id>/observations-buffer.jsonl` (on resume-submit, read `pending-submissions.jsonl` instead). One JSON object per line, each an `observation.v3`-shaped item written by `bc-path-traversal` and `bc-discovery` as observations accumulated this session. Inline-commit Validations on path sources (`target_type: path_source`) were already POSTed at traversal time and are **not** in this buffer — do not re-submit them.
+Read this session's observation list at `${SUBSTRATE_STATE}/sessions/<session_id>/observations-buffer.jsonl` (on resume-submit, read `pending-submissions.jsonl` instead). One JSON object per line, each a V2 submission shape per step 6 (Issue v5 / Validation v5 / Feedback v1 / Rating v4), written by `bc-path-traversal` and `bc-discovery` as observations accumulated this session. Inline-commit Validations on path sources (`target_type: path_source`) were already POSTed at traversal time and are **not** in this buffer — do not re-submit them.
 
 For each item:
 

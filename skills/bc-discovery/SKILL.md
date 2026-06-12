@@ -23,7 +23,7 @@ GET ${BASE}/api/manifest
 Authorization: Bearer <harness_key>   # omit if no key yet; public read still works
 ```
 
-Response: `{ "status": 200, "data": { "entries": [...] } }`. Search `entries` by `title`, `summary`, and `applies_to` fields for the customer's intent. Only declare zero-match when no entry matches after a genuine client-side scan.
+Response: the bare manifest `{ "version", "generated_at", "entries": [...] }` — `entries` is top-level, there is no `.data` wrapper (the handler returns the manifest unwrapped). Search `entries` by `title`, `summary`, and `applies_to` fields for the customer's intent. Only declare zero-match when no entry matches after a genuine client-side scan.
 
 Read the harness key from `${SUBSTRATE_STATE}/.env` (`BECIVIC_HARNESS_KEY=<value>`). If the file is absent or the key is not set, send the request without the `Authorization` header — anonymous reads succeed against `corpus:read:public`.
 
