@@ -303,9 +303,110 @@ Use the `BC_ROOT` install root the preamble emits as a session fact at session s
 
 2. **Introduce, then render the shipped form.** Tell the user the form is coming and why (a few quick questions about their situation so you pull the right guidance), then render `$BC_ROOT/skills/bc-onboarding/references/onboarding.<locale>.html` (carry-over language from `CARRYOVER_LANG` / `preferences.json`; fall back to `onboarding.en.html` for a locale not yet authored) via `mcp__visualize__show_widget`, passing the whole file as `widget_code`. Read it via `bash` `cat "$BC_ROOT/skills/…"` — it is a plugin-install asset the host `Read` tool can't see. **This is shipped, fully-branded, self-contained HTML — do NOT call `mcp__visualize__read_me` first** (it returns widget-*authoring* guidance for building a form from scratch; this one is already built — calling `read_me` here burns tokens for ignored output). The form's field count, pre-population (uncomment Section 2 from the procedure's `inputs`), commune/NIS5 datalist capture, locale selection, and submit format are all documented in the HTML's own runtime-insertion block — follow it. The form returns one `Be Civic onboarding — <field>: <value> · …` chat message.
 
-3. **Validate, then commit the sentinel.** Map the submitted fields onto `${SUBSTRATE_STATE}/profile.json` (**categorical fields only** — never names, NN/NISS, addresses, document numbers, exact dates of birth), normalise each to its `${SUBSTRATE_ROOT}/schemas/profile.schema.json` enum, and validate. **Set `last_updated_at` only once the profile validates AND the core routing fields are present** (≥ `region`, `civic_status`, `residency_status`, plus the procedure's declared `inputs`). Missing or un-normalising fields → ask for just those in chat (AskUserQuestion), and set `last_updated_at` only when they are filled. **Writing `last_updated_at` is the sentinel that tells future sessions the form is done — NEVER set it on a partial profile** (the form would be skipped forever with gaps; this is a privacy- and routing-critical trip-wire, restated as a safety invariant in the harness §3.2). If the user picks a language differing from the carry-over, mirror it to `${SUBSTRATE_STATE}/preferences.json` (and the profile) so later sessions don't revert. Narrative context (preferred name, soft history, family/work context) → `${SUBSTRATE_DATA}/MEMORY.md`, never the routing stores.
+3. **Hydrate any deferred-capture (`row_list`) fields — before the profile write.** Some form fields (today only `row_list` inputs — currently `belgian_residence_card_history`) let the user defer entry: instead of typed rows, the submit carries the sentinel `{ "__mode": "folder_drop"|"chat", "__status": "pending" }` under the field name. The harness cannot write a sentinel — it must hydrate it into structured rows first. **Run the row_list hydration loop below for every such field now, before step 4's profile write.** A field that submitted real rows (Mode 1) or no value skips the loop untouched.
 
-4. **Hand back to the harness.** The canonical is already in hand and the profile is captured → return control for the situation assessment (harness §3.3) and the procedure walk. Do not start the walk inside this skill; the harness owns it.
+4. **Validate, then commit the sentinel.** Map the submitted fields onto `${SUBSTRATE_STATE}/profile.json` (**categorical fields only** — never names, NN/NISS, addresses, document numbers, exact dates of birth), normalise each to its `${SUBSTRATE_ROOT}/schemas/profile.schema.json` enum, and validate. By now every `row_list` field holds the confirmed rows the step-3 loop produced (not a sentinel). **Set `last_updated_at` only once the profile validates AND the core routing fields are present** (≥ `region`, `civic_status`, `residency_status`, plus the procedure's declared `inputs`). Missing or un-normalising fields → ask for just those in chat (AskUserQuestion), and set `last_updated_at` only when they are filled. **Writing `last_updated_at` is the sentinel that tells future sessions the form is done — NEVER set it on a partial profile** (the form would be skipped forever with gaps; this is a privacy- and routing-critical trip-wire, restated as a safety invariant in the harness §3.2). If the user picks a language differing from the carry-over, mirror it to `${SUBSTRATE_STATE}/preferences.json` (and the profile) so later sessions don't revert. Narrative context (preferred name, soft history, family/work context) → `${SUBSTRATE_DATA}/MEMORY.md`, never the routing stores.
+
+5. **Hand back to the harness.** The canonical is already in hand and the profile is captured → return control for the situation assessment (harness §3.3) and the procedure walk. Do not start the walk inside this skill; the harness owns it.
+
+---
+
+### First-working-session mode → row_list hydration
+
+This is the **post-submit row_list hydration loop**. It runs inside first-working-session mode step 3, after the about-you form submit and **before** the profile.json write (step 4). It exists because the wire renders three capture modes for a `row_list` field (`type_directly` | `folder_drop` | `chat`); Modes 2 and 3 defer the actual data and submit a sentinel the harness must hydrate. This is the named anchor the `bc-document-handler/references/card-vision-prompt.md` reference points at — keep its heading stable.
+
+The walkable shape is: a Mode-2/Mode-3 submit → sentinel detected → rows assembled (vision-read or chat-parsed) → `pre_rows` re-render for confirmation → confirmed value written to `profile.json` under the field name → back to the submit flow.
+
+#### R1. Scan the submit for sentinels (defense layer 2)
+
+Scan every field in the cached submit payload for the sentinel shape:
+
+```json
+{ "<field_name>": { "__mode": "folder_drop"|"chat", "__status": "pending" } }
+```
+
+Before routing any sentinel to hydration, validate that it appears **only on a `row_list` input**. Read each field's `type` from the procedure canonical's `inputs:` block (in hand from step 1); the inputs catalogue declares which types may carry a sentinel. Today that allowlist is **`row_list` only**. If a sentinel appears on a `single_choice` / `text` / `yes_no` / any **non-row_list** input:
+
+1. **Reject.** Do not route it to hydration — the server-side renderer never produces this shape on those types, so receiving it means a stale client or a tampered submit. (Server-side rejection is layer 1; this is the harness-side layer-2 safety net.)
+2. **Log it** to the observation buffer as a `harness_anomaly` observation, category `sentinel_on_non_row_list`, recording the field name + input type. It rides the normal review-before-submit flow at session close.
+3. **Treat the field as missing** — re-prompt the user for it in chat using the input's normal copy (AskUserQuestion), as if the form returned `null`. Never fabricate a value.
+
+For each valid `row_list` sentinel, route by `__mode`: `folder_drop` → R2, `chat` → R3.
+
+#### R2. Mode 2 — folder_drop (poll, vision-read, archive, assemble)
+
+The user is dropping image files into the procedure-root inputs folder for this field:
+
+```
+${SUBSTRATE_DATA}/<procedure-slug>/inputs/<field_name>/
+```
+
+(`<procedure-slug>` is the active entry in `${SUBSTRATE_STATE}/procedures.json`; this is the same path the form's folder-drop panel showed the user.)
+
+**Wait for the user signal, then poll.** Folder polling waits for the user — they may not have started. Send, in conversation language:
+
+> *"When you've dropped your card photos in the folder and you're back here, just say 'done with cards' or anything that tells me you're back — I'll read them and walk you through what I found."*
+
+Hold position. The next user message is the trigger — any "I'm back" / "done" / "go ahead" / a single dot / a sigh. Use judgment; no magic word required. When it lands, list the folder.
+
+For each image file (or paired front+back set — see the prompt's pairing heuristics):
+
+1. **Run the agent's vision capability** with the prompt at `$BC_ROOT/skills/bc-document-handler/references/card-vision-prompt.md` (loaded verbatim — `cat` it via bash; it is a plugin-install asset the host `Read` tool can't see). One vision call per image, OR one per paired front+back set.
+2. **Parse the strict-JSON output.** Parse failure counts as one fail (see retry).
+3. **Score the read** per the prompt's pass/fail rules: valid JSON with a non-null `card_type` and ≥1 non-null date = pass; anything else = fail.
+
+**Two-fail retry policy.** On the **second consecutive** failure for the same image (or paired set), stop retrying that image and surface to the user:
+
+> *"I couldn't read `<filename>` clearly — want to upload a clearer photo, or just type that row in manually? Other cards I read fine, so this is per-card, not the whole set."*
+
+Three branches: **Re-upload** (restart the two-attempt cycle on the new file; drop the old one from the read-set — it stays archived), **Type manually** (the card hydrates as an empty/partial row — `card_type: null`, dates null — for the user to fill in the R4 widget), **Skip** (no row for that image). Other readable cards still hydrate normally.
+
+Once the read-set fully resolves (every image is a pass, a manual placeholder, or a skip), assemble the rows array — one row per pass or placeholder, chronological by `start_month` (nulls last). Map each `card_type` to the catalogue enum (R3's enum + mapping rules apply). Hand to R4.
+
+**Archive rule.** The dropped images stay in `${SUBSTRATE_DATA}/<procedure-slug>/inputs/<field_name>/` per the harness archive rule (same convention `bc-document-handler` uses for procedure-scoped documents). The hydration does **not** move, rename, or delete them — the user owns the archive.
+
+#### R3. Mode 3 — chat (parse free-text into enum-valid rows)
+
+Elicit conversationally. In conversation language:
+
+> *"Walk me through your card history, oldest first. For each card, tell me the type (A, F+, EU card, etc.) and the rough dates you held it. Don't worry about the exact day — month and year is enough."*
+
+The user replies in prose. Parse it into rows — one per card mentioned, chronological:
+
+```json
+{ "card_type": "<catalogue enum value>", "start_month": "<YYYY-MM>", "end_month": "<YYYY-MM or 'current'>", "notes": "<short optional free text>" }
+```
+
+**Parsing rules:**
+
+- **Map descriptions to the catalogue enum.** The authoritative enum + labels lives in the catalogue input `belgian_residence_card_history.yml` (mirrored in `${SUBSTRATE_ROOT}/schemas/profile.schema.json` — the runtime write target) and is the **23-value** set: `orange | visa_d | visa_c | A | B | C | D | K | L | F | F_plus | H | I | J | M | M_plus | N | E | E_plus | EU | EU_plus | EU_citizen | other`. Common mappings: "F+" → `F_plus`, "Blue Card" / "Carte bleue" → `H`, "EU card" / "Annex 8" → `EU`, "intra-corporate transferee" → `I`. A combined work+residence permit is **not** a distinct value (the old `single_permit` was retired) — record the work-route detail in `notes` against the actual card the person holds (usually `A` / `H`). Use judgment; if you cannot map a description, ask.
+- **Bucket dates to YYYY-MM.** "Spring 2018" → ask the user to pick a month. "Around 2018" → `2018-01` with a `notes` approximation marker if they don't refine. Current card → `end_month: "current"`.
+- **EU-citizen rows** (`card_type: "EU_citizen"`) carry null dates — EU citizens present without registering have no residence-card validity window.
+- Cap `notes` at 200 chars (catalogue max).
+
+If a row is ambiguous (can't pick a `card_type`, vague dates), do **not** guess — ask a clarifying follow-up, update that row, iterate until every row parses. Then hand to R4.
+
+#### R4. Re-render with `pre_rows` for in-place confirmation
+
+Regardless of mode, present the assembled rows back in the **same `row_list` widget** for in-place confirm/edit. Re-render via `mcp__visualize__show_widget` using the same widget the form returned, passing the assembled rows as the widget's `pre_rows` (the widget hydrates its inputs from `pre_rows` — see the wire's `row_list.html.hbs` "Mode 2/3 re-confirm render"). Frame in chat (conversation language):
+
+> *"Here's what I got — give it a quick look. Edit anything that's off, add rows I missed, and hit Continue. If a row's totally wrong, just clear it."*
+
+Wait for the second submit. Validate the returned rows against the catalogue column types: `card_type` ∈ the 23-value enum; `start_month` matches `^[0-9]{4}-[0-9]{2}$` (or null on an EU-citizen row); `end_month` matches `^([0-9]{4}-[0-9]{2}|current)$` (or null on an EU-citizen row); `notes` ≤ 200 chars. On a validation failure, re-render with an inline per-row error. On a clean submit, go to R5.
+
+#### R5. Scrub notes, then write the confirmed value to `profile.json`
+
+Before writing, run the Layer-1 scrub over each row's `notes`:
+
+```bash
+python3 "$BC_ROOT/scripts/scrub-layer1.py" --stdin --field notes
+```
+
+A row whose notes returns `status: "rejected"` (high-severity — identity / biometric / document-number shaped): **do not write yet** — surface it to the user by row index + redaction category, offer rewrite-or-clear (AskUserQuestion), re-scrub, loop until clean or cleared. Never silently redact a rejected note and proceed. A `status: "redacted"` row (medium severity, safe regex substitution) writes the redacted version without prompting.
+
+Once every row's notes is clean, **write the confirmed rows array to `${SUBSTRATE_STATE}/profile.json` under the field name** (`belgian_residence_card_history` → the `belgian_residence_card_history` key). This field's `render:` target is `profile` — the schema defines it on the profile, so it writes to `profile.json`, not a per-procedure case store.
+
+The sentinel is now replaced by structured rows. **Return to step 4** (validate + `last_updated_at` commit) with this field holding its confirmed value, then continue the rest of the submit flow.
 
 ---
 
